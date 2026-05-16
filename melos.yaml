@@ -1,0 +1,28 @@
+name: flutterguard_flow
+
+packages:
+  - packages/**
+  - examples/**
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+  version:
+    branch: main
+
+scripts:
+  analyze:
+    run: melos exec -c 1 -- "dart analyze ."
+  format:
+    run: melos exec -- "dart format ."
+  test:
+    run: |
+      dart test packages/flutterguard_core
+      dart test packages/flutterguard_dio
+      dart test packages/flutterguard_cli
+  test:core:
+    run: dart test packages/flutterguard_core
+  test:dio:
+    run: dart test packages/flutterguard_dio
+  test:cli:
+    run: dart test packages/flutterguard_cli
