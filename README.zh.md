@@ -446,9 +446,12 @@ dart test packages/flutterguard_dio
 dart test packages/flutterguard_cli
 flutter test packages/flutterguard_flutter
 
-# 运行示例
-cd examples/checkout
-flutter run
+# 运行追踪 API 演示
+dart run examples/usage_demo/bin/trace_demo.dart
+
+# 扫描示例项目
+dart pub global activate --source path packages/flutterguard_cli
+flutterguard scan --path examples/scan_demo
 ```
 
 ---

@@ -6,7 +6,6 @@ analyzer:
 linter:
   rules:
     - avoid_dynamic_calls
-    - avoid_print
     - prefer_const_constructors
     - prefer_const_declarations
     - prefer_final_locals

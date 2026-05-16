@@ -450,9 +450,12 @@ dart test packages/flutterguard_dio
 dart test packages/flutterguard_cli
 flutter test packages/flutterguard_flutter
 
-# Run the example
-cd examples/checkout
-flutter run
+# Run the tracing API demo
+dart run examples/usage_demo/bin/trace_demo.dart
+
+# Scan the demo project
+dart pub global activate --source path packages/flutterguard_cli
+flutterguard scan --path examples/scan_demo
 ```
 
 ---
