@@ -11,27 +11,19 @@ class TraceContext {
     }
   }
 
-  static R runWithTraceId<R>(
+  static Future<T> runWithTraceId<T>(
     String? traceId,
-    R Function() body,
-  ) {
-    if (traceId == null) return body();
-    return runZoned(
-      body,
-      zoneValues: {_keyName: traceId},
-    );
-  }
-
-  static Future<R> runGuardedWithTraceId<R>(
-    String? traceId,
-    Future<R> Function() body, {
-    void Function(Object error, StackTrace stack)? onError,
-  }) async {
-    if (traceId == null) return body();
-    return runZonedGuarded(
-      body,
-      onError ?? (_, __) {},
-      zoneValues: {_keyName: traceId},
-    );
+    FutureOr<T> Function() body,
+  ) async {
+    if (traceId == null) {
+      final result = body();
+      if (result is Future<T>) return result;
+      return result;
+    }
+    return runZoned(() async {
+      final result = body();
+      if (result is Future<T>) return await result;
+      return result;
+    }, zoneValues: {_keyName: traceId});
   }
 }

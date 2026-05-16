@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
+import 'package:path/path.dart' as p;
 
 import 'config_loader.dart';
 
@@ -10,9 +11,9 @@ class FileCollector {
     final allFiles = <String>{};
 
     for (final pattern in config.include) {
-      final glob = Glob(pattern, recursive: true);
-      final root = projectPath;
-      for (final entity in glob.listSync(root: root)) {
+      final fullPattern = p.join(projectPath, pattern);
+      final glob = Glob(fullPattern);
+      for (final entity in glob.listSync()) {
         if (entity is File && entity.path.endsWith('.dart')) {
           allFiles.add(entity.path);
         }
@@ -20,9 +21,9 @@ class FileCollector {
     }
 
     for (final pattern in config.exclude) {
-      final glob = Glob(pattern, recursive: true);
-      final root = projectPath;
-      for (final entity in glob.listSync(root: root)) {
+      final fullPattern = p.join(projectPath, pattern);
+      final glob = Glob(fullPattern);
+      for (final entity in glob.listSync()) {
         allFiles.remove(entity.path);
       }
       allFiles.removeWhere((f) => glob.matches(f));

@@ -43,9 +43,7 @@ class FlutterGuard {
     T result;
 
     try {
-      result = await TraceContext.runWithTraceId<T>(traceId, () async {
-        return await Future.value(body());
-      });
+      result = await TraceContext.runWithTraceId<T>(traceId, body);
     } catch (e, st) {
       failed = true;
       trace.errors.add(ErrorTrace(
