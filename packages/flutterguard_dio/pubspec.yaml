@@ -1,0 +1,16 @@
+name: flutterguard_dio
+description: Dio interceptor for FlutterGuard flow tracing - records HTTP requests within active flows.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  dio: ^5.7.0
+  flutterguard_core:
+    path: ../flutterguard_core
+
+dev_dependencies:
+  test: ^1.25.8
+  lints: ^3.0.0

@@ -1,0 +1,21 @@
+# Dart
+.dart_tool/
+.packages
+build/
+
+# Melos - ignore lock files in sub-packages (root lock should be committed)
+**/pubspec.lock
+!pubspec.lock
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# macOS
+.DS_Store
+
+# IDE
+*.iml
+
+# Test coverage
+coverage/
