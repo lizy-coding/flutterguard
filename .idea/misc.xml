@@ -3,17 +3,4 @@
   <component name="ProjectRootManager" version="2">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
-  <component name="StoredSessionsInfoStore">
-    <option name="sessions">
-      <list>
-        <SessionInfoState>
-          <option name="id" value="20260425-133820-a9fbb687-733e-4533-bfa5-2694a609de4f" />
-          <option name="lastUpdateTimestamp" value="1777095500259" />
-          <option name="responseMode" value="Agent" />
-          <option name="title" value="New Agent Session" />
-          <option name="user" value="guest" />
-        </SessionInfoState>
-      </list>
-    </option>
-  </component>
 </project>

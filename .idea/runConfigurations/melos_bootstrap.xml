@@ -1,0 +1,6 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Melos bootstrap" type="ShConfigurationType">
+    <option name="scriptText" value="melos bootstrap" />
+    <method v="2" />
+  </configuration>
+</component>

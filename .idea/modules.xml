@@ -2,12 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/examples/checkout_flow_example/melos_checkout_flow_example.iml" filepath="$PROJECT_DIR$/examples/checkout_flow_example/melos_checkout_flow_example.iml" />
       <module fileurl="file://$PROJECT_DIR$/packages/flutterguard_cli/melos_flutterguard_cli.iml" filepath="$PROJECT_DIR$/packages/flutterguard_cli/melos_flutterguard_cli.iml" />
       <module fileurl="file://$PROJECT_DIR$/packages/flutterguard_core/melos_flutterguard_core.iml" filepath="$PROJECT_DIR$/packages/flutterguard_core/melos_flutterguard_core.iml" />
       <module fileurl="file://$PROJECT_DIR$/packages/flutterguard_dio/melos_flutterguard_dio.iml" filepath="$PROJECT_DIR$/packages/flutterguard_dio/melos_flutterguard_dio.iml" />
       <module fileurl="file://$PROJECT_DIR$/packages/flutterguard_flutter/melos_flutterguard_flutter.iml" filepath="$PROJECT_DIR$/packages/flutterguard_flutter/melos_flutterguard_flutter.iml" />
-      <module fileurl="file://$PROJECT_DIR$/melos_flutterguard_flow.iml" filepath="$PROJECT_DIR$/melos_flutterguard_flow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/flutterguard.iml" filepath="$PROJECT_DIR$/flutterguard.iml" />
     </modules>
   </component>
 </project>

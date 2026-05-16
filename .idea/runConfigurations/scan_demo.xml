@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="FlutterGuard scan" type="DartCommandLineRunConfigurationType" factoryName="Dart Command Line Application" singleton="false">
+    <option name="filePath" value="$PROJECT_DIR$/packages/flutterguard_cli/bin/flutterguard.dart" />
+    <option name="scriptArguments" value="scan --path examples/scan_demo" />
+    <method v="2" />
+  </configuration>
+</component>

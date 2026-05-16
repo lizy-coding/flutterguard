@@ -1,17 +1,39 @@
+# Dart
 .dart_tool/
 .packages
-.dart_tool
 build/
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# CLI
 .flutterguard/
-*.iml
-.idea/
+
+# IDE
+.idea/*/
+.idea/*.xml
+.idea/*.iml
+!.idea/modules.xml
+!.idea/misc.xml
+!.idea/vcs.xml
+!.idea/runConfigurations/
+!.idea/runConfigurations/**
+!.idea/.name
 .vscode/
-*.lock
-doc/api/
+*.iml
+
+# macOS
 **/.DS_Store
+
+# Lock files (libraries and examples, not apps)
 pubspec.lock
-build/
+
+# API docs
+doc/api/
+
+# Coverage
 .coverage
 
-# Project evolution spec - not git tracked
+# Project evolution spec
 docs/

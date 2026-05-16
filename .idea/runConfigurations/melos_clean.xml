@@ -1,0 +1,6 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Melos clean" type="ShConfigurationType">
+    <option name="scriptText" value="melos clean" />
+    <method v="2" />
+  </configuration>
+</component>
