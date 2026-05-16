@@ -1,10 +1,8 @@
 # FlutterGuard
 
-> **Flow-level aspect tracing and architecture scanning for Flutter apps.**
+> **面向 Flutter 应用的流程级切面追踪与架构扫描工具。**
 
 [**English**](README.md) | [**中文**](README.zh.md)
-
-FlutterGuard connects user actions to async spans, network requests, route transitions, errors, frame metrics, rebuild boundaries, and static architectural risks — all in a single correlated report.
 
 [![Dart](https://img.shields.io/badge/Dart-3.3%2B-blue)](https://dart.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.19%2B-blue)](https://flutter.dev)
@@ -12,47 +10,47 @@ FlutterGuard connects user actions to async spans, network requests, route trans
 
 ---
 
-## What Makes It Different
+## 有何不同
 
-| Not a crash SDK | Not an HTTP inspector | Not a logger |
+| 不是崩溃 SDK | 不是 HTTP 抓包工具 | 不是日志库 |
 |---|---|---|
-| FlutterGuard doesn't replace Sentry/Crashlytics. It **connects** runtime behavior into structured traces. | Alice/Charles log request bodies. FlutterGuard records **only what happened** — method, path, status, duration — attached to your flow. | Debug logs are unstructured and ephemeral. FlutterGuard produces **exportable, correlation-first** reports. |
+| FlutterGuard 不取代 Sentry/Crashlytics。它将**运行时行为关联**为结构化追踪。 | Charles 记录请求体。FlutterGuard 只记录**发生了什么** — 方法、路径、状态码、耗时 — 挂接到你的流程上。 | 调试日志是非结构化和临时的。FlutterGuard 产出**可导出、可关联**的报告。 |
 
-FlutterGuard answers questions like:
+FlutterGuard 可以回答这些问题：
 
-- *"Why did this user action take 2 seconds?"* — spans, network, frames
-- *"Where did the error occur in the lifecycle of this action?"* — error within flow context
-- *"Which files are architectural risks in this project?"* — static scan
-- *"Did a rebuild cascade during this checkout?"* — GuardBoundary counters
+- *"为什么这个用户操作花了 2 秒？"* — spans、网络请求、帧
+- *"在这个操作的声明周期中，错误发生在哪里？"* — 流程上下文中的错误
+- *"这个项目中有哪些文件存在架构风险？"* — 静态扫描
+- *"在这次结账流程中发生了级联重建吗？"* — GuardBoundary 计数器
 
 ---
 
-## Installation
+## 安装
 
-### Runtime Packages (Flutter app)
+### 运行时包（Flutter 应用）
 
 ```yaml
 # pubspec.yaml
 dependencies:
   flutterguard_flutter: ^0.1.0
-  flutterguard_dio: ^0.1.0   # if using Dio
+  flutterguard_dio: ^0.1.0   # 如果使用 Dio
 ```
 
-### CLI (standalone tool)
+### CLI（独立工具）
 
 ```bash
 dart pub global activate flutterguard_cli
-# OR compile to native binary:
-git clone https://github.com/your-org/flutterguard.git
+# 或编译为原生二进制：
+git clone <repo-url>
 cd flutterguard
 dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 ```
 
 ---
 
-## Quick Start
+## 快速开始
 
-### 1. Wrap your app
+### 1. 包裹应用
 
 ```dart
 import 'package:flutterguard_flutter/flutterguard_flutter.dart';
@@ -67,13 +65,12 @@ void main() {
 }
 ```
 
-### 2. Trace a user action
+### 2. 追踪用户操作
 
 ```dart
 ElevatedButton(
   onPressed: () {
     FlutterGuard.action('checkout', () async {
-      // spans auto-attach to this flow
       final valid = await FlutterGuard.span('validate_cart', () => validate());
       if (valid) {
         await FlutterGuard.span('process_payment', () => process());
@@ -84,14 +81,14 @@ ElevatedButton(
 )
 ```
 
-### 3. Add the Dio interceptor
+### 3. 添加 Dio 拦截器
 
 ```dart
 final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'));
 dio.interceptors.add(FlutterGuardDioInterceptor());
 ```
 
-### 4. Mark widget boundaries
+### 4. 标记组件边界
 
 ```dart
 GuardBoundary(
@@ -100,7 +97,7 @@ GuardBoundary(
 )
 ```
 
-### 5. Export the report
+### 5. 导出报告
 
 ```dart
 final report = FlutterGuard.exportMarkdown();
@@ -110,7 +107,7 @@ final json = FlutterGuard.exportJson();
 await File('report.json').writeAsString(json);
 ```
 
-### 6. Run a static scan
+### 6. 运行静态扫描
 
 ```bash
 flutterguard scan --path ./my_project
@@ -118,11 +115,11 @@ flutterguard scan --path ./my_project
 
 ---
 
-## Runtime API
+## 运行时 API
 
 ### `FlutterGuard.run()`
 
-Initializes all hooks and starts the Flutter app. Must be called before `runApp`.
+初始化所有 hooks 并启动 Flutter 应用。必须在 `runApp` 之前调用。
 
 ```dart
 FlutterGuard.run(
@@ -142,7 +139,7 @@ FlutterGuard.run(
 
 ### `FlutterGuard.action<T>(name, body, {tags})`
 
-Creates a new flow trace. All spans, network calls, errors, routes, and frame metrics within `body` are automatically correlated.
+创建一个新的流程追踪。`body` 中的所有 spans、网络请求、错误、路由和帧指标会自动关联。
 
 ```dart
 await FlutterGuard.action('login', () async {
@@ -153,7 +150,7 @@ await FlutterGuard.action('login', () async {
 
 ### `FlutterGuard.span<T>(name, body, {tags})`
 
-Creates a child span under the current flow. If no active flow, executes body directly without recording.
+在当前流程下创建子 span。如果没有活跃流程，则直接执行 body 而不记录。
 
 ```dart
 final data = await FlutterGuard.span('fetch_user', () => api.getUser(id));
@@ -161,18 +158,17 @@ final data = await FlutterGuard.span('fetch_user', () => api.getUser(id));
 
 ### `FlutterGuardRouteObserver`
 
-Add to `MaterialApp.navigatorObservers`. Records push, pop, replace, remove events.
+添加到 `MaterialApp.navigatorObservers`。记录 push、pop、replace、remove 事件。
 
 ```dart
 MaterialApp(
   navigatorObservers: [FlutterGuard.routeObserver],
-  // ...
 )
 ```
 
 ### `GuardBoundary`
 
-Wrap any widget to count rebuilds within an active flow.
+包裹任意 widget 以在活跃流程中统计重建次数。
 
 ```dart
 GuardBoundary(
@@ -183,7 +179,7 @@ GuardBoundary(
 
 ### `FlutterGuard.currentTraceId`
 
-Returns the current flow trace ID from the Zone, or `null`.
+从 Zone 返回当前流程追踪 ID，或 `null`。
 
 ```dart
 final traceId = FlutterGuard.currentTraceId;
@@ -191,16 +187,16 @@ final traceId = FlutterGuard.currentTraceId;
 
 ### `FlutterGuard.exportJson()` / `FlutterGuard.exportMarkdown()`
 
-Export all recorded traces as structured reports.
+导出所有记录的追踪为结构化报告。
 
 ```dart
-final json = FlutterGuard.exportJson();       // JSON
-final md = FlutterGuard.exportMarkdown();     // Markdown
+final json = FlutterGuard.exportJson();
+final md = FlutterGuard.exportMarkdown();
 ```
 
 ### `FlutterGuard.reset()`
 
-Clears all stored traces.
+清除所有存储的追踪。
 
 ```dart
 FlutterGuard.reset();
@@ -216,9 +212,9 @@ FlutterGuardDioInterceptor(
 )
 ```
 
-Default sensitive keys: `authorization, cookie, set-cookie, token, password, secret, email, phone`
+默认敏感键：`authorization, cookie, set-cookie, token, password, secret, email, phone`
 
-Records method, path, status code, duration, success/failure. Does NOT log request/response bodies.
+记录 method、path、status code、duration、success/failure。不记录请求/响应体。
 
 ---
 
@@ -230,17 +226,17 @@ Records method, path, status code, duration, success/failure. Does NOT log reque
 flutterguard scan [options]
 
 Options:
-  -p, --path      Project path to scan (default: .)
-  -c, --config    Config file path (default: flutterguard.yaml)
-  -f, --format    Output format: json | markdown | both (default: both)
-  -o, --output    Output directory (default: .flutterguard)
-  --fail-on       CI gate threshold: none | high | medium | low (default: none)
-  --min-score     Minimum score 0-100
+  -p, --path      扫描项目路径（默认：.）
+  -c, --config    配置文件路径（默认：flutterguard.yaml）
+  -f, --format    输出格式：json | markdown | both（默认：both）
+  -o, --output    输出目录（默认：.flutterguard）
+  --fail-on       CI 门控阈值：none | high | medium | low（默认：none）
+  --min-score     最低分数 0-100
 ```
 
-Output files:
-- `.flutterguard/report.json` — machine-readable
-- `.flutterguard/report.md` — human-readable
+输出文件：
+- `.flutterguard/report.json` — 机器可读
+- `.flutterguard/report.md` — 人类可读
 
 ### `flutterguard.yaml`
 
@@ -276,9 +272,9 @@ boundaries:
       - lib/payment/**
 ```
 
-### CI Integration
+### CI 集成
 
-**GitHub Actions:**
+**GitHub Actions：**
 
 ```yaml
 - name: FlutterGuard Scan
@@ -287,32 +283,32 @@ boundaries:
     flutterguard scan --path . --fail-on high
 ```
 
-**Pre-commit (local):**
+**Pre-commit（本地）：**
 
 ```bash
 #!/bin/bash
 flutterguard scan --path . --fail-on medium
 ```
 
-Exit codes: `0` = pass, `1` = gate failed, `2` = error
+退出码：`0` = 通过，`1` = 门控失败，`2` = 错误
 
 ---
 
-## Static Rules
+## 静态规则
 
-| Rule | Level | What it detects |
-|------|-------|----------------|
-| `large_file` | medium | Files exceeding maxLines (default 500) |
-| `large_class` | medium | Classes exceeding maxLines (default 300) |
-| `large_build_method` | medium | Widget build() methods exceeding maxLines (default 80) |
-| `lifecycle_resource_not_disposed` | **high** | StreamSubscription, Timer, AnimationController, TextEditingController, ScrollController, FocusNode without matching cancel/dispose |
-| `boundary_import_violation` | **high** | Imports that violate configured module boundaries |
+| 规则 | 等级 | 检测内容 |
+|------|------|----------|
+| `large_file` | medium | 文件超过 maxLines（默认 500） |
+| `large_class` | medium | 类超过 maxLines（默认 300） |
+| `large_build_method` | medium | widget 的 build() 方法超过 maxLines（默认 80） |
+| `lifecycle_resource_not_disposed` | **high** | StreamSubscription、Timer、AnimationController、TextEditingController、ScrollController、FocusNode 未对应 cancel/dispose |
+| `boundary_import_violation` | **high** | 导入违反了配置的模块边界 |
 
-**Scoring**: 100 base — 10 per high — 4 per medium — 1 per low (minimum 0)
+**评分**：100 基础分 — 每 high -10，每 medium -4，每 low -1（最低 0）
 
 ---
 
-## Report Format
+## 报告格式
 
 ### JSON
 
@@ -345,38 +341,38 @@ Exit codes: `0` = pass, `1` = gate failed, `2` = error
 
 ### Markdown
 
-Comprehensive report with sections: Summary, Static Issues (High/Medium/Low), Runtime Flows, and CI Result.
+综合报告，包含以下章节：Summary、Static Issues（High/Medium/Low）、Runtime Flows 和 CI Result。
 
 ---
 
-## M1 Feature List
+## M1 功能列表
 
-- [x] `FlutterGuard.action()` — flow-level trace creation with Zone context
-- [x] `FlutterGuard.span()` — async child spans, auto-correlated
-- [x] `FlutterGuard.run()` — automatic error hooks, frame metrics, route observer
-- [x] `FlutterGuardRouteObserver` — records push/pop/replace/remove
-- [x] `GuardBoundary` — widget rebuild counting
-- [x] `FlutterGuardDioInterceptor` — Dio 5.x HTTP tracing
-- [x] CLI static scan — 5 rules, YAML config, JSON/Markdown reports
-- [x] CI gate — `--fail-on` threshold-based exit codes
-- [x] Score system — 0-100 based on issue severity
-- [x] Demo app — checkout flow with all integrations
+- [x] `FlutterGuard.action()` — 带 Zone 上下文的流程级追踪创建
+- [x] `FlutterGuard.span()` — 异步子 spans，自动关联
+- [x] `FlutterGuard.run()` — 自动错误 hooks、帧指标、路由观察者
+- [x] `FlutterGuardRouteObserver` — 记录 push/pop/replace/remove
+- [x] `GuardBoundary` — widget 重建计数
+- [x] `FlutterGuardDioInterceptor` — Dio 5.x HTTP 追踪
+- [x] CLI 静态扫描 — 5 条规则，YAML 配置，JSON/Markdown 报告
+- [x] CI 门控 — `--fail-on` 阈值退出码
+- [x] 评分系统 — 基于问题严重性的 0-100 分
+- [x] 演示应用 — 集成了所有功能的结账流程
 
-## Non-Goals (M1)
+## M1 非目标
 
-- AI-based diagnosis or auto-fix
-- DevTools extension
-- MQTT, BLE, or Matter protocol tracing
-- Riverpod/BLoC/GetX state management adapters
-- Full HTTP body inspection
-- Crash SDK replacement (Sentry/Crashlytics)
-- IDE lint plugin integration
+- AI 诊断或自动修复
+- DevTools 扩展
+- MQTT、BLE 或 Matter 协议追踪
+- Riverpod/BLoC/GetX 状态管理适配器
+- 完整 HTTP 体检查
+- 崩溃 SDK 替代品（Sentry/Crashlytics）
+- IDE lint 插件集成
 
 ---
 
-## Example Output
+## 示例输出
 
-Running the demo checkout flow:
+运行演示结账流程：
 
 ```
 # FlutterGuard Report
@@ -422,41 +418,41 @@ Running the demo checkout flow:
 
 ---
 
-## Roadmap
+## 路线图
 
-| Milestone | Timeline | Focus |
-|-----------|----------|-------|
-| **M1** | Current | Flow tracing + static scan MVP |
-| M2 | Q3 2026 | Type-accurate lifecycle detection, cycle detection, custom plugins |
-| M3 | Q4 2026 | DevTools extension, Sentry bridge, timeline integration |
-| M4 | 2027 | Enterprise features, multi-isolate, storage backends |
+| 里程碑 | 时间 | 重点 |
+|--------|------|------|
+| **M1** | 当前 | 流程追踪 + 静态扫描 MVP |
+| M2 | 2026 Q3 | 类型精确的生命周期检测、循环检测、自定义插件 |
+| M3 | 2026 Q4 | DevTools 扩展、Sentry 桥接、时间线集成 |
+| M4 | 2027 | 企业功能、多 isolate、存储后端 |
 
 ---
 
-## Development
+## 开发
 
 ```bash
-# Clone and bootstrap
+# 克隆和引导
 git clone <repo-url>
 cd flutterguard
 melos bootstrap
 
-# Analyze all packages
+# 分析所有包
 melos run analyze
 
-# Run tests
+# 运行测试
 dart test packages/flutterguard_core
 dart test packages/flutterguard_dio
 dart test packages/flutterguard_cli
 flutter test packages/flutterguard_flutter
 
-# Run the example
+# 运行示例
 cd examples/checkout
 flutter run
 ```
 
 ---
 
-## License
+## 许可
 
 MIT

@@ -1,4 +1,4 @@
-name: checkout_flow_example
+name: checkout_example
 description: Demo app showing FlutterGuard runtime integration.
 version: 0.1.0
 publish_to: none
