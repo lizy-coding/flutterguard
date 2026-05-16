@@ -14,4 +14,4 @@ build/
 .coverage
 
 # Project evolution spec - not git tracked
-FLUTTERGUARD_SPEC.md
+docs/

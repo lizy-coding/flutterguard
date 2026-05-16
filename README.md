@@ -41,8 +41,8 @@ dependencies:
 ```bash
 dart pub global activate flutterguard_cli
 # OR compile to native binary:
-git clone https://github.com/your-org/flutterguard_flow.git
-cd flutterguard_flow
+git clone https://github.com/your-org/flutterguard.git
+cd flutterguard
 dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 ```
 
@@ -436,7 +436,7 @@ Running the demo checkout flow:
 ```bash
 # Clone and bootstrap
 git clone <repo-url>
-cd flutterguard_flow
+cd flutterguard
 melos bootstrap
 
 # Analyze all packages

@@ -81,7 +81,7 @@ class LifecycleResourceRule {
                 message:
                     '$resourceType "$fieldName" in "${cls.name.lexeme}" may not be properly disposed.',
                 suggestion:
-                    'Call "${fieldName}.$expectedCall()" in the dispose() method.',
+                    'Call "$fieldName.$expectedCall()" in the dispose() method.',
                 metadata: {
                   'className': cls.name.lexeme,
                   'resourceType': resourceType,

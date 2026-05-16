@@ -37,7 +37,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       });
 
       if (mounted) {
-        Navigator.of(context).push<void>(
+        await Navigator.of(context).push<void>(
           MaterialPageRoute<void>(
             builder: (_) => Scaffold(
               appBar: AppBar(title: const Text('Order Result')),
