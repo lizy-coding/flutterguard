@@ -46,98 +46,55 @@ class LifecycleResourceRule {
           .where((f) => !f.isStatic)
           .toList();
 
-      final resourceFields = <String, String>{};
-
-      for (final field in fieldDeclarations) {
-        if (field.fields.type == null) continue;
-        final typeStr = field.fields.type.toString();
-        for (final resourceType in _resourceTypes.keys) {
-          if (typeStr == resourceType || typeStr.endsWith('<$resourceType>')) {
-            final fieldName = field.fields.variables.first.name.lexeme;
-            resourceFields[fieldName] = resourceType;
-          }
-        }
-      }
-
-      if (resourceFields.isEmpty) continue;
+      if (fieldDeclarations.isEmpty) continue;
 
       final disposeMethod = cls.members
           .whereType<MethodDeclaration>()
           .where((m) => m.name.lexeme == 'dispose')
           .firstOrNull;
 
-      for (final entry in resourceFields.entries) {
-        final fieldName = entry.key;
-        final resourceType = entry.value;
-        final expectedCall = _resourceTypes[resourceType]!;
-        final isDisposed = _isFieldDisposed(disposeMethod, fieldName, expectedCall);
+      for (final field in fieldDeclarations) {
+        final type = field.fields.type;
+        if (type == null) continue;
 
-        if (!isDisposed) {
-          final field = fieldDeclarations.firstWhere(
-            (f) => f.fields.variables.any((v) => v.name.lexeme == fieldName),
-          );
-          final line =
-              (field.parent as ClassDeclaration).name.offset;
+        final typeStr = type.toString();
+        for (final resourceType in _resourceTypes.keys) {
+          if (typeStr == resourceType || typeStr.endsWith('<$resourceType>')) {
+            final fieldName = field.fields.variables.first.name.lexeme;
+            final expectedCall = _resourceTypes[resourceType]!;
 
-          issues.add(StaticIssue(
-            id: 'lifecycle_resource_not_disposed',
-            title: 'Lifecycle resource not disposed',
-            file: file,
-            line: line,
-            level: RiskLevel.high,
-            message:
-                '$resourceType "$fieldName" in "${cls.name.lexeme}" may not be properly disposed.',
-            suggestion:
-                'Call "${fieldName}.$expectedCall()" in the dispose() method.',
-            metadata: {
-              'className': cls.name.lexeme,
-              'resourceType': resourceType,
-              'expectedDisposeCall': expectedCall,
-            },
-          ));
+            bool isDisposed = false;
+            if (disposeMethod != null) {
+              final disposeBody = disposeMethod.toString();
+              isDisposed = disposeBody.contains('$fieldName.$expectedCall');
+            }
+
+            if (!isDisposed) {
+              final line = field.fields.variables.first.name.offset;
+
+              issues.add(StaticIssue(
+                id: 'lifecycle_resource_not_disposed',
+                title: 'Lifecycle resource not disposed',
+                file: file,
+                line: line,
+                level: RiskLevel.high,
+                message:
+                    '$resourceType "$fieldName" in "${cls.name.lexeme}" may not be properly disposed.',
+                suggestion:
+                    'Call "${fieldName}.$expectedCall()" in the dispose() method.',
+                metadata: {
+                  'className': cls.name.lexeme,
+                  'resourceType': resourceType,
+                  'fieldName': fieldName,
+                  'expectedDisposeCall': expectedCall,
+                },
+              ));
+            }
+          }
         }
       }
     }
 
     return issues;
-  }
-
-  bool _isFieldDisposed(
-    MethodDeclaration? disposeMethod,
-    String fieldName,
-    String expectedCall,
-  ) {
-    if (disposeMethod == null) return false;
-
-    bool found = false;
-    disposeMethod.visitChildren(_FieldDisposeVisitor(
-      fieldName: fieldName,
-      expectedCall: expectedCall,
-      onFound: () => found = true,
-    ));
-    return found;
-  }
-}
-
-class _FieldDisposeVisitor extends RecursiveAstVisitor<void> {
-  final String fieldName;
-  final String expectedCall;
-  final VoidCallback onFound;
-
-  _FieldDisposeVisitor({
-    required this.fieldName,
-    required this.expectedCall,
-    required this.onFound,
-  });
-
-  @override
-  void visitMethodInvocation(MethodInvocation node) {
-    if (node.target is SimpleIdentifier) {
-      final target = node.target as SimpleIdentifier;
-      if (target.name == fieldName && node.methodName.name == expectedCall) {
-        onFound();
-      }
-    }
-    super.visitMethodInvocation(node);
   }
 }

@@ -19,44 +19,49 @@ void main() {
   });
 
   test('interceptor records success response', () async {
-    final request = RequestOptions(path: '/api/items');
-    final startTime = DateTime.now().subtract(const Duration(milliseconds: 50));
-    request.extra['flutterguard_start_time'] = startTime;
+    await FlutterGuard.action('network_action', () async {
+      final request = RequestOptions(path: '/api/items');
+      final startTime =
+          DateTime.now().subtract(const Duration(milliseconds: 50));
+      request.extra['flutterguard_start_time'] = startTime;
 
-    final response = Response(
-      requestOptions: request,
-      statusCode: 200,
-      data: {'id': 1},
-    );
+      final response = Response(
+        requestOptions: request,
+        statusCode: 200,
+        data: {'id': 1},
+      );
 
-    FlutterGuard.recordNetwork(NetworkTrace(
-      flowId: 'test_flow',
-      method: request.method,
-      path: request.uri.path,
-      statusCode: response.statusCode!,
-      durationMs: 50,
-      success: true,
-    ));
+      FlutterGuard.recordNetwork(NetworkTrace(
+        flowId: FlutterGuard.currentTraceId,
+        method: request.method,
+        path: request.uri.path,
+        statusCode: response.statusCode!,
+        durationMs: 50,
+        success: true,
+      ));
+    });
 
-    final traces = FlutterGuard.exportJson();
-    expect(traces, contains('200'));
-    expect(traces, contains('/api/items'));
+    final json = FlutterGuard.exportJson();
+    expect(json, contains('200'));
+    expect(json, contains('/api/items'));
   });
 
   test('interceptor records error response', () async {
-    FlutterGuard.recordNetwork(NetworkTrace(
-      flowId: 'test_flow',
-      method: 'GET',
-      path: '/api/error',
-      durationMs: 100,
-      success: false,
-      errorType: 'connectionError',
-      errorMessage: 'Connection refused',
-    ));
+    await FlutterGuard.action('error_network_action', () async {
+      FlutterGuard.recordNetwork(NetworkTrace(
+        flowId: FlutterGuard.currentTraceId,
+        method: 'GET',
+        path: '/api/error',
+        durationMs: 100,
+        success: false,
+        errorType: 'connectionError',
+        errorMessage: 'Connection refused',
+      ));
+    });
 
-    final traces = FlutterGuard.exportJson();
-    expect(traces, contains('Connection refused'));
-    expect(traces, contains('/api/error'));
+    final json = FlutterGuard.exportJson();
+    expect(json, contains('Connection refused'));
+    expect(json, contains('/api/error'));
   });
 
   test('interceptor attaches to current flow', () async {

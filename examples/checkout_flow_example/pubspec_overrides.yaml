@@ -1,0 +1,8 @@
+# melos_managed_dependency_overrides: flutterguard_core,flutterguard_dio,flutterguard_flutter
+dependency_overrides:
+  flutterguard_core:
+    path: ../../packages/flutterguard_core
+  flutterguard_dio:
+    path: ../../packages/flutterguard_dio
+  flutterguard_flutter:
+    path: ../../packages/flutterguard_flutter

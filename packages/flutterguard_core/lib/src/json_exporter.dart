@@ -17,10 +17,10 @@ class JsonExporter {
   }
 
   static Map<String, int> _buildSummary(List<FlowTrace> traces) {
-    int total = traces.length;
-    int success = traces.where((t) => t.status == FlowStatus.success).length;
-    int failed = traces.where((t) => t.status == FlowStatus.failed).length;
-    int running = traces.where((t) => t.status == FlowStatus.running).length;
+    final total = traces.length;
+    final success = traces.where((t) => t.status == FlowStatus.success).length;
+    final failed = traces.where((t) => t.status == FlowStatus.failed).length;
+    final running = traces.where((t) => t.status == FlowStatus.running).length;
     return {'total': total, 'success': success, 'failed': failed, 'running': running};
   }
 }

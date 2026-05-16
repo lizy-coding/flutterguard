@@ -130,7 +130,8 @@ class ReportGenerator {
 
   static int _calculateScore(List<StaticIssue> issues) {
     final summary = _buildSummary(issues);
-    var score = 100 - summary.high * 10 - summary.medium * 4 - summary.low * 1;
+    final score =
+        100 - summary.high * 10 - summary.medium * 4 - summary.low * 1;
     return score.clamp(0, 100);
   }
 

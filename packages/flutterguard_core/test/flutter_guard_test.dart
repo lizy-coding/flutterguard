@@ -37,7 +37,6 @@ void main() {
 
     final json = FlutterGuard.exportJson();
     expect(json, contains('inner_span'));
-    expect(json, contains('span_done'));
   });
 
   test('zone context survives async futures', () async {

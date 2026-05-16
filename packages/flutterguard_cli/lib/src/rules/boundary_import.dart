@@ -42,10 +42,6 @@ class BoundaryImportRule {
 
         for (final forbiddenGlob in boundary.forbidden) {
           if (_importMatchesForbidden(importPath, file, forbiddenGlob)) {
-            final line = unit.declarations.isNotEmpty
-                ? null
-                : null;
-
             issues.add(StaticIssue(
               id: 'boundary_import_violation',
               title: 'Boundary import violation',
