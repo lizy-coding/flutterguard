@@ -1,4 +1,0 @@
-# melos_managed_dependency_overrides: flutterguard_core
-dependency_overrides:
-  flutterguard_core:
-    path: ../flutterguard_core

@@ -1,6 +1,7 @@
 # Dart
 .dart_tool/
 .packages
+pubspec_overrides.yaml
 build/
 
 # Flutter
