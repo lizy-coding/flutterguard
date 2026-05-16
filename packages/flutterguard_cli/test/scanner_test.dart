@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutterguard_cli/src/config_loader.dart';
-import 'package:flutterguard_cli/src/file_collector.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/rules/boundary_import.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
@@ -15,21 +14,20 @@ String get fixturesPath => p.join(Directory.current.path, 'test', 'fixtures');
 void main() {
   group('Static Rules', () {
     test('scan detects large file', () {
-      final config = ScanConfig.fromFile(
-          p.join(fixturesPath, 'boundary_config.yaml'));
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
       final files = [p.join(fixturesPath, 'large_file.dart')];
 
       final issues = LargeUnitsRule(config.rules).analyze(files);
 
-      final largeFileIssue =
-          issues.where((i) => i.id == 'large_file').toList();
+      final largeFileIssue = issues.where((i) => i.id == 'large_file').toList();
       expect(largeFileIssue, isNotEmpty);
       expect(largeFileIssue.first.metadata['actual'], greaterThan(500));
     });
 
     test('scan detects large class', () {
-      final config = ScanConfig.fromFile(
-          p.join(fixturesPath, 'boundary_config.yaml'));
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
       final files = [p.join(fixturesPath, 'large_class.dart')];
 
       final issues = LargeUnitsRule(config.rules).analyze(files);
@@ -40,8 +38,8 @@ void main() {
     });
 
     test('scan detects large build method', () {
-      final config = ScanConfig.fromFile(
-          p.join(fixturesPath, 'boundary_config.yaml'));
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
       final files = [p.join(fixturesPath, 'large_build.dart')];
 
       final issues = LargeUnitsRule(config.rules).analyze(files);
@@ -52,8 +50,8 @@ void main() {
     });
 
     test('scan detects lifecycle resource not disposed', () {
-      final config = ScanConfig.fromFile(
-          p.join(fixturesPath, 'boundary_config.yaml'));
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
       final files = [p.join(fixturesPath, 'lifecycle_issue.dart')];
 
       final issues =
@@ -65,8 +63,8 @@ void main() {
     });
 
     test('scan detects boundary violation', () {
-      final config = ScanConfig.fromFile(
-          p.join(fixturesPath, 'boundary_config.yaml'));
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
       final files = [p.join(fixturesPath, 'boundary_issue.dart')];
 
       final issues = BoundaryImportRule(config.boundaries).analyze(files);

@@ -10,8 +10,7 @@ class FlutterGuardDioInterceptor extends Interceptor {
     this.sanitizeHeaders = true,
     this.sanitizeBody = true,
     List<String>? sensitiveKeys,
-  }) : sensitiveKeys = sensitiveKeys ??
-            _defaultSensitiveKeys;
+  }) : sensitiveKeys = sensitiveKeys ?? _defaultSensitiveKeys;
 
   static const _defaultSensitiveKeys = [
     'authorization',
@@ -47,8 +46,7 @@ class FlutterGuardDioInterceptor extends Interceptor {
     final startTime = requestOptions.extra['flutterguard_start_time'];
     if (startTime is! DateTime) return;
 
-    final durationMs =
-        DateTime.now().difference(startTime).inMilliseconds;
+    final durationMs = DateTime.now().difference(startTime).inMilliseconds;
     final statusCode = response.statusCode;
     final success = statusCode != null && statusCode >= 200 && statusCode < 400;
 
@@ -69,8 +67,7 @@ class FlutterGuardDioInterceptor extends Interceptor {
     final startTime = requestOptions.extra['flutterguard_start_time'];
     if (startTime is! DateTime) return;
 
-    final durationMs =
-        DateTime.now().difference(startTime).inMilliseconds;
+    final durationMs = DateTime.now().difference(startTime).inMilliseconds;
 
     FlutterGuard.recordNetwork(NetworkTrace(
       flowId: FlutterGuard.currentTraceId,

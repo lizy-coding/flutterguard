@@ -1,9 +1,10 @@
+// ignore_for_file: unused_field, inference_failure_on_instance_creation
 import 'dart:async';
 
 // Fixture: lifecycle resource not disposed
 class LifecycleIssueWidget {
-  StreamSubscription _subscription;
-  Timer _timer;
+  late StreamSubscription _subscription;
+  late Timer _timer;
 
   LifecycleIssueWidget() {
     _subscription = const Stream.empty().listen((_) {});

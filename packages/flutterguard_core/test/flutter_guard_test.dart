@@ -6,8 +6,7 @@ import 'package:test/test.dart';
 void main() {
   setUp(() {
     FlutterGuard.reset();
-    FlutterGuard
-        .configure(const FlutterGuardConfig(maxTraces: 100));
+    FlutterGuard.configure(const FlutterGuardConfig(maxTraces: 100));
   });
 
   tearDown(() {
@@ -16,7 +15,7 @@ void main() {
 
   test('action creates flow trace', () async {
     final result = await FlutterGuard.action('test_action', () async {
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
       return 'done';
     });
 
@@ -29,7 +28,7 @@ void main() {
   test('span attaches to current flow', () async {
     await FlutterGuard.action('test_action', () async {
       final spanResult = await FlutterGuard.span('inner_span', () async {
-        await Future.delayed(const Duration(milliseconds: 5));
+        await Future<void>.delayed(const Duration(milliseconds: 5));
         return 'span_done';
       });
       expect(spanResult, equals('span_done'));
@@ -46,7 +45,7 @@ void main() {
       final id1 = FlutterGuard.currentTraceId;
       expect(id1, isNotNull);
 
-      await Future.delayed(const Duration(milliseconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
       final id2 = FlutterGuard.currentTraceId;
       expect(id2, equals(id1));
 
@@ -57,12 +56,15 @@ void main() {
   });
 
   test('errors mark flow failed', () async {
+    bool threw = false;
     try {
       await FlutterGuard.action('test_action', () async {
         throw Exception('test error');
       });
-      fail('should have thrown');
-    } catch (_) {}
+    } catch (_) {
+      threw = true;
+    }
+    expect(threw, isTrue);
 
     final json = FlutterGuard.exportJson();
     expect(json, contains('failed'));

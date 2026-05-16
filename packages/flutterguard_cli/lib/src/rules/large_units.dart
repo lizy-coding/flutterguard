@@ -73,8 +73,7 @@ class LargeUnitsRule {
 
     for (final cls in classes) {
       final startLine = content.substring(0, cls.offset).split('\n').length;
-      final endLine =
-          content.substring(0, cls.end).split('\n').length;
+      final endLine = content.substring(0, cls.end).split('\n').length;
       final lineCount = endLine - startLine + 1;
 
       if (lineCount > config.largeClass.maxLines) {
@@ -114,8 +113,7 @@ class LargeUnitsRule {
             member.returnType?.toString() == 'Widget') {
           final startLine =
               content.substring(0, member.offset).split('\n').length;
-          final endLine =
-              content.substring(0, member.end).split('\n').length;
+          final endLine = content.substring(0, member.end).split('\n').length;
           final lineCount = endLine - startLine + 1;
 
           if (lineCount > config.largeBuildMethod.maxLines) {

@@ -13,14 +13,14 @@ class FlutterGuard {
 
   static void run({
     required Widget app,
-    FlutterGuardConfig config = const FlutterGuardConfig(),
+    core.FlutterGuardConfig config = const core.FlutterGuardConfig(),
   }) {
     core.FlutterGuard.configure(config);
 
     final previousOnError = FlutterError.onError;
     if (config.collectErrors) {
       FlutterError.onError = (details) {
-        core.FlutterGuard.recordError(ErrorTrace(
+        core.FlutterGuard.recordError(core.ErrorTrace(
           flowId: core.FlutterGuard.currentTraceId,
           errorType: details.exception.runtimeType.toString(),
           message: details.exception.toString(),
@@ -44,7 +44,7 @@ class FlutterGuard {
       },
       (error, stack) {
         if (config.collectErrors) {
-          core.FlutterGuard.recordError(ErrorTrace(
+          core.FlutterGuard.recordError(core.ErrorTrace(
             flowId: core.FlutterGuard.currentTraceId,
             errorType: error.runtimeType.toString(),
             message: error.toString(),
@@ -56,7 +56,7 @@ class FlutterGuard {
     );
   }
 
-  static void _recordFrameStats(FlutterGuardConfig config) {
+  static void _recordFrameStats(core.FlutterGuardConfig config) {
     final binding = SchedulerBinding.instance;
     try {
       binding.addTimingsCallback((timings) {
@@ -66,7 +66,7 @@ class FlutterGuard {
           final rasterDuration = timing.rasterDuration.inMicroseconds ~/ 1000;
           final janky = totalSpan > config.jankFrameMs;
 
-          core.FlutterGuard.recordFrame(FrameTrace(
+          core.FlutterGuard.recordFrame(core.FrameTrace(
             flowId: core.FlutterGuard.currentTraceId,
             totalSpanMs: totalSpan,
             buildDurationMs: buildDuration,
@@ -80,8 +80,6 @@ class FlutterGuard {
       // addTimingsCallback not available on this Flutter version
     }
   }
-
-  // Delegation to flutterguard_core FlutterGuard
 
   static String? get currentTraceId => core.FlutterGuard.currentTraceId;
 
@@ -99,16 +97,16 @@ class FlutterGuard {
   }) =>
       core.FlutterGuard.span(name, body, tags: tags);
 
-  static void recordNetwork(NetworkTrace trace) =>
+  static void recordNetwork(core.NetworkTrace trace) =>
       core.FlutterGuard.recordNetwork(trace);
 
-  static void recordRoute(RouteTrace trace) =>
+  static void recordRoute(core.RouteTrace trace) =>
       core.FlutterGuard.recordRoute(trace);
 
-  static void recordError(ErrorTrace trace) =>
+  static void recordError(core.ErrorTrace trace) =>
       core.FlutterGuard.recordError(trace);
 
-  static void recordFrame(FrameTrace trace) =>
+  static void recordFrame(core.FrameTrace trace) =>
       core.FlutterGuard.recordFrame(trace);
 
   static void recordBuild(String boundaryName) =>
@@ -120,6 +118,6 @@ class FlutterGuard {
 
   static void reset() => core.FlutterGuard.reset();
 
-  static void configure(FlutterGuardConfig config) =>
+  static void configure(core.FlutterGuardConfig config) =>
       core.FlutterGuard.configure(config);
 }

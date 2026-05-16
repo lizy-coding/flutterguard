@@ -21,6 +21,11 @@ class JsonExporter {
     final success = traces.where((t) => t.status == FlowStatus.success).length;
     final failed = traces.where((t) => t.status == FlowStatus.failed).length;
     final running = traces.where((t) => t.status == FlowStatus.running).length;
-    return {'total': total, 'success': success, 'failed': failed, 'running': running};
+    return {
+      'total': total,
+      'success': success,
+      'failed': failed,
+      'running': running
+    };
   }
 }

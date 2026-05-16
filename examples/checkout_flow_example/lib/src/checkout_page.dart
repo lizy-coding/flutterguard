@@ -37,8 +37,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       });
 
       if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
             builder: (_) => Scaffold(
               appBar: AppBar(title: const Text('Order Result')),
               body: Center(child: Text('Order: $orderResult')),
@@ -58,7 +58,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final isValid = await FlutterGuard.span(
       'validate_form',
       () async {
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
         return true;
       },
     );
@@ -68,7 +68,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final response = await FlutterGuard.span(
       'request_create_order',
       () async {
-        final resp = await widget.dio.post(
+        final resp = await widget.dio.post<Map<String, dynamic>>(
           '/posts',
           data: jsonEncode({
             'title': 'Checkout Order',
@@ -80,7 +80,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       },
     );
 
-    return 'Order #${response.data['id']} created';
+    // ignore: avoid_dynamic_calls
+    return 'Order #${response.data!['id']} created';
   }
 
   @override
@@ -100,18 +101,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   child: const Text('Submit Order'),
                 ),
               if (_result != null) Text(_result!),
-              if (!_isSubmitting)
-                const SizedBox(height: 20),
+              if (!_isSubmitting) const SizedBox(height: 20),
               if (!_isSubmitting)
                 ElevatedButton(
                   onPressed: () {
                     final report = FlutterGuard.exportJson();
-                    showDialog(
+                    showDialog<void>(
                       context: context,
                       builder: (_) => AlertDialog(
                         title: const Text('Export Report'),
                         content: SingleChildScrollView(
-                          child: Text(report, style: const TextStyle(fontSize: 10)),
+                          child: Text(report,
+                              style: const TextStyle(fontSize: 10)),
                         ),
                         actions: [
                           TextButton(

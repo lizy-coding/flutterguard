@@ -88,7 +88,8 @@ void _handleScan(ArgResults args) {
   final allIssues = <StaticIssue>[];
 
   allIssues.addAll(LargeUnitsRule(config.rules).analyze(files));
-  allIssues.addAll(LifecycleResourceRule(config.rules.lifecycleResource).analyze(files));
+  allIssues.addAll(
+      LifecycleResourceRule(config.rules.lifecycleResource).analyze(files));
   allIssues.addAll(BoundaryImportRule(config.boundaries).analyze(files));
 
   allIssues.sort((a, b) {
@@ -128,8 +129,8 @@ void _handleScan(ArgResults args) {
 
   if (failOn != 'none') {
     if (ReportGenerator.shouldFail(allIssues, failOn)) {
-      stderr.writeln(
-          'CI gate failed: Issues found at or above "$failOn" level.');
+      stderr
+          .writeln('CI gate failed: Issues found at or above "$failOn" level.');
       exit(1);
     }
   }
@@ -153,7 +154,8 @@ void _handleScan(ArgResults args) {
 }
 
 void _printUsage(ArgParser parser) {
-  stdout.writeln('FlutterGuard - Flow-level aspect tracing and architecture scanning');
+  stdout.writeln(
+      'FlutterGuard - Flow-level aspect tracing and architecture scanning');
   stdout.writeln();
   stdout.writeln('Usage: flutterguard <command> [options]');
   stdout.writeln();
