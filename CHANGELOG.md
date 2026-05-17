@@ -2,22 +2,18 @@
 
 ## 0.1.0 (2026-05-17)
 
-### Initial Release
+### Initial Release — CLI Static Analysis
 
-- **cli:** Initial CLI scan command with 3 rules (large_units, lifecycle_resource, boundary_import)
-- **cli:** YAML-driven config with include/exclude patterns and rule thresholds
-- **cli:** JSON and Markdown report generation with score calculation
-- **cli:** CI gate integration with fail-on threshold and min-score support
-- **core:** Flow-level aspect tracing engine with Zone-based context propagation
-- **core:** Ring buffer trace store (100 trace default)
-- **core:** JSON and Markdown export for flow traces
-- **dio:** Dio 5.x interceptor for HTTP request tracing within flows
-- **flutter:** Flutter runtime integration with error hooks, route observer, and frame metrics
-- **flutter:** GuardBoundary widget for rebuild count tracking
-- **docs:** Comprehensive FLUTTERGUARD_SPEC.md with full contract, test matrices, and IoT rules
-- **docs:** Dual-language README (en/zh) with installation, API reference, and CI integration guide
-- **docs:** Agent-readable project rules (CONTEXT.md, PROJECT_RULES.md, AGENTS.md)
-- **docs:** ARCHITECTURE.md with dependency graph and override chain documentation
+- **cli:** 6 static analysis rules: large_file, large_class, large_build_method, lifecycle_resource_not_disposed (IoT-aware), layer_violation, module_violation, circular_dependency, missing_const_constructor
+- **cli:** YAML-driven config with include/exclude patterns, rule thresholds, and architecture layers/modules
+- **cli:** Table (terminal) and JSON output formats with domain-grouped reporting
+- **cli:** CI gate integration with --fail-on threshold and --min-score support
+- **cli:** Architecture layer/module enforcement with configurable enabled/disabled
+- **cli:** Config key validation (warns on unknown YAML keys)
+- **cli:** --version and comprehensive --help output
+- **cli:** Native binary compilation (dart compile exe)
+- **docs:** FLUTTERGUARD_SPEC.md with full rule contracts, config schema, and output spec
+- **docs:** ARCHITECTURE.md, AGENTS.md, PROJECT_RULES.md with dependency graph and override chains
 - **meta:** melos monorepo setup with 4 packages + 2 examples
 - **meta:** MIT license
 
