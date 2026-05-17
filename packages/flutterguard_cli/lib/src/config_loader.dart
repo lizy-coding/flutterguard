@@ -51,6 +51,20 @@ class ScanConfig {
     required this.architecture,
   });
 
+  static const _knownTopLevelKeys = {
+    'include', 'exclude', 'rules', 'architecture',
+  };
+  static const _knownRuleKeys = {
+    'large_file', 'large_class', 'large_build_method',
+    'lifecycle_resource', 'missing_const_constructor',
+  };
+  static const _knownLayerKeys = {
+    'name', 'path', 'allowed_deps',
+  };
+  static const _knownArchKeys = {
+    'layers', 'modules', 'detect_cycles', 'layer_violation', 'module_violation',
+  };
+
   factory ScanConfig.fromFile(String path) {
     final file = File(path);
     if (!file.existsSync()) {
@@ -59,6 +73,25 @@ class ScanConfig {
 
     final content = file.readAsStringSync();
     final yaml = loadYaml(content) as YamlMap;
+
+    _warnUnknownKeys(yaml, _knownTopLevelKeys, 'config');
+
+    final rules = yaml['rules'] as YamlMap? ?? YamlMap();
+    _warnUnknownKeys(rules, _knownRuleKeys, 'rules');
+
+    final arch = yaml['architecture'] as YamlMap? ?? YamlMap();
+    _warnUnknownKeys(arch, _knownArchKeys, 'architecture');
+
+    if (arch['layers'] is YamlList) {
+      for (final layer in arch['layers'] as YamlList) {
+        _warnUnknownKeys(layer as YamlMap, _knownLayerKeys, 'layer');
+      }
+    }
+    if (arch['modules'] is YamlList) {
+      for (final module in arch['modules'] as YamlList) {
+        _warnUnknownKeys(module as YamlMap, _knownLayerKeys, 'module');
+      }
+    }
 
     return ScanConfig(
       include: _parseStringList(yaml['include']) ?? ['lib/**'],
@@ -69,8 +102,8 @@ class ScanConfig {
             'lib/**.freezed.dart',
             'lib/**.mocks.dart',
           ],
-      rules: _parseRules(yaml['rules'] as YamlMap? ?? YamlMap()),
-      architecture: _parseArchitecture(yaml['architecture'] as YamlMap? ?? YamlMap()),
+      rules: _parseRules(rules),
+      architecture: _parseArchitecture(arch),
     );
   }
 
@@ -149,6 +182,15 @@ class ScanConfig {
       layerViolationEnabled: arch['layer_violation']?['enabled'] as bool? ?? true,
       moduleViolationEnabled: arch['module_violation']?['enabled'] as bool? ?? true,
     );
+  }
+
+  static void _warnUnknownKeys(YamlMap map, Set<String> known, String context) {
+    for (final key in map.keys) {
+      final keyStr = key.toString();
+      if (!known.contains(keyStr)) {
+        stderr.writeln('Warning: Unknown $context key "$keyStr"');
+      }
+    }
   }
 
   static List<String>? _parseStringList(dynamic value) {
