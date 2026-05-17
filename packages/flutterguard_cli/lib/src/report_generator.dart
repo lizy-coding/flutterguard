@@ -59,7 +59,7 @@ class ReportGenerator {
     required List<StaticIssue> issues,
   }) {
     final byDomain = _buildSummaryByDomain(issues);
-    final score = _calculateScore(issues);
+    final score = calculateScore(issues);
 
     final payload = {
       'version': '1.0.0',
@@ -85,7 +85,7 @@ class ReportGenerator {
     bool verbose = false,
   }) {
     final buf = StringBuffer();
-    final score = _calculateScore(issues);
+    final score = calculateScore(issues);
     final projectName = p.basename(projectPath);
 
     _writeHeader(buf, projectName, score, issues);
@@ -232,7 +232,7 @@ class ReportGenerator {
     return byDomain;
   }
 
-  static int _calculateScore(List<StaticIssue> issues) {
+  static int calculateScore(List<StaticIssue> issues) {
     final high = issues.where((i) => i.level == RiskLevel.high).length;
     final medium = issues.where((i) => i.level == RiskLevel.medium).length;
     final low = issues.where((i) => i.level == RiskLevel.low).length;

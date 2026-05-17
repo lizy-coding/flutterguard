@@ -23,7 +23,11 @@ void main() {
           ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'large_file.dart')];
 
-      final issues = LargeUnitsRule(config.rules).analyze(files);
+      final issues = LargeUnitsRule(
+        largeFileConfig: config.rules.largeFile,
+        largeClassConfig: config.rules.largeClass,
+        largeBuildMethodConfig: config.rules.largeBuildMethod,
+      ).analyze(files);
 
       final largeFileIssue =
           issues.where((i) => i.id == 'large_file').toList();
@@ -36,7 +40,11 @@ void main() {
           ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'large_class.dart')];
 
-      final issues = LargeUnitsRule(config.rules).analyze(files);
+      final issues = LargeUnitsRule(
+        largeFileConfig: config.rules.largeFile,
+        largeClassConfig: config.rules.largeClass,
+        largeBuildMethodConfig: config.rules.largeBuildMethod,
+      ).analyze(files);
 
       final largeClassIssue =
           issues.where((i) => i.id == 'large_class').toList();
@@ -48,7 +56,11 @@ void main() {
           ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'large_build.dart')];
 
-      final issues = LargeUnitsRule(config.rules).analyze(files);
+      final issues = LargeUnitsRule(
+        largeFileConfig: config.rules.largeFile,
+        largeClassConfig: config.rules.largeClass,
+        largeBuildMethodConfig: config.rules.largeBuildMethod,
+      ).analyze(files);
 
       final largeBuildIssue =
           issues.where((i) => i.id == 'large_build_method').toList();

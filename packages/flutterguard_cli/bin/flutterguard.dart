@@ -93,7 +93,11 @@ void _handleScan(ArgResults args) {
 
   final allIssues = <StaticIssue>[];
 
-  allIssues.addAll(LargeUnitsRule(config.rules).analyze(files));
+  allIssues.addAll(LargeUnitsRule(
+    largeFileConfig: config.rules.largeFile,
+    largeClassConfig: config.rules.largeClass,
+    largeBuildMethodConfig: config.rules.largeBuildMethod,
+  ).analyze(files));
   allIssues.addAll(
       LifecycleResourceRule(config.rules.lifecycleResource).analyze(files));
   if (config.architecture.layerViolationEnabled) {
@@ -150,13 +154,7 @@ void _handleScan(ArgResults args) {
   if (minScoreStr != null) {
     final minScore = int.tryParse(minScoreStr);
     if (minScore != null) {
-      final high = allIssues.where((i) => i.level == RiskLevel.high).length;
-      final medium =
-          allIssues.where((i) => i.level == RiskLevel.medium).length;
-      final low = allIssues.where((i) => i.level == RiskLevel.low).length;
-      final score = allIssues.isEmpty
-          ? 100
-          : 100 - high * 10 - medium * 4 - low * 1;
+      final score = ReportGenerator.calculateScore(allIssues);
       if (score < minScore) {
         stderr.writeln(
             'CI gate failed: Score $score is below minimum $minScore.');
