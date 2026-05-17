@@ -1,10 +1,14 @@
 import 'dart:io';
 
 import 'package:flutterguard_cli/src/config_loader.dart';
+import 'package:flutterguard_cli/src/domain.dart';
+import 'package:flutterguard_cli/src/priority.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
-import 'package:flutterguard_cli/src/rules/boundary_import.dart';
+import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
+import 'package:flutterguard_cli/src/rules/layer_violation.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
+import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -15,19 +19,20 @@ void main() {
   group('Static Rules', () {
     test('scan detects large file', () {
       final config =
-          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'large_file.dart')];
 
       final issues = LargeUnitsRule(config.rules).analyze(files);
 
-      final largeFileIssue = issues.where((i) => i.id == 'large_file').toList();
+      final largeFileIssue =
+          issues.where((i) => i.id == 'large_file').toList();
       expect(largeFileIssue, isNotEmpty);
       expect(largeFileIssue.first.metadata['actual'], greaterThan(500));
     });
 
     test('scan detects large class', () {
       final config =
-          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'large_class.dart')];
 
       final issues = LargeUnitsRule(config.rules).analyze(files);
@@ -39,7 +44,7 @@ void main() {
 
     test('scan detects large build method', () {
       final config =
-          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'large_build.dart')];
 
       final issues = LargeUnitsRule(config.rules).analyze(files);
@@ -51,7 +56,7 @@ void main() {
 
     test('scan detects lifecycle resource not disposed', () {
       final config =
-          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
       final files = [p.join(fixturesPath, 'lifecycle_issue.dart')];
 
       final issues =
@@ -62,15 +67,47 @@ void main() {
           issues.any((i) => i.id == 'lifecycle_resource_not_disposed'), isTrue);
     });
 
-    test('scan detects boundary violation', () {
+    test('scan detects layer violation', () {
       final config =
-          ScanConfig.fromFile(p.join(fixturesPath, 'boundary_config.yaml'));
-      final files = [p.join(fixturesPath, 'boundary_issue.dart')];
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
+      final files = [
+        p.join(fixturesPath, 'boundary_issue.dart'),
+        p.join(fixturesPath, 'forbidden_file.dart'),
+      ];
 
-      final issues = BoundaryImportRule(config.boundaries).analyze(files);
+      final issues =
+          LayerViolationRule(config.architecture.layers).analyze(files);
 
       expect(issues, isNotEmpty);
-      expect(issues.any((i) => i.id == 'boundary_import_violation'), isTrue);
+      expect(issues.any((i) => i.id == 'layer_violation'), isTrue);
+    });
+
+    test('scan detects module violation', () {
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
+      final files = [
+        p.join(fixturesPath, 'boundary_issue.dart'),
+        p.join(fixturesPath, 'forbidden_file.dart'),
+      ];
+
+      final issues =
+          ModuleViolationRule(config.architecture.modules).analyze(files);
+
+      expect(issues, isNotEmpty);
+      expect(issues.any((i) => i.id == 'module_violation'), isTrue);
+    });
+
+    test('scan detects circular dependency', () {
+      final files = [
+        p.join(fixturesPath, 'cycle_a.dart'),
+        p.join(fixturesPath, 'cycle_b.dart'),
+        p.join(fixturesPath, 'cycle_c.dart'),
+      ];
+
+      final issues = const CircularDependencyRule(enabled: true).analyze(files);
+
+      expect(issues, isNotEmpty);
+      expect(issues.any((i) => i.id == 'circular_dependency'), isTrue);
     });
 
     test('ci fail on high returns exit 1 scenario', () {
@@ -80,7 +117,10 @@ void main() {
           title: 'Test high',
           file: 'test.dart',
           level: RiskLevel.high,
+          domain: IssueDomain.architecture,
+          priority: Priority.p0,
           message: 'High severity issue',
+          detail: '',
           suggestion: 'Fix it',
         ),
       ];
@@ -91,7 +131,7 @@ void main() {
   });
 
   group('Report Generation', () {
-    test('markdown report is generated', () {
+    test('json report is generated', () {
       final issues = [
         StaticIssue(
           id: 'test_issue',
@@ -99,31 +139,11 @@ void main() {
           file: '/test/file.dart',
           line: 42,
           level: RiskLevel.medium,
-          message: 'A medium issue',
+          domain: IssueDomain.architecture,
+          priority: Priority.p1,
+          message: 'A medium architecture issue',
+          detail: 'Detailed description',
           suggestion: 'Try fixing it',
-        ),
-      ];
-
-      final md = ReportGenerator.generateMarkdown(
-        projectPath: '/test',
-        issues: issues,
-      );
-
-      expect(md, contains('# FlutterGuard Flow Report'));
-      expect(md, contains('## Summary'));
-      expect(md, contains('## Static Issues'));
-      expect(md, contains('test_issue'));
-    });
-
-    test('json report is generated', () {
-      final issues = [
-        StaticIssue(
-          id: 'test_issue',
-          title: 'Test issue',
-          file: '/test/file.dart',
-          level: RiskLevel.low,
-          message: 'A low issue',
-          suggestion: 'Consider fixing it',
         ),
       ];
 
@@ -135,7 +155,8 @@ void main() {
       expect(json, contains('"version"'));
       expect(json, contains('"projectPath"'));
       expect(json, contains('"score"'));
-      expect(json, contains('"staticIssues"'));
+      expect(json, contains('"issues"'));
+      expect(json, contains('"byDomain"'));
       expect(json, contains('test_issue'));
     });
   });

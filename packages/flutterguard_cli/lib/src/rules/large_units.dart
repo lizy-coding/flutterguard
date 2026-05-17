@@ -5,6 +5,8 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 
 import '../config_loader.dart';
+import '../domain.dart';
+import '../priority.dart';
 import '../static_issue.dart';
 
 class LargeUnitsRule {
@@ -44,14 +46,17 @@ class LargeUnitsRule {
         return [
           StaticIssue(
             id: 'large_file',
-            title: 'Large file detected',
+            title: '文件过大',
             file: file,
             line: null,
-            level: RiskLevel.medium,
+            level: RiskLevel.low,
+            domain: IssueDomain.standards,
+            priority: Priority.p2,
             message:
-                'File has ${lines.length} lines (threshold: ${config.largeFile.maxLines})',
+                '文件 ${lines.length} 行（阈值: ${config.largeFile.maxLines} 行）',
+            detail: '',
             suggestion:
-                'Consider splitting ${p.basename(file)} into smaller modules.',
+                '建议将 ${p.basename(file)} 拆分为更小的模块文件',
             metadata: {
               'actual': lines.length,
               'threshold': config.largeFile.maxLines,
@@ -79,14 +84,17 @@ class LargeUnitsRule {
       if (lineCount > config.largeClass.maxLines) {
         issues.add(StaticIssue(
           id: 'large_class',
-          title: 'Large class detected',
+          title: '类过大',
           file: file,
           line: startLine,
-          level: RiskLevel.medium,
+          level: RiskLevel.low,
+          domain: IssueDomain.standards,
+          priority: Priority.p2,
           message:
-              'Class "${cls.name.lexeme}" has $lineCount lines (threshold: ${config.largeClass.maxLines})',
+              '类 "${cls.name.lexeme}" $lineCount 行（阈值: ${config.largeClass.maxLines} 行）',
+          detail: '',
           suggestion:
-              'Consider extracting responsibilities from "${cls.name.lexeme}" into smaller classes.',
+              '建议将 "${cls.name.lexeme}" 的职责提取到更小的类中',
           metadata: {
             'actual': lineCount,
             'threshold': config.largeClass.maxLines,
@@ -119,14 +127,17 @@ class LargeUnitsRule {
           if (lineCount > config.largeBuildMethod.maxLines) {
             issues.add(StaticIssue(
               id: 'large_build_method',
-              title: 'Large build method detected',
+              title: '构建方法过长',
               file: file,
               line: startLine,
               level: RiskLevel.medium,
+              domain: IssueDomain.performance,
+              priority: Priority.p1,
               message:
-                  'build() method in "${cls.name.lexeme}" has $lineCount lines (threshold: ${config.largeBuildMethod.maxLines})',
+                  '${cls.name.lexeme}.build() $lineCount 行（阈值: ${config.largeBuildMethod.maxLines} 行）',
+              detail: '',
               suggestion:
-                  'Extract parts of the build method into smaller helper widgets or methods.',
+                  '将 build 方法中的部分提取为更小的子组件或方法',
               metadata: {
                 'actual': lineCount,
                 'threshold': config.largeBuildMethod.maxLines,

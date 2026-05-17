@@ -6,9 +6,11 @@ import 'package:path/path.dart' as p;
 import 'package:flutterguard_cli/src/config_loader.dart';
 import 'package:flutterguard_cli/src/file_collector.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
+import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
+import 'package:flutterguard_cli/src/rules/layer_violation.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
-import 'package:flutterguard_cli/src/rules/boundary_import.dart';
+import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 
 void main(List<String> args) {
@@ -21,27 +23,22 @@ void main(List<String> args) {
         help: 'Path to flutterguard.yaml config file')
     ..addOption('format',
         abbr: 'f',
-        defaultsTo: 'both',
-        allowed: ['json', 'markdown', 'both'],
+        defaultsTo: 'table',
+        allowed: ['table', 'json'],
         help: 'Output format')
     ..addOption('output',
         abbr: 'o',
         defaultsTo: '.flutterguard',
         help: 'Output directory for reports')
+    ..addFlag('verbose',
+        abbr: 'v',
+        help: 'Show detailed output with code context',
+        negatable: false)
     ..addOption('fail-on',
         defaultsTo: 'none',
         allowed: ['none', 'high', 'medium', 'low'],
         help: 'Fail threshold for CI gate')
-    ..addOption('min-score', help: 'Minimum score threshold (0-100)')
-    ..addOption('group-by',
-        defaultsTo: 'module',
-        allowed: ['module', 'severity'],
-        help: 'Stdout grouping: module or severity')
-    ..addOption('top',
-        help: 'Show only top N worst modules (module grouping only)')
-    ..addFlag('no-module-score',
-        help: 'Hide module-level scores in stdout',
-        negatable: false);
+    ..addOption('min-score', help: 'Minimum score threshold (0-100)');
 
   final parser = ArgParser()
     ..addCommand('scan', scanParser)
@@ -75,6 +72,7 @@ void _handleScan(ArgResults args) {
   final configPath = args['config'] as String;
   final outputDir = args['output'] as String;
   final format = args['format'] as String;
+  final verbose = args['verbose'] as bool;
   final failOn = args['fail-on'] as String;
   final minScoreStr = args['min-score'] as String?;
 
@@ -97,7 +95,13 @@ void _handleScan(ArgResults args) {
   allIssues.addAll(LargeUnitsRule(config.rules).analyze(files));
   allIssues.addAll(
       LifecycleResourceRule(config.rules.lifecycleResource).analyze(files));
-  allIssues.addAll(BoundaryImportRule(config.boundaries).analyze(files));
+  allIssues.addAll(
+      LayerViolationRule(config.architecture.layers).analyze(files));
+  allIssues.addAll(
+      ModuleViolationRule(config.architecture.modules).analyze(files));
+  allIssues.addAll(CircularDependencyRule(
+    enabled: config.architecture.detectCycles,
+  ).analyze(files));
 
   allIssues.sort((a, b) {
     final levelOrder = {
@@ -112,7 +116,7 @@ void _handleScan(ArgResults args) {
 
   Directory(outputDir).createSync(recursive: true);
 
-  if (format == 'json' || format == 'both') {
+  if (format == 'json') {
     final json = ReportGenerator.generateJson(
       projectPath: projectPath,
       issues: allIssues,
@@ -120,29 +124,17 @@ void _handleScan(ArgResults args) {
     File(p.join(outputDir, 'report.json')).writeAsStringSync(json);
   }
 
-  if (format == 'markdown' || format == 'both') {
-    final md = ReportGenerator.generateMarkdown(
-      projectPath: projectPath,
-      issues: allIssues,
-    );
-    File(p.join(outputDir, 'report.md')).writeAsStringSync(md);
-  }
-
-  final topStr = args['top'] as String?;
-  final top = topStr != null ? int.tryParse(topStr) : null;
   final stdoutOutput = ReportGenerator.generateStdout(
     projectPath: projectPath,
     issues: allIssues,
-    groupBy: args['group-by'] as String,
-    showModuleScore: !args['no-module-score'],
-    top: top,
+    verbose: verbose,
   );
   stdout.writeln(stdoutOutput);
 
   if (failOn != 'none') {
     if (ReportGenerator.shouldFail(allIssues, failOn)) {
-      stderr
-          .writeln('CI gate failed: Issues found at or above "$failOn" level.');
+      stderr.writeln(
+          'CI gate failed: Issues found at or above "$failOn" level.');
       exit(1);
     }
   }
@@ -150,12 +142,13 @@ void _handleScan(ArgResults args) {
   if (minScoreStr != null) {
     final minScore = int.tryParse(minScoreStr);
     if (minScore != null) {
+      final high = allIssues.where((i) => i.level == RiskLevel.high).length;
+      final medium =
+          allIssues.where((i) => i.level == RiskLevel.medium).length;
+      final low = allIssues.where((i) => i.level == RiskLevel.low).length;
       final score = allIssues.isEmpty
           ? 100
-          : 100 -
-              allIssues.where((i) => i.level == RiskLevel.high).length * 10 -
-              allIssues.where((i) => i.level == RiskLevel.medium).length * 4 -
-              allIssues.where((i) => i.level == RiskLevel.low).length * 1;
+          : 100 - high * 10 - medium * 4 - low * 1;
       if (score < minScore) {
         stderr.writeln(
             'CI gate failed: Score $score is below minimum $minScore.');
@@ -167,7 +160,7 @@ void _handleScan(ArgResults args) {
 
 void _printUsage(ArgParser parser) {
   stdout.writeln(
-      'FlutterGuard - Flow-level aspect tracing and architecture scanning');
+      'FlutterGuard — IoT Flutter architecture static analysis CLI');
   stdout.writeln();
   stdout.writeln('Usage: flutterguard <command> [options]');
   stdout.writeln();

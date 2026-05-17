@@ -4,10 +4,24 @@ import 'dart:io';
 
 import 'package:yaml/yaml.dart';
 
-typedef BoundaryConfig = ({
+typedef LayerConfig = ({
   String name,
-  String from,
-  List<String> forbidden,
+  String path,
+  List<String> allowedDeps,
+});
+
+typedef ModuleConfig = ({
+  String name,
+  String path,
+  List<String> allowedDeps,
+});
+
+typedef ArchitectureConfig = ({
+  List<LayerConfig> layers,
+  List<ModuleConfig> modules,
+  bool detectCycles,
+  bool layerViolationEnabled,
+  bool moduleViolationEnabled,
 });
 
 typedef RulesConfig = ({
@@ -26,19 +40,39 @@ class ScanConfig {
   final List<String> include;
   final List<String> exclude;
   final RulesConfig rules;
-  final List<BoundaryConfig> boundaries;
+  final ArchitectureConfig architecture;
 
   const ScanConfig({
     required this.include,
     required this.exclude,
     required this.rules,
-    required this.boundaries,
+    required this.architecture,
   });
 
   factory ScanConfig.fromFile(String path) {
     final file = File(path);
     if (!file.existsSync()) {
-      return const ScanConfig(
+      return _defaultConfig();
+    }
+
+    final content = file.readAsStringSync();
+    final yaml = loadYaml(content) as YamlMap;
+
+    return ScanConfig(
+      include: _parseStringList(yaml['include']) ?? ['lib/**'],
+      exclude: _parseStringList(yaml['exclude']) ??
+          [
+            'lib/generated/**',
+            'lib/**.g.dart',
+            'lib/**.freezed.dart',
+            'lib/**.mocks.dart',
+          ],
+      rules: _parseRules(yaml['rules'] as YamlMap? ?? YamlMap()),
+      architecture: _parseArchitecture(yaml['architecture'] as YamlMap? ?? YamlMap()),
+    );
+  }
+
+  static ScanConfig _defaultConfig() => const ScanConfig(
         include: ['lib/**'],
         exclude: [
           'lib/generated/**',
@@ -52,36 +86,16 @@ class ScanConfig {
           largeBuildMethod: (enabled: true, maxLines: 80),
           lifecycleResource: (enabled: true),
         ),
-        boundaries: [],
+        architecture: (
+          layers: [],
+          modules: [],
+          detectCycles: false,
+          layerViolationEnabled: true,
+          moduleViolationEnabled: true,
+        ),
       );
-    }
 
-    final content = file.readAsStringSync();
-    final yaml = loadYaml(content) as YamlMap;
-
-    final rules = yaml['rules'] as YamlMap? ?? YamlMap();
-
-    final boundaries = <BoundaryConfig>[];
-    if (yaml['boundaries'] is YamlList) {
-      for (final b in yaml['boundaries'] as YamlList) {
-        boundaries.add((
-          name: b['name'] as String,
-          from: b['from'] as String,
-          forbidden: List<String>.from(b['forbidden'] as YamlList),
-        ));
-      }
-    }
-
-    return ScanConfig(
-      include: _parseStringList(yaml['include']) ?? ['lib/**'],
-      exclude: _parseStringList(yaml['exclude']) ??
-          [
-            'lib/generated/**',
-            'lib/**.g.dart',
-            'lib/**.freezed.dart',
-            'lib/**.mocks.dart',
-          ],
-      rules: (
+  static RulesConfig _parseRules(YamlMap rules) => (
         largeFile: (
           enabled: rules['large_file']?['enabled'] as bool? ?? true,
           maxLines: rules['large_file']?['maxLines'] as int? ?? 500,
@@ -97,8 +111,37 @@ class ScanConfig {
         lifecycleResource: (
           enabled: rules['lifecycle_resource']?['enabled'] as bool? ?? true,
         ),
-      ),
-      boundaries: boundaries,
+      );
+
+  static ArchitectureConfig _parseArchitecture(YamlMap arch) {
+    final layers = <LayerConfig>[];
+    if (arch['layers'] is YamlList) {
+      for (final l in arch['layers'] as YamlList) {
+        layers.add((
+          name: l['name'] as String,
+          path: l['path'] as String,
+          allowedDeps: List<String>.from(l['allowed_deps'] as YamlList? ?? []),
+        ));
+      }
+    }
+
+    final modules = <ModuleConfig>[];
+    if (arch['modules'] is YamlList) {
+      for (final m in arch['modules'] as YamlList) {
+        modules.add((
+          name: m['name'] as String,
+          path: m['path'] as String,
+          allowedDeps: List<String>.from(m['allowed_deps'] as YamlList? ?? []),
+        ));
+      }
+    }
+
+    return (
+      layers: layers,
+      modules: modules,
+      detectCycles: arch['detect_cycles'] as bool? ?? false,
+      layerViolationEnabled: arch['layer_violation']?['enabled'] as bool? ?? true,
+      moduleViolationEnabled: arch['module_violation']?['enabled'] as bool? ?? true,
     );
   }
 

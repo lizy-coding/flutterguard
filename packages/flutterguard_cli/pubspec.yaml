@@ -12,8 +12,6 @@ dependencies:
   glob: ^2.1.2
   path: ^1.9.0
   yaml: ^3.1.2
-  flutterguard_core:
-    path: ../flutterguard_core
 
 executables:
   flutterguard: flutterguard
