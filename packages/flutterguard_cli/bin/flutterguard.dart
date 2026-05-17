@@ -12,10 +12,6 @@ import 'package:flutterguard_cli/src/rules/boundary_import.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 
 void main(List<String> args) {
-  final parser = ArgParser()
-    ..addCommand('scan')
-    ..addFlag('help', abbr: 'h', help: 'Show usage', negatable: false);
-
   final scanParser = ArgParser()
     ..addOption('path',
         abbr: 'p', defaultsTo: '.', help: 'Project path to scan')
@@ -38,7 +34,9 @@ void main(List<String> args) {
         help: 'Fail threshold for CI gate')
     ..addOption('min-score', help: 'Minimum score threshold (0-100)');
 
-  parser.addCommand('scan', scanParser);
+  final parser = ArgParser()
+    ..addCommand('scan', scanParser)
+    ..addFlag('help', abbr: 'h', help: 'Show usage', negatable: false);
 
   try {
     final results = parser.parse(args);

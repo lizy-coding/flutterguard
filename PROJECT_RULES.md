@@ -52,3 +52,35 @@ Do NOT modify frozen packages except for critical bug fixes. Do NOT add new feat
 - Commit messages: imperative mood, prefixed by scope (`cli:`, `spec:`, `docs:`).
 - Before committing: run `melos run analyze` and `melos run test:cli`.
 - Do NOT force-push to `develop` or `main`.
+
+## 9. Override Hierarchy
+
+### 9.1 pubspec_overrides.yaml
+Managed by `melos bootstrap`. 4 packages override `flutterguard_core` to local path:
+
+| Package | Override | Managed By |
+|---------|----------|------------|
+| `flutterguard_cli/pubspec_overrides.yaml` | `flutterguard_core` → `../flutterguard_core` | melos |
+| `flutterguard_dio/pubspec_overrides.yaml` | `flutterguard_core` → `../flutterguard_core` | melos |
+| `flutterguard_flutter/pubspec_overrides.yaml` | `flutterguard_core` → `../flutterguard_core` | melos |
+| `usage_demo/pubspec_overrides.yaml` | `flutterguard_core` → `../../packages/flutterguard_core` | melos |
+
+**Rule**: Do NOT edit manually. Re-run `melos bootstrap` after any pubspec.yaml change.
+
+### 9.2 analysis_options.yaml Inheritance Chain
+```
+root/analysis_options.yaml          # strict-casts + strict-inference + 6 lint rules
+├── packages/flutterguard_cli/...   # inherits root + package:lints/recommended + excludes test/fixtures/**
+├── examples/usage_demo/...         # inherits root + excludes avoid_print
+```
+
+**Rule**: Keep corporate-wide strictness at root. Per-package loosening only for legitimate reasons (fixture code, print-based demos).
+
+### 9.3 flutterguard.yaml Config Override Chain
+```
+root/flutterguard.yaml                          # development defaults (maxLines: 500/300/80)
+└── <user_project>/flutterguard.yaml             # per-scan override (merges over root)
+    └── (injected via CLI --config flag)          # explicit path override
+```
+
+**Rule**: Root config serves as documented example. User projects may override all fields.

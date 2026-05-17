@@ -1,6 +1,7 @@
 # Project Context
 
 > **Purpose**: Session handover document. Agents should read this first.
+> **Also read**: `AGENTS.md` (project rules & package hierarchy), `PROJECT_RULES.md` (constitution), `docs/ARCHITECTURE.md` (dependency chains).
 
 ---
 
@@ -14,6 +15,10 @@
 | 4 | Example refactoring | Removed `examples/checkout/` (Flutter view), added `examples/scan_demo/` (CLI target) + `examples/usage_demo/` (tracing API demo) |
 | 5 | .idea config | Updated project name, modules, added runConfigurations (trace_demo, scan_demo, melos bootstrap/clean/test), cleaned misc.xml |
 | 6 | Clean tracked artifacts | Removed 3x `pubspec_overrides.yaml` + `.idea/caches/` + `.idea/git_toolbox_prj.xml` from git tracking |
+| 7 | Directory rename | `flutterguard_flow/` → `flutterguard/` (git mv) |
+| 8 | Create `PROJECT_RULES.md` | Agent-readable constitution (Root) |
+| 9 | Supplement `docs/FLUTTERGUARD_SPEC.md` | §0 Scope + §15 IoT rules + updated Roadmap/Commands/Known Limitations |
+| 10 | Renumber spec sections | §0 added, existing sections renumbered through §15 |
 
 ## Strategic Decisions
 
@@ -26,18 +31,15 @@
 ## Pending
 
 | # | Task | Priority | File |
-|---|------|----------|------|
-| 1 | Rename directory `flutterguard_flow/` → `flutterguard/` | Must-do | `git mv` |
-| 2 | Create `PROJECT_RULES.md` | Must-do | Root, Agent-readable constitution (~70 lines) |
-| 3 | Supplement `docs/FLUTTERGUARD_SPEC.md` | Must-do | Add §0 Scope, §15 IoT rules, update Roadmap/Commands |
-| 4 | Refocus CLI rules toward IoT domain | Medium | Add device lifecycle, MQTT, BLE, security rules |
-| 5 | Archive or spin off runtime packages | Low | `flutterguard_core`, `flutterguard_dio`, `flutterguard_flutter` |
+|   |------|----------|------|
+| 1 | Refocus CLI rules toward IoT domain | Medium | Add device lifecycle, MQTT, BLE, security rules |
+| 2 | Archive or spin off runtime packages | Low | `flutterguard_core`, `flutterguard_dio`, `flutterguard_flutter` |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `PROJECT_RULES.md` | NOT YET CREATED — Agent-readable scope definition |
+| `PROJECT_RULES.md` | Agent-readable scope & conventions |
 | `docs/FLUTTERGUARD_SPEC.md` | Single source of truth for implementation |
 | `flutterguard.yaml` | CLI config schema example |
 | `packages/flutterguard_cli/` | PRIMARY active package |
@@ -49,4 +51,4 @@
 
 ## Agent Instructions
 
-When resuming, always read this file first, then `PROJECT_RULES.md` (once created), then reference `docs/FLUTTERGUARD_SPEC.md` for detailed specs.
+When resuming, always read `CONTEXT.md` (session state), `AGENTS.md` (project rules), `PROJECT_RULES.md` (constitution), `docs/ARCHITECTURE.md` (architecture), then reference `docs/FLUTTERGUARD_SPEC.md` for detailed specs.
