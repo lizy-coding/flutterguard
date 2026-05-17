@@ -33,7 +33,7 @@ LargeUnitsRule, LifecycleResourceRule, LayerViolationRule, ModuleViolationRule, 
 ## Test
 - command: `melos run test:cli`
 - test file: `test/scanner_test.dart` (12 tests)
-- fixtures: `test/fixtures/` (13 fixture files)
+- fixtures: `test/fixtures/` (12 fixture files)
 - every new rule needs: spec entry → config typedef → class → fixture → test → wire in bin/
 
 ## IoT Domain (planned in spec §12)
