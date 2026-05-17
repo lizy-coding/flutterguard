@@ -16,13 +16,10 @@ scripts:
   format:
     run: melos exec -- "dart format ."
   test:
-    run: |
-      dart test packages/flutterguard_core
-      dart test packages/flutterguard_dio
-      dart test packages/flutterguard_cli
+    run: dart run melos exec -c 1 --scope="flutterguard_*" -- dart test
   test:core:
-    run: dart test packages/flutterguard_core
+    run: dart run melos exec --scope="flutterguard_core" -- dart test
   test:dio:
-    run: dart test packages/flutterguard_dio
+    run: dart run melos exec --scope="flutterguard_dio" -- dart test
   test:cli:
-    run: dart test packages/flutterguard_cli
+    run: dart run melos exec --scope="flutterguard_cli" -- dart test
