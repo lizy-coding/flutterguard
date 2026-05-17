@@ -32,7 +32,16 @@ void main(List<String> args) {
         defaultsTo: 'none',
         allowed: ['none', 'high', 'medium', 'low'],
         help: 'Fail threshold for CI gate')
-    ..addOption('min-score', help: 'Minimum score threshold (0-100)');
+    ..addOption('min-score', help: 'Minimum score threshold (0-100)')
+    ..addOption('group-by',
+        defaultsTo: 'module',
+        allowed: ['module', 'severity'],
+        help: 'Stdout grouping: module or severity')
+    ..addOption('top',
+        help: 'Show only top N worst modules (module grouping only)')
+    ..addFlag('no-module-score',
+        help: 'Hide module-level scores in stdout',
+        negatable: false);
 
   final parser = ArgParser()
     ..addCommand('scan', scanParser)
@@ -62,7 +71,7 @@ void main(List<String> args) {
 }
 
 void _handleScan(ArgResults args) {
-  final projectPath = p.absolute(args['path'] as String);
+  final projectPath = p.normalize(p.absolute(args['path'] as String));
   final configPath = args['config'] as String;
   final outputDir = args['output'] as String;
   final format = args['format'] as String;
@@ -119,11 +128,16 @@ void _handleScan(ArgResults args) {
     File(p.join(outputDir, 'report.md')).writeAsStringSync(md);
   }
 
-  final summary = ReportGenerator.generateMarkdown(
+  final topStr = args['top'] as String?;
+  final top = topStr != null ? int.tryParse(topStr) : null;
+  final stdoutOutput = ReportGenerator.generateStdout(
     projectPath: projectPath,
     issues: allIssues,
+    groupBy: args['group-by'] as String,
+    showModuleScore: !args['no-module-score'],
+    top: top,
   );
-  stdout.writeln(summary);
+  stdout.writeln(stdoutOutput);
 
   if (failOn != 'none') {
     if (ReportGenerator.shouldFail(allIssues, failOn)) {
