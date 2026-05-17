@@ -4,7 +4,7 @@
 Primary CLI tool for IoT Flutter static architecture scanning and CI gating.
 
 ## Dependency Map
-- depends on: flutterguard_core (path), args, analyzer ^7.3.0, glob, path, yaml
+- depends on: args, analyzer ^7.3.0, glob, path, yaml
 - depended by: nothing
 
 ## Entry Points
@@ -17,26 +17,24 @@ Primary CLI tool for IoT Flutter static architecture scanning and CI gating.
 | `bin/flutterguard.dart` | Arg parsing, scan orchestration, exit codes |
 | `src/config_loader.dart` | YAML → ScanConfig typedef parsing |
 | `src/file_collector.dart` | Glob-based .dart file discovery |
+| `src/import_utils.dart` | Shared import resolution utility |
 | `src/static_issue.dart` | StaticIssue model + RiskLevel enum |
-| `src/report_generator.dart` | JSON + Markdown report + score calc |
-| `src/rules/large_units.dart` | 3 sub-rules: file size, class size, build method |
-| `src/rules/lifecycle_resource.dart` | Undisposed controllers/streams detection |
-| `src/rules/boundary_import.dart` | Cross-boundary import violation detection |
+| `src/report_generator.dart` | JSON + Table report generation + score |
+| `src/rules/large_units.dart` | 3 sub-rules: file size, class size, build method size |
+| `src/rules/lifecycle_resource.dart` | Undisposed controllers/streams/MQTT/BLE detection |
+| `src/rules/layer_violation.dart` | Cross-layer import violation detection |
+| `src/rules/module_violation.dart` | Cross-module import violation detection |
+| `src/rules/circular_dependency.dart` | File-level cycle detection |
+| `src/rules/missing_const_constructor.dart` | Widgets missing const constructor |
 
-## Wired Rules (3)
-LargeUnitsRule, LifecycleResourceRule, BoundaryImportRule
-
-## Pubspec Overrides
-melos-managed: flutterguard_core → path: ../flutterguard_core
-
-## Analysis Options Override
-Inherits root strict-casts/strict-inference + package:lints/recommended.yaml. Excludes test/fixtures/**.
+## Wired Rules (6)
+LargeUnitsRule, LifecycleResourceRule, LayerViolationRule, ModuleViolationRule, CircularDependencyRule, MissingConstConstructorRule
 
 ## Test
 - command: `melos run test:cli`
-- test file: `test/scanner_test.dart` (8 tests)
-- fixtures: `test/fixtures/` (7 fixture files)
+- test file: `test/scanner_test.dart` (12 tests)
+- fixtures: `test/fixtures/` (13 fixture files)
 - every new rule needs: spec entry → config typedef → class → fixture → test → wire in bin/
 
-## IoT Domain (planned in spec §15)
-Rules defined in spec but not yet implemented: device_lifecycle, mqtt_connection, ble_scanning, iot_security, pubspec_security.
+## IoT Domain (planned in spec §12)
+Rules defined but not yet implemented: device_lifecycle, mqtt_connection, ble_scanning, iot_security, pubspec_security.

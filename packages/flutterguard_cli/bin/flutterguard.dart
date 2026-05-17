@@ -14,7 +14,14 @@ import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 
+const _version = '0.1.0';
+
 void main(List<String> args) {
+  if (args.contains('--version') || args.contains('-V')) {
+    stdout.writeln('flutterguard $_version');
+    exit(0);
+  }
+
   final scanParser = ArgParser()
     ..addOption('path',
         abbr: 'p', defaultsTo: '.', help: 'Project path to scan')
@@ -173,5 +180,22 @@ void _printUsage(ArgParser parser) {
   stdout.writeln('Commands:');
   stdout.writeln('  scan    Scan a Flutter project for architecture issues');
   stdout.writeln();
-  stdout.writeln(parser.usage);
+  stdout.writeln('Scan Options:');
+  stdout.writeln('  -p, --path <path>       Project path to scan (default: .)');
+  stdout.writeln(
+      '  -c, --config <file>     Config file path (default: flutterguard.yaml)');
+  stdout.writeln(
+      '  -f, --format <fmt>      Output format: table | json (default: table)');
+  stdout.writeln(
+      '  -o, --output <dir>      Output directory (default: .flutterguard)');
+  stdout.writeln('  -v, --verbose           Show detailed output with code context');
+  stdout.writeln('  -V, --version           Show version');
+  stdout.writeln(
+      '      --fail-on <level>   CI gate: none | high | medium | low (default: none)');
+  stdout.writeln('      --min-score <num>   Minimum score threshold 0-100');
+  stdout.writeln('  -h, --help              Show this help message');
+  stdout.writeln();
+  stdout.writeln('Examples:');
+  stdout.writeln('  flutterguard scan -p ./my_flutter_app');
+  stdout.writeln('  flutterguard scan -p . --format json --fail-on high');
 }
