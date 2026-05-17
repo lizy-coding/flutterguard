@@ -8,6 +8,7 @@ import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
 import 'package:flutterguard_cli/src/rules/layer_violation.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
+import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
@@ -108,6 +109,24 @@ void main() {
 
       expect(issues, isNotEmpty);
       expect(issues.any((i) => i.id == 'circular_dependency'), isTrue);
+    });
+
+    test('scan detects missing const constructor in widgets', () {
+      final config =
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
+      final files = [p.join(fixturesPath, 'missing_const.dart')];
+
+      final issues = MissingConstConstructorRule(
+        config.rules.missingConstConstructor,
+      ).analyze(files);
+
+      expect(issues, hasLength(2));
+      expect(
+          issues.any((i) => i.id == 'missing_const_constructor'), isTrue);
+      expect(issues.any((i) =>
+          i.metadata['className'] == 'MissingConstWidget'), isTrue);
+      expect(issues.any((i) =>
+          i.metadata['className'] == 'MyStatefulWidget'), isTrue);
     });
 
     test('architecture config parses layer/module enabled flags', () {

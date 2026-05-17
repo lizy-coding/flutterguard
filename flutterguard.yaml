@@ -19,6 +19,8 @@ rules:
     maxLines: 80
   lifecycle_resource:
     enabled: true
+  missing_const_constructor:
+    enabled: true
 
 architecture:
   # layers:

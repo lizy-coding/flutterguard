@@ -10,6 +10,7 @@ import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
 import 'package:flutterguard_cli/src/rules/layer_violation.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
+import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 
@@ -103,6 +104,9 @@ void _handleScan(ArgResults args) {
     allIssues.addAll(
         ModuleViolationRule(config.architecture.modules).analyze(files));
   }
+  allIssues.addAll(MissingConstConstructorRule(
+    config.rules.missingConstConstructor,
+  ).analyze(files));
   allIssues.addAll(CircularDependencyRule(
     enabled: config.architecture.detectCycles,
   ).analyze(files));

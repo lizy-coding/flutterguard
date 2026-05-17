@@ -29,12 +29,14 @@ typedef RulesConfig = ({
   LargeClassRuleConfig largeClass,
   LargeBuildMethodRuleConfig largeBuildMethod,
   LifecycleResourceRuleConfig lifecycleResource,
+  MissingConstConstructorRuleConfig missingConstConstructor,
 });
 
 typedef LargeFileRuleConfig = ({bool enabled, int maxLines});
 typedef LargeClassRuleConfig = ({bool enabled, int maxLines});
 typedef LargeBuildMethodRuleConfig = ({bool enabled, int maxLines});
 typedef LifecycleResourceRuleConfig = ({bool enabled});
+typedef MissingConstConstructorRuleConfig = ({bool enabled});
 
 class ScanConfig {
   final List<String> include;
@@ -85,6 +87,7 @@ class ScanConfig {
           largeClass: (enabled: true, maxLines: 300),
           largeBuildMethod: (enabled: true, maxLines: 80),
           lifecycleResource: (enabled: true),
+          missingConstConstructor: (enabled: true),
         ),
         architecture: (
           layers: [],
@@ -110,6 +113,9 @@ class ScanConfig {
         ),
         lifecycleResource: (
           enabled: rules['lifecycle_resource']?['enabled'] as bool? ?? true,
+        ),
+        missingConstConstructor: (
+          enabled: rules['missing_const_constructor']?['enabled'] as bool? ?? true,
         ),
       );
 

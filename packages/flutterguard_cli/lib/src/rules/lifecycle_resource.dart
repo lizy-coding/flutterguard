@@ -15,6 +15,9 @@ const _resourceTypes = <String, String>{
   'TextEditingController': 'dispose',
   'ScrollController': 'dispose',
   'FocusNode': 'dispose',
+  'MqttClient': 'disconnect',
+  'BluetoothDevice': 'disconnect',
+  'StreamController': 'close',
 };
 
 class LifecycleResourceRule {
