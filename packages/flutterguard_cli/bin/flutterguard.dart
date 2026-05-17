@@ -95,10 +95,14 @@ void _handleScan(ArgResults args) {
   allIssues.addAll(LargeUnitsRule(config.rules).analyze(files));
   allIssues.addAll(
       LifecycleResourceRule(config.rules.lifecycleResource).analyze(files));
-  allIssues.addAll(
-      LayerViolationRule(config.architecture.layers).analyze(files));
-  allIssues.addAll(
-      ModuleViolationRule(config.architecture.modules).analyze(files));
+  if (config.architecture.layerViolationEnabled) {
+    allIssues.addAll(
+        LayerViolationRule(config.architecture.layers).analyze(files));
+  }
+  if (config.architecture.moduleViolationEnabled) {
+    allIssues.addAll(
+        ModuleViolationRule(config.architecture.modules).analyze(files));
+  }
   allIssues.addAll(CircularDependencyRule(
     enabled: config.architecture.detectCycles,
   ).analyze(files));

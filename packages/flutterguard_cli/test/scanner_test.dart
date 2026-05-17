@@ -110,6 +110,36 @@ void main() {
       expect(issues.any((i) => i.id == 'circular_dependency'), isTrue);
     });
 
+    test('architecture config parses layer/module enabled flags', () {
+      final enabledConfig =
+          ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
+      expect(enabledConfig.architecture.layerViolationEnabled, isTrue);
+      expect(enabledConfig.architecture.moduleViolationEnabled, isTrue);
+
+      final disabledConfig = ScanConfig.fromFile(
+          p.join(fixturesPath, 'architecture_disabled.yaml'));
+      expect(disabledConfig.architecture.layerViolationEnabled, isFalse);
+      expect(disabledConfig.architecture.moduleViolationEnabled, isFalse);
+    });
+
+    test('wiring: disabled layer/module violations produce no issues', () {
+      final config = ScanConfig.fromFile(
+          p.join(fixturesPath, 'architecture_disabled.yaml'));
+      final files = [
+        p.join(fixturesPath, 'boundary_issue.dart'),
+        p.join(fixturesPath, 'forbidden_file.dart'),
+      ];
+
+      List<StaticIssue> issues = [];
+      if (config.architecture.layerViolationEnabled) {
+        issues.addAll(LayerViolationRule(config.architecture.layers).analyze(files));
+      }
+      if (config.architecture.moduleViolationEnabled) {
+        issues.addAll(ModuleViolationRule(config.architecture.modules).analyze(files));
+      }
+      expect(issues, isEmpty);
+    });
+
     test('ci fail on high returns exit 1 scenario', () {
       final issues = [
         StaticIssue(
