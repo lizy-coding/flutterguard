@@ -89,7 +89,7 @@ class LayerViolationRule {
               '目标层: ${targetLayer.name} (${targetLayer.path})\n'
               '允许依赖: $allowedStr',
           suggestion:
-              '将导入的内容移至 ${sourceLayer.allowedDeps.isEmpty ? 'core 或更抽象的层' : sourceLayer.allowedDeps.join(' 或 ')} 层',
+              '将导入的内容移至 ${sourceLayer.allowedDeps.isEmpty ? 'core 或更抽象层' : '${sourceLayer.allowedDeps.join(' 或 ')}层'}',
           metadata: {
             'sourceLayer': sourceLayer.name,
             'targetLayer': targetLayer.name,

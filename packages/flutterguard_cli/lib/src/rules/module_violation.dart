@@ -89,7 +89,7 @@ class ModuleViolationRule {
               '目标模块: ${targetModule.name} (${targetModule.path})\n'
               '允许依赖: $allowedStr',
           suggestion:
-              '通过 ${sourceModule.allowedDeps.isEmpty ? 'core 层共享接口' : sourceModule.allowedDeps.join(' 或 ')} 解耦',
+              '通过 ${sourceModule.allowedDeps.isEmpty ? 'core 层共享接口解耦' : '${sourceModule.allowedDeps.join(' 或 ')}解耦'}',
           metadata: {
             'sourceModule': sourceModule.name,
             'targetModule': targetModule.name,
