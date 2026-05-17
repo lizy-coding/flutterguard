@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:glob/glob.dart';
-import 'package:path/path.dart' as p;
 
 import '../config_loader.dart';
 import '../domain.dart';
+import '../import_utils.dart';
 import '../priority.dart';
 import '../static_issue.dart';
 
@@ -61,7 +61,7 @@ class ModuleViolationRule {
       final importStr = import.uri.stringValue;
       if (importStr == null) continue;
 
-      final resolved = _resolveImport(sourceFile, importStr, fileSet);
+      final resolved = resolveImport(sourceFile, importStr, fileSet);
       if (resolved == null) continue;
 
       final targetModule = fileToModule[resolved];
@@ -103,21 +103,4 @@ class ModuleViolationRule {
     return issues;
   }
 
-  String? _resolveImport(String sourceFile, String importStr, Set<String> fileSet) {
-    if (importStr.startsWith('package:')) {
-      final relative = importStr.replaceFirst(RegExp(r'^package:[^/]+/'), '');
-      final candidate = p.join(p.dirname(sourceFile), relative);
-      if (fileSet.contains(candidate)) return candidate;
-      final dotPhp = candidate.endsWith('.dart') ? candidate : '$candidate.dart';
-      if (fileSet.contains(dotPhp)) return dotPhp;
-      return null;
-    }
-
-    final sourceDir = p.dirname(sourceFile);
-    final resolved = p.normalize(p.join(sourceDir, importStr));
-    if (fileSet.contains(resolved)) return resolved;
-    final resolvedWithExt = resolved.endsWith('.dart') ? resolved : '$resolved.dart';
-    if (fileSet.contains(resolvedWithExt)) return resolvedWithExt;
-    return null;
-  }
 }
