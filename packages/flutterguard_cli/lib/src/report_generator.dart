@@ -192,7 +192,7 @@ class ReportGenerator {
       buf.writeln(
           '       ${_Ansi.bold}${issue.title}${_Ansi.reset}');
       buf.writeln(
-          '       ${_Ansi.gray}$relDir/$fileName$lineInfo${_Ansi.reset}');
+          '       ${_Ansi.gray}${p.join(relDir, fileName)}$lineInfo${_Ansi.reset}');
       buf.writeln('       ${issue.message}');
 
       if (verbose && issue.detail.isNotEmpty) {
@@ -211,9 +211,7 @@ class ReportGenerator {
   }
 
   static String _relativeDir(String filePath) {
-    final parts = filePath.split('/');
-    if (parts.length < 2) return '.';
-    return parts.sublist(0, parts.length - 1).join('/');
+    return p.dirname(filePath);
   }
 
   static Map<String, Map<String, int>> _buildSummaryByDomain(

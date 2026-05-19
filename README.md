@@ -6,15 +6,44 @@ FlutterGuard scans Flutter/Dart source code to detect architecture issues, secur
 
 ## Installation
 
-```bash
-# Download pre-compiled binary
-curl -sL https://github.com/lizy-coding/flutterguard/releases/download/v0.1.0/flutterguard -o /usr/local/bin/flutterguard
-chmod +x /usr/local/bin/flutterguard
+### Prerequisites
 
-# Or compile from source
+- [Dart SDK](https://dart.dev/get-dart) >=3.3.0
+
+### Option A: Global activation (cross-platform)
+
+```bash
+# Clone the repo
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
+
+# Install monorepo dependencies
+dart pub global activate melos
+melos bootstrap
+
+# Register flutterguard command globally
+dart pub global activate --source path packages/flutterguard_cli
+
+# Verify installation
+flutterguard --help
+```
+
+> **Windows**: After activation, ensure `%USERPROFILE%\AppData\Local\Pub\Cache\bin` is in your `PATH`. Dart SDK installer usually adds it automatically. To verify: `where flutterguard`.
+
+### Option B: Compile native binary
+
+```bash
+git clone https://github.com/lizy-coding/flutterguard.git
+cd flutterguard
+melos bootstrap
 dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
+```
+
+### Option C: Pre-compiled binary (macOS/Linux only)
+
+```bash
+curl -sL https://github.com/lizy-coding/flutterguard/releases/download/v0.1.0/flutterguard -o /usr/local/bin/flutterguard
+chmod +x /usr/local/bin/flutterguard
 ```
 
 ## Quick Start
@@ -34,7 +63,7 @@ flutterguard --help
 
 ```bash
 # From the repo root, scan the demo project
-./flutterguard scan -p examples/scan_demo
+flutterguard scan -p examples/scan_demo
 ```
 
 ---
