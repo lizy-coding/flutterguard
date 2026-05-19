@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../domain.dart';
 import '../import_utils.dart';
+import '../path_utils.dart';
 import '../priority.dart';
 import '../static_issue.dart';
 
@@ -13,16 +14,19 @@ enum _Color { white, gray, black }
 
 class CircularDependencyRule {
   final bool enabled;
+  final String? projectPath;
 
-  const CircularDependencyRule({this.enabled = true});
+  const CircularDependencyRule({this.enabled = true, this.projectPath});
 
   List<StaticIssue> analyze(List<String> files) {
     if (!enabled || files.length < 2) return [];
 
-    final fileSet = files.toSet();
+    final fileSet = {
+      for (final file in files) normalizePath(file),
+    };
     final graph = <String, Set<String>>{};
 
-    for (final file in files) {
+    for (final file in fileSet) {
       try {
         final content = File(file).readAsStringSync();
         final result = parseString(content: content, path: file);
@@ -48,7 +52,12 @@ class CircularDependencyRule {
       final importStr = import.uri.stringValue;
       if (importStr == null) continue;
 
-      final resolved = resolveImport(sourceFile, importStr, fileSet);
+      final resolved = resolveImport(
+        sourceFile,
+        importStr,
+        fileSet,
+        projectPath: projectPath,
+      );
       if (resolved != null && resolved != sourceFile) {
         deps.add(resolved);
       }
@@ -130,12 +139,10 @@ class CircularDependencyRule {
       priority: Priority.p1,
       message: '检测到循环依赖: $cycleStr',
       detail: '依赖链:\n${cycle.map((f) => '  $f').join('\n')}',
-      suggestion:
-          '将循环中公共的依赖提取到 core/ 层，或使用依赖反转（接口抽象）打破循环',
+      suggestion: '将循环中公共的依赖提取到 core/ 层，或使用依赖反转（接口抽象）打破循环',
       metadata: {
         'cycle': cycle,
       },
     );
   }
-
 }

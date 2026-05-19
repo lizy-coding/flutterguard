@@ -7,24 +7,31 @@ import 'package:glob/glob.dart';
 import '../config_loader.dart';
 import '../domain.dart';
 import '../import_utils.dart';
+import '../path_utils.dart';
 import '../priority.dart';
 import '../static_issue.dart';
 
 class ModuleViolationRule {
   final List<ModuleConfig> modules;
+  final String? projectPath;
 
-  const ModuleViolationRule(this.modules);
+  const ModuleViolationRule(this.modules, {this.projectPath});
 
   List<StaticIssue> analyze(List<String> files) {
     if (modules.isEmpty) return [];
 
     final fileToModule = <String, ModuleConfig>{};
-    final fileSet = files.toSet();
+    final fileSet = {
+      for (final file in files) normalizePath(file),
+    };
 
-    for (final file in files) {
+    for (final file in fileSet) {
       for (final module in modules) {
         try {
-          if (Glob(module.path).matches(file)) {
+          final matches = projectPath == null
+              ? Glob(module.path.replaceAll('\\', '/')).matches(file)
+              : matchesProjectGlob(file, module.path, projectPath!);
+          if (matches) {
             fileToModule[file] = module;
             break;
           }
@@ -33,14 +40,20 @@ class ModuleViolationRule {
     }
 
     final issues = <StaticIssue>[];
-    for (final file in files) {
+    for (final file in fileSet) {
       final sourceModule = fileToModule[file];
       if (sourceModule == null) continue;
 
       try {
         final content = File(file).readAsStringSync();
         final result = parseString(content: content, path: file);
-        issues.addAll(_checkImports(file, sourceModule, result.unit, fileToModule, fileSet));
+        issues.addAll(_checkImports(
+          file,
+          sourceModule,
+          result.unit,
+          fileToModule,
+          fileSet,
+        ));
       } catch (_) {}
     }
 
@@ -61,7 +74,12 @@ class ModuleViolationRule {
       final importStr = import.uri.stringValue;
       if (importStr == null) continue;
 
-      final resolved = resolveImport(sourceFile, importStr, fileSet);
+      final resolved = resolveImport(
+        sourceFile,
+        importStr,
+        fileSet,
+        projectPath: projectPath,
+      );
       if (resolved == null) continue;
 
       final targetModule = fileToModule[resolved];
@@ -82,8 +100,7 @@ class ModuleViolationRule {
           level: RiskLevel.high,
           domain: IssueDomain.architecture,
           priority: Priority.p0,
-          message:
-              '模块 ${sourceModule.name} 不可依赖模块 ${targetModule.name}',
+          message: '模块 ${sourceModule.name} 不可依赖模块 ${targetModule.name}',
           detail: '导入: $importStr\n'
               '源模块: ${sourceModule.name} (${sourceModule.path})\n'
               '目标模块: ${targetModule.name} (${targetModule.path})\n'
@@ -102,5 +119,4 @@ class ModuleViolationRule {
 
     return issues;
   }
-
 }

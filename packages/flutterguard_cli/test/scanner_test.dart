@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutterguard_cli/src/config_loader.dart';
 import 'package:flutterguard_cli/src/domain.dart';
+import 'package:flutterguard_cli/src/import_utils.dart';
+import 'package:flutterguard_cli/src/path_utils.dart';
 import 'package:flutterguard_cli/src/priority.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
@@ -29,8 +31,7 @@ void main() {
         largeBuildMethodConfig: config.rules.largeBuildMethod,
       ).analyze(files);
 
-      final largeFileIssue =
-          issues.where((i) => i.id == 'large_file').toList();
+      final largeFileIssue = issues.where((i) => i.id == 'large_file').toList();
       expect(largeFileIssue, isNotEmpty);
       expect(largeFileIssue.first.metadata['actual'], greaterThan(500));
     });
@@ -95,6 +96,32 @@ void main() {
       expect(issues.any((i) => i.id == 'layer_violation'), isTrue);
     });
 
+    test('layer violation matches project-relative architecture paths', () {
+      final files = [
+        p.join(fixturesPath, 'boundary_issue.dart'),
+        p.join(fixturesPath, 'forbidden_file.dart'),
+      ];
+
+      final issues = LayerViolationRule(
+        const [
+          (
+            name: 'ui',
+            path: 'test/fixtures/boundary_issue.dart',
+            allowedDeps: []
+          ),
+          (
+            name: 'model',
+            path: 'test/fixtures/forbidden_file.dart',
+            allowedDeps: [],
+          ),
+        ],
+        projectPath: Directory.current.path,
+      ).analyze(files);
+
+      expect(issues, isNotEmpty);
+      expect(issues.any((i) => i.id == 'layer_violation'), isTrue);
+    });
+
     test('scan detects module violation', () {
       final config =
           ScanConfig.fromFile(p.join(fixturesPath, 'architecture_config.yaml'));
@@ -133,12 +160,11 @@ void main() {
       ).analyze(files);
 
       expect(issues, hasLength(2));
-      expect(
-          issues.any((i) => i.id == 'missing_const_constructor'), isTrue);
-      expect(issues.any((i) =>
-          i.metadata['className'] == 'MissingConstWidget'), isTrue);
-      expect(issues.any((i) =>
-          i.metadata['className'] == 'MyStatefulWidget'), isTrue);
+      expect(issues.any((i) => i.id == 'missing_const_constructor'), isTrue);
+      expect(issues.any((i) => i.metadata['className'] == 'MissingConstWidget'),
+          isTrue);
+      expect(issues.any((i) => i.metadata['className'] == 'MyStatefulWidget'),
+          isTrue);
     });
 
     test('architecture config parses layer/module enabled flags', () {
@@ -163,10 +189,12 @@ void main() {
 
       List<StaticIssue> issues = [];
       if (config.architecture.layerViolationEnabled) {
-        issues.addAll(LayerViolationRule(config.architecture.layers).analyze(files));
+        issues.addAll(
+            LayerViolationRule(config.architecture.layers).analyze(files));
       }
       if (config.architecture.moduleViolationEnabled) {
-        issues.addAll(ModuleViolationRule(config.architecture.modules).analyze(files));
+        issues.addAll(
+            ModuleViolationRule(config.architecture.modules).analyze(files));
       }
       expect(issues, isEmpty);
     });
@@ -219,6 +247,53 @@ void main() {
       expect(json, contains('"issues"'));
       expect(json, contains('"byDomain"'));
       expect(json, contains('test_issue'));
+    });
+  });
+
+  group('Path handling', () {
+    test('matches project-relative globs against Windows paths', () {
+      final windows = p.Context(style: p.Style.windows, current: r'C:\repo');
+
+      expect(
+        matchesProjectGlob(
+          r'C:\repo\lib\presentation\device_page.dart',
+          'lib/presentation/**',
+          r'C:\repo',
+          context: windows,
+        ),
+        isTrue,
+      );
+    });
+
+    test('resolves nested package imports from project lib root', () {
+      final source =
+          p.join(Directory.current.path, 'lib', 'presentation', 'page.dart');
+      final target = p.join(Directory.current.path, 'lib', 'data', 'repo.dart');
+
+      final resolved = resolveImport(
+        source,
+        'package:app/data/repo.dart',
+        {source, target},
+        projectPath: Directory.current.path,
+      );
+
+      expect(resolved, target);
+    });
+
+    test('resolves Windows package imports from project lib root', () {
+      final windows = p.Context(style: p.Style.windows, current: r'C:\repo');
+      const source = r'C:\repo\lib\presentation\page.dart';
+      const target = r'C:\repo\lib\data\repo.dart';
+
+      final resolved = resolveImport(
+        source,
+        'package:app/data/repo.dart',
+        {source, target},
+        projectPath: r'C:\repo',
+        context: windows,
+      );
+
+      expect(resolved, target);
     });
   });
 }

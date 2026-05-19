@@ -12,9 +12,9 @@ command:
 
 scripts:
   analyze:
-    run: melos exec -c 1 -- "dart analyze ."
+    run: dart run melos exec -c 1 -- "dart analyze ."
   format:
-    run: melos exec -- "dart format ."
+    run: dart run melos exec -- "dart format ."
   test:
     run: dart run melos exec --scope="flutterguard_cli" -- dart test
   test:cli:

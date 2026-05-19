@@ -108,18 +108,23 @@ void _handleScan(ArgResults args) {
   allIssues.addAll(
       LifecycleResourceRule(config.rules.lifecycleResource).analyze(files));
   if (config.architecture.layerViolationEnabled) {
-    allIssues.addAll(
-        LayerViolationRule(config.architecture.layers).analyze(files));
+    allIssues.addAll(LayerViolationRule(
+      config.architecture.layers,
+      projectPath: projectPath,
+    ).analyze(files));
   }
   if (config.architecture.moduleViolationEnabled) {
-    allIssues.addAll(
-        ModuleViolationRule(config.architecture.modules).analyze(files));
+    allIssues.addAll(ModuleViolationRule(
+      config.architecture.modules,
+      projectPath: projectPath,
+    ).analyze(files));
   }
   allIssues.addAll(MissingConstConstructorRule(
     config.rules.missingConstConstructor,
   ).analyze(files));
   allIssues.addAll(CircularDependencyRule(
     enabled: config.architecture.detectCycles,
+    projectPath: projectPath,
   ).analyze(files));
 
   allIssues.sort((a, b) {
@@ -133,14 +138,16 @@ void _handleScan(ArgResults args) {
     return a.file.compareTo(b.file);
   });
 
-  Directory(outputDir).createSync(recursive: true);
+  final reportDir =
+      p.isAbsolute(outputDir) ? outputDir : p.join(projectPath, outputDir);
+  Directory(reportDir).createSync(recursive: true);
 
   if (format == 'json') {
     final json = ReportGenerator.generateJson(
       projectPath: projectPath,
       issues: allIssues,
     );
-    File(p.join(outputDir, 'report.json')).writeAsStringSync(json);
+    File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
   }
 
   final stdoutOutput = ReportGenerator.generateStdout(
@@ -152,8 +159,8 @@ void _handleScan(ArgResults args) {
 
   if (failOn != 'none') {
     if (ReportGenerator.shouldFail(allIssues, failOn)) {
-      stderr.writeln(
-          'CI gate failed: Issues found at or above "$failOn" level.');
+      stderr
+          .writeln('CI gate failed: Issues found at or above "$failOn" level.');
       exit(1);
     }
   }
@@ -172,8 +179,7 @@ void _handleScan(ArgResults args) {
 }
 
 void _printUsage(ArgParser parser) {
-  stdout.writeln(
-      'FlutterGuard — IoT Flutter architecture static analysis CLI');
+  stdout.writeln('FlutterGuard — IoT Flutter architecture static analysis CLI');
   stdout.writeln();
   stdout.writeln('Usage: flutterguard <command> [options]');
   stdout.writeln();
@@ -188,7 +194,8 @@ void _printUsage(ArgParser parser) {
       '  -f, --format <fmt>      Output format: table | json (default: table)');
   stdout.writeln(
       '  -o, --output <dir>      Output directory (default: .flutterguard)');
-  stdout.writeln('  -v, --verbose           Show detailed output with code context');
+  stdout.writeln(
+      '  -v, --verbose           Show detailed output with code context');
   stdout.writeln('  -V, --version           Show version');
   stdout.writeln(
       '      --fail-on <level>   CI gate: none | high | medium | low (default: none)');
