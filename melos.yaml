@@ -1,7 +1,7 @@
 name: flutterguard
 
 packages:
-  - packages/**
+  - packages/flutterguard_cli
   - examples/**
 
 command:
@@ -12,14 +12,10 @@ command:
 
 scripts:
   analyze:
-    run: melos exec -c 1 -- "dart analyze ."
+    run: dart run melos exec -c 1 -- "dart analyze ."
   format:
-    run: melos exec -- "dart format ."
+    run: dart run melos exec -- "dart format ."
   test:
-    run: dart run melos exec -c 1 --scope="flutterguard_*" -- dart test
-  test:core:
-    run: dart run melos exec --scope="flutterguard_core" -- dart test
-  test:dio:
-    run: dart run melos exec --scope="flutterguard_dio" -- dart test
+    run: dart run melos exec --scope="flutterguard_cli" -- dart test
   test:cli:
     run: dart run melos exec --scope="flutterguard_cli" -- dart test

@@ -1,253 +1,95 @@
 # FlutterGuard
 
-> **Flow-level aspect tracing and architecture scanning for Flutter apps.**
+> **IoT Flutter project static analysis CLI — architecture enforcement, code quality, CI gating.**
 
-[**English**](README.md) | [**中文**](README.zh.md)
-
-FlutterGuard connects user actions to async spans, network requests, route transitions, errors, frame metrics, rebuild boundaries, and static architectural risks — all in a single correlated report.
-
-[![Dart](https://img.shields.io/badge/Dart-3.3%2B-blue)](https://dart.dev)
-[![Flutter](https://img.shields.io/badge/Flutter-3.19%2B-blue)](https://flutter.dev)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-
----
-
-## What Makes It Different
-
-| Not a crash SDK | Not an HTTP inspector | Not a logger |
-|---|---|---|
-| FlutterGuard doesn't replace Sentry/Crashlytics. It **connects** runtime behavior into structured traces. | Alice/Charles log request bodies. FlutterGuard records **only what happened** — method, path, status, duration — attached to your flow. | Debug logs are unstructured and ephemeral. FlutterGuard produces **exportable, correlation-first** reports. |
-
-FlutterGuard answers questions like:
-
-- *"Why did this user action take 2 seconds?"* — spans, network, frames
-- *"Where did the error occur in the lifecycle of this action?"* — error within flow context
-- *"Which files are architectural risks in this project?"* — static scan
-- *"Did a rebuild cascade during this checkout?"* — GuardBoundary counters
-
----
+FlutterGuard scans Flutter/Dart source code to detect architecture issues, security vulnerabilities, and anti-patterns specific to IoT device applications. Designed for CI integration and team-wide adoption.
 
 ## Installation
 
-### Runtime Packages (Flutter app)
+### Prerequisites
 
-```yaml
-# pubspec.yaml
-dependencies:
-  flutterguard_flutter: ^0.1.0
-  flutterguard_dio: ^0.1.0   # if using Dio
-```
+- [Dart SDK](https://dart.dev/get-dart) >=3.3.0
 
-### CLI (standalone tool)
+### Option A: Global activation (cross-platform)
 
 ```bash
-dart pub global activate flutterguard_cli
-# OR compile to native binary:
-git clone https://github.com/your-org/flutterguard.git
+# Clone the repo
+git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
+
+# Install monorepo dependencies
+dart pub global activate melos
+melos bootstrap
+
+# Register flutterguard command globally
+dart pub global activate --source path packages/flutterguard_cli
+
+# Verify installation
+flutterguard --help
+```
+
+> **Windows**: After activation, ensure `%USERPROFILE%\AppData\Local\Pub\Cache\bin` is in your `PATH`. Dart SDK installer usually adds it automatically. To verify: `where flutterguard`.
+
+### Option B: Compile native binary
+
+```bash
+git clone https://github.com/lizy-coding/flutterguard.git
+cd flutterguard
+melos bootstrap
 dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 ```
 
----
+### Option C: Pre-compiled binary (macOS/Linux only)
+
+```bash
+curl -sL https://github.com/lizy-coding/flutterguard/releases/download/v0.1.0/flutterguard -o /usr/local/bin/flutterguard
+chmod +x /usr/local/bin/flutterguard
+```
 
 ## Quick Start
 
-### 1. Wrap your app
+```bash
+# Scan a Flutter project
+flutterguard scan -p /path/to/your/project
 
-```dart
-import 'package:flutterguard_flutter/flutterguard_flutter.dart';
+# JSON output for CI
+flutterguard scan -p . --format json --fail-on high
 
-void main() {
-  FlutterGuard.run(
-    app: MaterialApp(
-      navigatorObservers: [FlutterGuard.routeObserver],
-      home: HomePage(),
-    ),
-  );
-}
+# See all options
+flutterguard --help
 ```
 
-### 2. Trace a user action
-
-```dart
-ElevatedButton(
-  onPressed: () {
-    FlutterGuard.action('checkout', () async {
-      // spans auto-attach to this flow
-      final valid = await FlutterGuard.span('validate_cart', () => validate());
-      if (valid) {
-        await FlutterGuard.span('process_payment', () => process());
-      }
-    });
-  },
-  child: Text('Checkout'),
-)
-```
-
-### 3. Add the Dio interceptor
-
-```dart
-final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'));
-dio.interceptors.add(FlutterGuardDioInterceptor());
-```
-
-### 4. Mark widget boundaries
-
-```dart
-GuardBoundary(
-  name: 'CheckoutPage',
-  child: CheckoutView(),
-)
-```
-
-### 5. Export the report
-
-```dart
-final report = FlutterGuard.exportMarkdown();
-print(report);
-
-final json = FlutterGuard.exportJson();
-await File('report.json').writeAsString(json);
-```
-
-### 6. Run a static scan
+### Demo
 
 ```bash
-flutterguard scan --path ./my_project
+# From the repo root, scan the demo project
+flutterguard scan -p examples/scan_demo
 ```
 
 ---
 
-## Runtime API
+## Available Rules (6)
 
-### `FlutterGuard.run()`
-
-Initializes all hooks and starts the Flutter app. Must be called before `runApp`.
-
-```dart
-FlutterGuard.run(
-  config: const FlutterGuardConfig(
-    enabled: true,
-    collectErrors: true,
-    collectFrames: true,
-    collectRoutes: true,
-    collectBuilds: true,
-    slowFlowMs: 1000,
-    jankFrameMs: 16,
-    maxTraces: 100,
-  ),
-  app: MyApp(),
-);
-```
-
-### `FlutterGuard.action<T>(name, body, {tags})`
-
-Creates a new flow trace. All spans, network calls, errors, routes, and frame metrics within `body` are automatically correlated.
-
-```dart
-await FlutterGuard.action('login', () async {
-  final token = await auth.login(username, password);
-  storage.saveToken(token);
-}, tags: {'screen': 'login'});
-```
-
-### `FlutterGuard.span<T>(name, body, {tags})`
-
-Creates a child span under the current flow. If no active flow, executes body directly without recording.
-
-```dart
-final data = await FlutterGuard.span('fetch_user', () => api.getUser(id));
-```
-
-### `FlutterGuardRouteObserver`
-
-Add to `MaterialApp.navigatorObservers`. Records push, pop, replace, remove events.
-
-```dart
-MaterialApp(
-  navigatorObservers: [FlutterGuard.routeObserver],
-  // ...
-)
-```
-
-### `GuardBoundary`
-
-Wrap any widget to count rebuilds within an active flow.
-
-```dart
-GuardBoundary(
-  name: 'ProductList',
-  child: ProductListView(),
-)
-```
-
-### `FlutterGuard.currentTraceId`
-
-Returns the current flow trace ID from the Zone, or `null`.
-
-```dart
-final traceId = FlutterGuard.currentTraceId;
-```
-
-### `FlutterGuard.exportJson()` / `FlutterGuard.exportMarkdown()`
-
-Export all recorded traces as structured reports.
-
-```dart
-final json = FlutterGuard.exportJson();       // JSON
-final md = FlutterGuard.exportMarkdown();     // Markdown
-```
-
-### `FlutterGuard.reset()`
-
-Clears all stored traces.
-
-```dart
-FlutterGuard.reset();
-```
-
-### `FlutterGuardDioInterceptor`
-
-```dart
-FlutterGuardDioInterceptor(
-  sanitizeHeaders: true,
-  sanitizeBody: true,
-  sensitiveKeys: ['authorization', 'password'],
-)
-```
-
-Default sensitive keys: `authorization, cookie, set-cookie, token, password, secret, email, phone`
-
-Records method, path, status code, duration, success/failure. Does NOT log request/response bodies.
+| Rule ID | Level | Domain | What it detects |
+|---------|-------|--------|----------------|
+| `large_file` | LOW | standards | Files exceeding maxLines (default 500) |
+| `large_class` | LOW | standards | Classes exceeding maxLines (default 300) |
+| `large_build_method` | MEDIUM | performance | Widget build() exceeding maxLines (default 80) |
+| `lifecycle_resource_not_disposed` | MEDIUM | performance | StreamSubscription, Timer, AnimationController, MqttClient, BluetoothDevice, StreamController without matching cancel/dispose/close |
+| `layer_violation` | HIGH | architecture | Cross-layer import violations (YAML-configured) |
+| `module_violation` | HIGH | architecture | Cross-module import violations (YAML-configured) |
+| `circular_dependency` | MEDIUM | architecture | File-level import cycles |
+| `missing_const_constructor` | LOW | standards | StatelessWidget/StatefulWidget subclasses missing const constructor |
 
 ---
 
-## CLI
+## Configuration
 
-### `flutterguard scan`
-
-```
-flutterguard scan [options]
-
-Options:
-  -p, --path      Project path to scan (default: .)
-  -c, --config    Config file path (default: flutterguard.yaml)
-  -f, --format    Output format: json | markdown | both (default: both)
-  -o, --output    Output directory (default: .flutterguard)
-  --fail-on       CI gate threshold: none | high | medium | low (default: none)
-  --min-score     Minimum score 0-100
-```
-
-Output files:
-- `.flutterguard/report.json` — machine-readable
-- `.flutterguard/report.md` — human-readable
-
-### `flutterguard.yaml`
+Create a `flutterguard.yaml` in your project root:
 
 ```yaml
 include:
   - lib/**
-  - test/**
 
 exclude:
   - lib/generated/**
@@ -267,195 +109,136 @@ rules:
     maxLines: 80
   lifecycle_resource:
     enabled: true
+  missing_const_constructor:
+    enabled: true
 
-boundaries:
-  - name: cart_module
-    from: lib/cart/**
-    forbidden:
-      - lib/checkout/**
-      - lib/payment/**
+architecture:
+  layers:                        # Layered architecture enforcement
+    - name: presentation
+      path: lib/presentation/**
+      allowed_deps: [domain, core]
+    - name: domain
+      path: lib/domain/**
+      allowed_deps: [core]
+    - name: data
+      path: lib/data/**
+      allowed_deps: [domain, core]
+    - name: core
+      path: lib/core/**
+      allowed_deps: []
+
+  modules:                       # Business module isolation
+    - name: device_mqtt
+      path: lib/device/mqtt/**
+      allowed_deps: [domain, core]
+    - name: device_ble
+      path: lib/device/ble/**
+      allowed_deps: [domain, core]
+
+  detect_cycles: true
+  layer_violation:
+    enabled: true
+  module_violation:
+    enabled: true
 ```
-
-### CI Integration
-
-**GitHub Actions:**
-
-```yaml
-- name: FlutterGuard Scan
-  run: |
-    dart pub global activate flutterguard_cli
-    flutterguard scan --path . --fail-on high
-```
-
-**Pre-commit (local):**
-
-```bash
-#!/bin/bash
-flutterguard scan --path . --fail-on medium
-```
-
-Exit codes: `0` = pass, `1` = gate failed, `2` = error
 
 ---
 
-## Static Rules
+## Output Formats
 
-| Rule | Level | What it detects |
-|------|-------|----------------|
-| `large_file` | medium | Files exceeding maxLines (default 500) |
-| `large_class` | medium | Classes exceeding maxLines (default 300) |
-| `large_build_method` | medium | Widget build() methods exceeding maxLines (default 80) |
-| `lifecycle_resource_not_disposed` | **high** | StreamSubscription, Timer, AnimationController, TextEditingController, ScrollController, FocusNode without matching cancel/dispose |
-| `boundary_import_violation` | **high** | Imports that violate configured module boundaries |
+### Table (default)
 
-**Scoring**: 100 base — 10 per high — 4 per medium — 1 per low (minimum 0)
+```
+ FlutterGuard Report  ─  scan_demo
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 总评分:  98/100  优秀      文件总数: 2  问题总数: 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
----
-
-## Report Format
+ 代码规范  2 items  ▰  LOW
+────────────────────────────────────────────────────────────────
+ LOW  P2 可选
+       类过大
+       lib/services/user_service.dart:3
+       类 "UserService" 49 行（阈值: 30 行）
+       修复: 建议将 "UserService" 的职责提取到更小的类中
+```
 
 ### JSON
+
+```bash
+flutterguard scan -p . --format json
+```
+
+Output written to `.flutterguard/report.json`:
 
 ```json
 {
   "version": "1.0.0",
-  "generatedAt": "2026-05-16T12:00:00.000Z",
-  "projectPath": "/Users/you/my_app",
   "score": 85,
-  "summary": { "high": 1, "medium": 2, "low": 1, "total": 4 },
-  "staticIssues": [
-    {
-      "id": "lifecycle_resource_not_disposed",
-      "title": "Lifecycle resource not disposed",
-      "file": "/Users/you/my_app/lib/widgets/player.dart",
-      "line": 42,
-      "level": "high",
-      "message": "AnimationController \"_controller\" in \"PlayerWidget\" may not be properly disposed.",
-      "suggestion": "Call \"_controller.dispose()\" in the dispose() method.",
-      "metadata": {
-        "className": "PlayerWidget",
-        "resourceType": "AnimationController",
-        "fieldName": "_controller",
-        "expectedDisposeCall": "dispose"
-      }
+  "summary": {
+    "total": 3,
+    "high": 1,
+    "medium": 1,
+    "low": 1,
+    "byDomain": {
+      "architecture": { "high": 1, "medium": 0, "low": 0, "total": 1 },
+      "performance": { "high": 0, "medium": 1, "low": 0, "total": 1 },
+      "standards":   { "high": 0, "medium": 0, "low": 1, "total": 1 }
     }
-  ]
+  },
+  "issues": [...]
 }
 ```
 
-### Markdown
-
-Comprehensive report with sections: Summary, Static Issues (High/Medium/Low), Runtime Flows, and CI Result.
-
 ---
 
-## M1 Feature List
+## CI Integration
 
-- [x] `FlutterGuard.action()` — flow-level trace creation with Zone context
-- [x] `FlutterGuard.span()` — async child spans, auto-correlated
-- [x] `FlutterGuard.run()` — automatic error hooks, frame metrics, route observer
-- [x] `FlutterGuardRouteObserver` — records push/pop/replace/remove
-- [x] `GuardBoundary` — widget rebuild counting
-- [x] `FlutterGuardDioInterceptor` — Dio 5.x HTTP tracing
-- [x] CLI static scan — 5 rules, YAML config, JSON/Markdown reports
-- [x] CI gate — `--fail-on` threshold-based exit codes
-- [x] Score system — 0-100 based on issue severity
-- [x] Demo app — checkout flow with all integrations
+```bash
+# Fail the build if any HIGH issues exist
+flutterguard scan -p . --format json --fail-on high
 
-## Non-Goals (M1)
+# Enforce a minimum score of 80
+flutterguard scan -p . --format json --min-score 80
 
-- AI-based diagnosis or auto-fix
-- DevTools extension
-- MQTT, BLE, or Matter protocol tracing
-- Riverpod/BLoC/GetX state management adapters
-- Full HTTP body inspection
-- Crash SDK replacement (Sentry/Crashlytics)
-- IDE lint plugin integration
-
----
-
-## Example Output
-
-Running the demo checkout flow:
-
-```
-# FlutterGuard Report
-
-**Generated**: 2026-05-16T12:00:00.000Z
-**Score**: 100 / 100
-
-## Summary
-| Level | Count |
-|-------|-------|
-| High | 0 |
-| Medium | 0 |
-| Low | 0 |
-| **Total** | **0** |
-
-## Runtime Flows
-
-### submit_order `4b7d261143d5`
-- **Status**: success
-- **Duration**: 250ms
-
-#### Spans
-| Name | Duration | Error |
-|------|----------|-------|
-| validate_form | 100ms | - |
-| request_create_order | 42ms | - |
-
-#### Network
-| Method | Path | Status | Duration |
-|--------|------|--------|----------|
-| POST | /posts | 201 | 42ms |
-
-#### Routes
-| Type | From | To |
-|------|------|----|
-| push | / | OrderResult |
-
-#### Build Boundaries
-- **CheckoutPage**: 1 rebuilds
-
----
+# Accept only clean scans (no issues at any level)
+flutterguard scan -p . --fail-on low
 ```
 
+**Exit codes**: `0` = pass, `1` = gate failed, `2` = error
+
 ---
 
-## Roadmap
+## Scoring
 
-| Milestone | Timeline | Focus |
-|-----------|----------|-------|
-| **M1** | Current | Flow tracing + static scan MVP |
-| M2 | Q3 2026 | Type-accurate lifecycle detection, cycle detection, custom plugins |
-| M3 | Q4 2026 | DevTools extension, Sentry bridge, timeline integration |
-| M4 | 2027 | Enterprise features, multi-isolate, storage backends |
+```
+score = max(0, 100 - high*10 - medium*4 - low*1)
+```
+
+| Score | Rating |
+|-------|--------|
+| 80-100 | 优秀 (Excellent) |
+| 50-79 | 需关注 (Needs review) |
+| 0-49 | 需整改 (Needs action) |
 
 ---
 
 ## Development
 
 ```bash
-# Clone and bootstrap
-git clone <repo-url>
+# Bootstrap monorepo
+git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 melos bootstrap
 
-# Analyze all packages
-melos run analyze
+# Analyze
+dart run melos run analyze
 
-# Run tests
-dart test packages/flutterguard_core
-dart test packages/flutterguard_dio
-dart test packages/flutterguard_cli
-flutter test packages/flutterguard_flutter
+# Test (12 tests)
+dart run melos run test:cli
 
-# Run the tracing API demo
-dart run examples/usage_demo/bin/trace_demo.dart
-
-# Scan the demo project
-dart pub global activate --source path packages/flutterguard_cli
-flutterguard scan --path examples/scan_demo
+# Compile CLI
+dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 ```
 
 ---

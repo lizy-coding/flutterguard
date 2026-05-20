@@ -4,6 +4,8 @@ import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../config_loader.dart';
+import '../domain.dart';
+import '../priority.dart';
 import '../static_issue.dart';
 
 const _resourceTypes = <String, String>{
@@ -13,6 +15,9 @@ const _resourceTypes = <String, String>{
   'TextEditingController': 'dispose',
   'ScrollController': 'dispose',
   'FocusNode': 'dispose',
+  'MqttClient': 'disconnect',
+  'BluetoothDevice': 'disconnect',
+  'StreamController': 'close',
 };
 
 class LifecycleResourceRule {
@@ -59,7 +64,8 @@ class LifecycleResourceRule {
 
         final typeStr = type.toString();
         for (final resourceType in _resourceTypes.keys) {
-          if (typeStr == resourceType || typeStr.endsWith('<$resourceType>')) {
+          if (typeStr == resourceType ||
+              typeStr.endsWith('<$resourceType>')) {
             final fieldName = field.fields.variables.first.name.lexeme;
             final expectedCall = _resourceTypes[resourceType]!;
 
@@ -74,14 +80,19 @@ class LifecycleResourceRule {
 
               issues.add(StaticIssue(
                 id: 'lifecycle_resource_not_disposed',
-                title: 'Lifecycle resource not disposed',
+                title: '资源未释放',
                 file: file,
                 line: line,
-                level: RiskLevel.high,
+                level: RiskLevel.medium,
+                domain: IssueDomain.performance,
+                priority: Priority.p1,
                 message:
-                    '$resourceType "$fieldName" in "${cls.name.lexeme}" may not be properly disposed.',
+                    '$resourceType 类型字段 "$fieldName" 在 "${cls.name.lexeme}" 中未在 dispose() 中释放',
+                detail: '字段: $fieldName ($resourceType)\n'
+                    '类: ${cls.name.lexeme}\n'
+                    '预期释放调用: $fieldName.$expectedCall()',
                 suggestion:
-                    'Call "$fieldName.$expectedCall()" in the dispose() method.',
+                    '在 dispose() 方法中添加 "$fieldName.$expectedCall()" 调用',
                 metadata: {
                   'className': cls.name.lexeme,
                   'resourceType': resourceType,

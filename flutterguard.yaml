@@ -19,5 +19,28 @@ rules:
     maxLines: 80
   lifecycle_resource:
     enabled: true
+  missing_const_constructor:
+    enabled: true
 
-boundaries: []
+architecture:
+  # layers:
+  #   - name: presentation
+  #     path: lib/presentation/**
+  #     allowed_deps: [domain, core]
+  #   - name: domain
+  #     path: lib/domain/**
+  #     allowed_deps: [core]
+  #   - name: data
+  #     path: lib/data/**
+  #     allowed_deps: [domain, core]
+  #   - name: core
+  #     path: lib/core/**
+  #     allowed_deps: []
+  # modules:
+  #   - name: device_mqtt
+  #     path: lib/device/mqtt/**
+  #     allowed_deps: [domain, core]
+  #   - name: device_ble
+  #     path: lib/device/ble/**
+  #     allowed_deps: [domain, core]
+  # detect_cycles: true

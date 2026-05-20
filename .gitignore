@@ -10,6 +10,7 @@ build/
 
 # CLI
 .flutterguard/
+flutterguard
 
 # IDE
 .idea/*/

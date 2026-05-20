@@ -5,14 +5,14 @@
 - NOT a general observability SDK, APM tool, or crash reporter.
 - Output: compiled CLI binary (`dart compile exe`) that scans Dart source code.
 
-## 2. Active vs Frozen
+## 2. Active vs Archived
 
 | Path | Status | Package | Notes |
 |------|--------|---------|-------|
 | **Path A** — CLI static analysis | **ACTIVE** | `flutterguard_cli` | All new features |
-| **Path B** — Runtime tracing | **FROZEN** | `core`, `dio`, `flutter` | Bug fixes only |
+| **Path B** — Runtime tracing | **ARCHIVED** | `core`, `dio`, `flutter` | In `archive/` for future reference |
 
-Do NOT modify frozen packages except for critical bug fixes. Do NOT add new features to them.
+Do NOT modify archived packages. They are preserved as-is for reference.
 
 ## 3. Architecture Constraints
 - Monorepo managed by **melos**. New packages must register in `melos.yaml`.
@@ -44,7 +44,7 @@ Do NOT modify frozen packages except for critical bug fixes. Do NOT add new feat
 - Do NOT add web/cloud infrastructure or dashboard UI.
 - Do NOT use third-party SaaS SDKs.
 - Do NOT commit secrets, API keys, or credentials.
-- Do NOT add runtime instrumentation outside frozen packages.
+- Do NOT add runtime instrumentation outside archived packages.
 - Do NOT introduce `package:build` / code generation dependencies.
 
 ## 8. Git Workflow
@@ -56,22 +56,14 @@ Do NOT modify frozen packages except for critical bug fixes. Do NOT add new feat
 ## 9. Override Hierarchy
 
 ### 9.1 pubspec_overrides.yaml
-Managed by `melos bootstrap`. 4 packages override `flutterguard_core` to local path:
-
-| Package | Override | Managed By |
-|---------|----------|------------|
-| `flutterguard_cli/pubspec_overrides.yaml` | `flutterguard_core` → `../flutterguard_core` | melos |
-| `flutterguard_dio/pubspec_overrides.yaml` | `flutterguard_core` → `../flutterguard_core` | melos |
-| `flutterguard_flutter/pubspec_overrides.yaml` | `flutterguard_core` → `../flutterguard_core` | melos |
-| `usage_demo/pubspec_overrides.yaml` | `flutterguard_core` → `../../packages/flutterguard_core` | melos |
+Managed by `melos bootstrap`. No path dependencies currently exist for `flutterguard_cli`.
 
 **Rule**: Do NOT edit manually. Re-run `melos bootstrap` after any pubspec.yaml change.
 
 ### 9.2 analysis_options.yaml Inheritance Chain
 ```
 root/analysis_options.yaml          # strict-casts + strict-inference + 6 lint rules
-├── packages/flutterguard_cli/...   # inherits root + package:lints/recommended + excludes test/fixtures/**
-├── examples/usage_demo/...         # inherits root + excludes avoid_print
+└── packages/flutterguard_cli/...   # inherits root + package:lints/recommended + excludes test/fixtures/**
 ```
 
 **Rule**: Keep corporate-wide strictness at root. Per-package loosening only for legitimate reasons (fixture code, print-based demos).

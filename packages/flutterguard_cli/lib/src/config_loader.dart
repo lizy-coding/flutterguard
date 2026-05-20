@@ -4,10 +4,24 @@ import 'dart:io';
 
 import 'package:yaml/yaml.dart';
 
-typedef BoundaryConfig = ({
+typedef LayerConfig = ({
   String name,
-  String from,
-  List<String> forbidden,
+  String path,
+  List<String> allowedDeps,
+});
+
+typedef ModuleConfig = ({
+  String name,
+  String path,
+  List<String> allowedDeps,
+});
+
+typedef ArchitectureConfig = ({
+  List<LayerConfig> layers,
+  List<ModuleConfig> modules,
+  bool detectCycles,
+  bool layerViolationEnabled,
+  bool moduleViolationEnabled,
 });
 
 typedef RulesConfig = ({
@@ -15,60 +29,67 @@ typedef RulesConfig = ({
   LargeClassRuleConfig largeClass,
   LargeBuildMethodRuleConfig largeBuildMethod,
   LifecycleResourceRuleConfig lifecycleResource,
+  MissingConstConstructorRuleConfig missingConstConstructor,
 });
 
 typedef LargeFileRuleConfig = ({bool enabled, int maxLines});
 typedef LargeClassRuleConfig = ({bool enabled, int maxLines});
 typedef LargeBuildMethodRuleConfig = ({bool enabled, int maxLines});
 typedef LifecycleResourceRuleConfig = ({bool enabled});
+typedef MissingConstConstructorRuleConfig = ({bool enabled});
 
 class ScanConfig {
   final List<String> include;
   final List<String> exclude;
   final RulesConfig rules;
-  final List<BoundaryConfig> boundaries;
+  final ArchitectureConfig architecture;
 
   const ScanConfig({
     required this.include,
     required this.exclude,
     required this.rules,
-    required this.boundaries,
+    required this.architecture,
   });
+
+  static const _knownTopLevelKeys = {
+    'include', 'exclude', 'rules', 'architecture',
+  };
+  static const _knownRuleKeys = {
+    'large_file', 'large_class', 'large_build_method',
+    'lifecycle_resource', 'missing_const_constructor',
+  };
+  static const _knownLayerKeys = {
+    'name', 'path', 'allowed_deps',
+  };
+  static const _knownArchKeys = {
+    'layers', 'modules', 'detect_cycles', 'layer_violation', 'module_violation',
+  };
 
   factory ScanConfig.fromFile(String path) {
     final file = File(path);
     if (!file.existsSync()) {
-      return const ScanConfig(
-        include: ['lib/**'],
-        exclude: [
-          'lib/generated/**',
-          'lib/**.g.dart',
-          'lib/**.freezed.dart',
-          'lib/**.mocks.dart',
-        ],
-        rules: (
-          largeFile: (enabled: true, maxLines: 500),
-          largeClass: (enabled: true, maxLines: 300),
-          largeBuildMethod: (enabled: true, maxLines: 80),
-          lifecycleResource: (enabled: true),
-        ),
-        boundaries: [],
-      );
+      return _defaultConfig();
     }
 
     final content = file.readAsStringSync();
     final yaml = loadYaml(content) as YamlMap;
 
-    final rules = yaml['rules'] as YamlMap? ?? YamlMap();
+    _warnUnknownKeys(yaml, _knownTopLevelKeys, 'config');
 
-    final boundaries = <BoundaryConfig>[];
-    if (yaml['boundaries'] is YamlList) {
-      for (final b in yaml['boundaries'] as YamlList) {
-        boundaries.add((
-          name: b['name'] as String,
-          from: b['from'] as String,
-          forbidden: List<String>.from(b['forbidden'] as YamlList),
-        ));
+    final rules = yaml['rules'] as YamlMap? ?? YamlMap();
+    _warnUnknownKeys(rules, _knownRuleKeys, 'rules');
+
+    final arch = yaml['architecture'] as YamlMap? ?? YamlMap();
+    _warnUnknownKeys(arch, _knownArchKeys, 'architecture');
+
+    if (arch['layers'] is YamlList) {
+      for (final layer in arch['layers'] as YamlList) {
+        _warnUnknownKeys(layer as YamlMap, _knownLayerKeys, 'layer');
+      }
+    }
+    if (arch['modules'] is YamlList) {
+      for (final module in arch['modules'] as YamlList) {
+        _warnUnknownKeys(module as YamlMap, _knownLayerKeys, 'module');
       }
     }
 
@@ -81,7 +102,36 @@ class ScanConfig {
             'lib/**.freezed.dart',
             'lib/**.mocks.dart',
           ],
-      rules: (
+      rules: _parseRules(rules),
+      architecture: _parseArchitecture(arch),
+    );
+  }
+
+  static ScanConfig _defaultConfig() => const ScanConfig(
+        include: ['lib/**'],
+        exclude: [
+          'lib/generated/**',
+          'lib/**.g.dart',
+          'lib/**.freezed.dart',
+          'lib/**.mocks.dart',
+        ],
+        rules: (
+          largeFile: (enabled: true, maxLines: 500),
+          largeClass: (enabled: true, maxLines: 300),
+          largeBuildMethod: (enabled: true, maxLines: 80),
+          lifecycleResource: (enabled: true),
+          missingConstConstructor: (enabled: true),
+        ),
+        architecture: (
+          layers: [],
+          modules: [],
+          detectCycles: false,
+          layerViolationEnabled: true,
+          moduleViolationEnabled: true,
+        ),
+      );
+
+  static RulesConfig _parseRules(YamlMap rules) => (
         largeFile: (
           enabled: rules['large_file']?['enabled'] as bool? ?? true,
           maxLines: rules['large_file']?['maxLines'] as int? ?? 500,
@@ -97,9 +147,50 @@ class ScanConfig {
         lifecycleResource: (
           enabled: rules['lifecycle_resource']?['enabled'] as bool? ?? true,
         ),
-      ),
-      boundaries: boundaries,
+        missingConstConstructor: (
+          enabled: rules['missing_const_constructor']?['enabled'] as bool? ?? true,
+        ),
+      );
+
+  static ArchitectureConfig _parseArchitecture(YamlMap arch) {
+    final layers = <LayerConfig>[];
+    if (arch['layers'] is YamlList) {
+      for (final l in arch['layers'] as YamlList) {
+        layers.add((
+          name: l['name'] as String,
+          path: l['path'] as String,
+          allowedDeps: List<String>.from(l['allowed_deps'] as YamlList? ?? []),
+        ));
+      }
+    }
+
+    final modules = <ModuleConfig>[];
+    if (arch['modules'] is YamlList) {
+      for (final m in arch['modules'] as YamlList) {
+        modules.add((
+          name: m['name'] as String,
+          path: m['path'] as String,
+          allowedDeps: List<String>.from(m['allowed_deps'] as YamlList? ?? []),
+        ));
+      }
+    }
+
+    return (
+      layers: layers,
+      modules: modules,
+      detectCycles: arch['detect_cycles'] as bool? ?? false,
+      layerViolationEnabled: arch['layer_violation']?['enabled'] as bool? ?? true,
+      moduleViolationEnabled: arch['module_violation']?['enabled'] as bool? ?? true,
     );
+  }
+
+  static void _warnUnknownKeys(YamlMap map, Set<String> known, String context) {
+    for (final key in map.keys) {
+      final keyStr = key.toString();
+      if (!known.contains(keyStr)) {
+        stderr.writeln('Warning: Unknown $context key "$keyStr"');
+      }
+    }
   }
 
   static List<String>? _parseStringList(dynamic value) {

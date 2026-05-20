@@ -2,29 +2,28 @@ import 'dart:io';
 
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
-import 'package:path/path.dart' as p;
 
 import 'config_loader.dart';
+import 'path_utils.dart';
 
 class FileCollector {
   static List<String> collect(String projectPath, ScanConfig config) {
+    final context = projectPathContext(projectPath);
     final allFiles = <String>{};
 
     for (final pattern in config.include) {
-      final fullPattern = p.join(projectPath, pattern);
-      final glob = Glob(fullPattern);
-      for (final entity in glob.listSync()) {
+      final glob = Glob(pattern.replaceAll('\\', '/'), context: context);
+      for (final entity in glob.listSync(root: context.current)) {
         if (entity is File && entity.path.endsWith('.dart')) {
-          allFiles.add(entity.path);
+          allFiles.add(normalizePath(entity.path, context: context));
         }
       }
     }
 
     for (final pattern in config.exclude) {
-      final fullPattern = p.join(projectPath, pattern);
-      final glob = Glob(fullPattern);
-      for (final entity in glob.listSync()) {
-        allFiles.remove(entity.path);
+      final glob = Glob(pattern.replaceAll('\\', '/'), context: context);
+      for (final entity in glob.listSync(root: context.current)) {
+        allFiles.remove(normalizePath(entity.path, context: context));
       }
       allFiles.removeWhere((f) => glob.matches(f));
     }
