@@ -11,4 +11,6 @@ export 'src/rules/layer_violation.dart';
 export 'src/rules/lifecycle_resource.dart';
 export 'src/rules/missing_const_constructor.dart';
 export 'src/rules/module_violation.dart';
+export 'src/scanner.dart';
+export 'src/source_utils.dart';
 export 'src/static_issue.dart';

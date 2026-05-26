@@ -82,17 +82,23 @@ class ReportGenerator {
   static String generateStdout({
     required String projectPath,
     required List<StaticIssue> issues,
+    int? scannedFileCount,
     bool verbose = false,
   }) {
     final buf = StringBuffer();
     final score = calculateScore(issues);
     final projectName = p.basename(projectPath);
 
-    _writeHeader(buf, projectName, score, issues);
+    _writeHeader(
+      buf,
+      projectName,
+      score,
+      issues,
+      scannedFileCount ?? issues.map((i) => i.file).toSet().length,
+    );
 
     if (issues.isEmpty) {
-      buf.writeln(
-          '  ${_Ansi.green}未发现问题，代码质量良好。${_Ansi.reset}');
+      buf.writeln('  ${_Ansi.green}未发现问题，代码质量良好。${_Ansi.reset}');
       return buf.toString();
     }
 
@@ -101,7 +107,7 @@ class ReportGenerator {
     for (final domain in IssueDomain.values) {
       final domainIssues = issues.where((i) => i.domain == domain).toList();
       if (domainIssues.isEmpty) continue;
-      _writeDomainSection(buf, domain, domainIssues, verbose);
+      _writeDomainSection(buf, projectPath, domain, domainIssues, verbose);
     }
 
     return buf.toString();
@@ -112,6 +118,7 @@ class ReportGenerator {
     String projectName,
     int score,
     List<StaticIssue> issues,
+    int scannedFileCount,
   ) {
     final scoreAnsi = _scoreAnsi(score);
     final scoreLabel = score >= 80
@@ -119,9 +126,6 @@ class ReportGenerator {
         : score >= 50
             ? '需关注'
             : '需整改';
-    final fileCount =
-        issues.map((i) => i.file).toSet().length;
-
     buf.writeln(
         ' ${_Ansi.bold}FlutterGuard Report${_Ansi.reset}  ${_Ansi.gray}─${_Ansi.reset}  $projectName');
     buf.writeln(
@@ -129,7 +133,7 @@ class ReportGenerator {
     buf.write(
         ' 总评分:  $scoreAnsi$score/100${_Ansi.reset}  $scoreAnsi$scoreLabel${_Ansi.reset}');
     buf.writeln(
-        '      ${_Ansi.bold}文件总数: $fileCount${_Ansi.reset}  问题总数: ${_Ansi.bold}${issues.length}${_Ansi.reset}');
+        '      ${_Ansi.bold}扫描文件: $scannedFileCount${_Ansi.reset}  问题总数: ${_Ansi.bold}${issues.length}${_Ansi.reset}');
     buf.writeln(
         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     buf.writeln();
@@ -150,12 +154,10 @@ class ReportGenerator {
       final levelLabel = _levelLabel[maxLevel]!;
       final domainAnsi = _domainAnsi[domain]!;
 
-      buf.write(
-          '  $domainAnsi${_domainLabels[domain]}${_Ansi.reset}');
+      buf.write('  $domainAnsi${_domainLabels[domain]}${_Ansi.reset}');
       buf.write('  $count items  ');
       buf.write('${_Ansi.gray}▰${_Ansi.reset}  ');
-      buf.writeln(
-          '${_levelAnsi[maxLevel]}$levelLabel${_Ansi.reset}');
+      buf.writeln('${_levelAnsi[maxLevel]}$levelLabel${_Ansi.reset}');
     }
     buf.writeln(
         '────────────────────────────────────────────────────────────────────────────────────');
@@ -164,12 +166,12 @@ class ReportGenerator {
 
   static void _writeDomainSection(
     StringBuffer buf,
+    String projectPath,
     IssueDomain domain,
     List<StaticIssue> issues,
     bool verbose,
   ) {
-    final sorted = [...issues]
-      ..sort((a, b) {
+    final sorted = [...issues]..sort((a, b) {
         final order = {
           RiskLevel.high: 0,
           RiskLevel.medium: 1,
@@ -183,16 +185,13 @@ class ReportGenerator {
       final lvlLabel = _levelLabel[issue.level]!;
       final priAnsi = _priorityAnsi[issue.priority]!;
       final priLabel = _priorityLabel[issue.priority]!;
-      final fileName = p.basename(issue.file);
-      final relDir = _relativeDir(issue.file);
+      final displayPath = _displayPath(issue.file, projectPath);
       final lineInfo = issue.line != null ? ':${issue.line}' : '';
 
       buf.writeln(
           '  $lvlAnsi$lvlLabel${_Ansi.reset} $priAnsi$priLabel${_Ansi.reset}');
-      buf.writeln(
-          '       ${_Ansi.bold}${issue.title}${_Ansi.reset}');
-      buf.writeln(
-          '       ${_Ansi.gray}${p.join(relDir, fileName)}$lineInfo${_Ansi.reset}');
+      buf.writeln('       ${_Ansi.bold}${issue.title}${_Ansi.reset}');
+      buf.writeln('       ${_Ansi.gray}$displayPath$lineInfo${_Ansi.reset}');
       buf.writeln('       ${issue.message}');
 
       if (verbose && issue.detail.isNotEmpty) {
@@ -201,8 +200,7 @@ class ReportGenerator {
           buf.writeln('       ${_Ansi.dim}$line${_Ansi.reset}');
         }
       }
-      buf.writeln(
-          '       修复: ${_Ansi.green}${issue.suggestion}${_Ansi.reset}');
+      buf.writeln('       修复: ${_Ansi.green}${issue.suggestion}${_Ansi.reset}');
       buf.writeln();
     }
     buf.writeln(
@@ -210,8 +208,11 @@ class ReportGenerator {
     buf.writeln();
   }
 
-  static String _relativeDir(String filePath) {
-    return p.dirname(filePath);
+  static String _displayPath(String filePath, String projectPath) {
+    if (p.isWithin(projectPath, filePath) || p.equals(projectPath, filePath)) {
+      return p.relative(filePath, from: projectPath);
+    }
+    return filePath;
   }
 
   static Map<String, Map<String, int>> _buildSummaryByDomain(

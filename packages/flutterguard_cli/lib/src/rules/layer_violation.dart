@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/source/line_info.dart';
 import 'package:glob/glob.dart';
 
 import '../config_loader.dart';
@@ -9,6 +10,7 @@ import '../domain.dart';
 import '../import_utils.dart';
 import '../path_utils.dart';
 import '../priority.dart';
+import '../source_utils.dart';
 import '../static_issue.dart';
 
 class LayerViolationRule {
@@ -51,6 +53,7 @@ class LayerViolationRule {
           file,
           sourceLayer,
           result.unit,
+          result.lineInfo,
           fileToLayer,
           fileSet,
         ));
@@ -64,6 +67,7 @@ class LayerViolationRule {
     String sourceFile,
     LayerConfig sourceLayer,
     CompilationUnit unit,
+    LineInfo lineInfo,
     Map<String, LayerConfig> fileToLayer,
     Set<String> fileSet,
   ) {
@@ -87,7 +91,7 @@ class LayerViolationRule {
       if (targetLayer.name == sourceLayer.name) continue;
 
       if (!sourceLayer.allowedDeps.contains(targetLayer.name)) {
-        final line = import.uri.offset;
+        final line = lineNumberForOffset(lineInfo, import.uri.offset);
         final allowedStr = sourceLayer.allowedDeps.isEmpty
             ? '无'
             : sourceLayer.allowedDeps.join(', ');

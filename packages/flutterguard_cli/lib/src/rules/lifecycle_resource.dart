@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/source/line_info.dart';
 
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../source_utils.dart';
 import '../static_issue.dart';
 
 const _resourceTypes = <String, String>{
@@ -34,14 +36,18 @@ class LifecycleResourceRule {
       try {
         final content = File(file).readAsStringSync();
         final result = parseString(content: content, path: file);
-        issues.addAll(_checkFile(file, result.unit));
+        issues.addAll(_checkFile(file, result.unit, result.lineInfo));
       } catch (_) {}
     }
 
     return issues;
   }
 
-  List<StaticIssue> _checkFile(String file, CompilationUnit unit) {
+  List<StaticIssue> _checkFile(
+    String file,
+    CompilationUnit unit,
+    LineInfo lineInfo,
+  ) {
     final issues = <StaticIssue>[];
     final classes = unit.declarations.whereType<ClassDeclaration>();
 
@@ -64,8 +70,7 @@ class LifecycleResourceRule {
 
         final typeStr = type.toString();
         for (final resourceType in _resourceTypes.keys) {
-          if (typeStr == resourceType ||
-              typeStr.endsWith('<$resourceType>')) {
+          if (typeStr == resourceType || typeStr.endsWith('<$resourceType>')) {
             final fieldName = field.fields.variables.first.name.lexeme;
             final expectedCall = _resourceTypes[resourceType]!;
 
@@ -76,7 +81,10 @@ class LifecycleResourceRule {
             }
 
             if (!isDisposed) {
-              final line = field.fields.variables.first.name.offset;
+              final line = lineNumberForOffset(
+                lineInfo,
+                field.fields.variables.first.name.offset,
+              );
 
               issues.add(StaticIssue(
                 id: 'lifecycle_resource_not_disposed',
@@ -91,8 +99,7 @@ class LifecycleResourceRule {
                 detail: '字段: $fieldName ($resourceType)\n'
                     '类: ${cls.name.lexeme}\n'
                     '预期释放调用: $fieldName.$expectedCall()',
-                suggestion:
-                    '在 dispose() 方法中添加 "$fieldName.$expectedCall()" 调用',
+                suggestion: '在 dispose() 方法中添加 "$fieldName.$expectedCall()" 调用',
                 metadata: {
                   'className': cls.name.lexeme,
                   'resourceType': resourceType,

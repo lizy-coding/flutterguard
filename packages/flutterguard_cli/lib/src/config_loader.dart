@@ -52,17 +52,29 @@ class ScanConfig {
   });
 
   static const _knownTopLevelKeys = {
-    'include', 'exclude', 'rules', 'architecture',
+    'include',
+    'exclude',
+    'rules',
+    'architecture',
   };
   static const _knownRuleKeys = {
-    'large_file', 'large_class', 'large_build_method',
-    'lifecycle_resource', 'missing_const_constructor',
+    'large_file',
+    'large_class',
+    'large_build_method',
+    'lifecycle_resource',
+    'missing_const_constructor',
   };
   static const _knownLayerKeys = {
-    'name', 'path', 'allowed_deps',
+    'name',
+    'path',
+    'allowed_deps',
   };
   static const _knownArchKeys = {
-    'layers', 'modules', 'detect_cycles', 'layer_violation', 'module_violation',
+    'layers',
+    'modules',
+    'detect_cycles',
+    'layer_violation',
+    'module_violation',
   };
 
   factory ScanConfig.fromFile(String path) {
@@ -72,24 +84,38 @@ class ScanConfig {
     }
 
     final content = file.readAsStringSync();
-    final yaml = loadYaml(content) as YamlMap;
+    final parsed = loadYaml(content);
+    if (parsed == null) {
+      return _defaultConfig();
+    }
+    if (parsed is! YamlMap) {
+      throw FormatException('Config file "$path" must contain a YAML map.');
+    }
+    final yaml = parsed;
 
     _warnUnknownKeys(yaml, _knownTopLevelKeys, 'config');
 
-    final rules = yaml['rules'] as YamlMap? ?? YamlMap();
+    final rules = _optionalMap(yaml['rules'], 'rules');
     _warnUnknownKeys(rules, _knownRuleKeys, 'rules');
 
-    final arch = yaml['architecture'] as YamlMap? ?? YamlMap();
+    final arch = _optionalMap(yaml['architecture'], 'architecture');
     _warnUnknownKeys(arch, _knownArchKeys, 'architecture');
 
     if (arch['layers'] is YamlList) {
       for (final layer in arch['layers'] as YamlList) {
-        _warnUnknownKeys(layer as YamlMap, _knownLayerKeys, 'layer');
+        if (layer is! YamlMap) {
+          throw const FormatException('Each architecture layer must be a map.');
+        }
+        _warnUnknownKeys(layer, _knownLayerKeys, 'layer');
       }
     }
     if (arch['modules'] is YamlList) {
       for (final module in arch['modules'] as YamlList) {
-        _warnUnknownKeys(module as YamlMap, _knownLayerKeys, 'module');
+        if (module is! YamlMap) {
+          throw const FormatException(
+              'Each architecture module must be a map.');
+        }
+        _warnUnknownKeys(module, _knownLayerKeys, 'module');
       }
     }
 
@@ -131,35 +157,55 @@ class ScanConfig {
         ),
       );
 
-  static RulesConfig _parseRules(YamlMap rules) => (
-        largeFile: (
-          enabled: rules['large_file']?['enabled'] as bool? ?? true,
-          maxLines: rules['large_file']?['maxLines'] as int? ?? 500,
-        ),
-        largeClass: (
-          enabled: rules['large_class']?['enabled'] as bool? ?? true,
-          maxLines: rules['large_class']?['maxLines'] as int? ?? 300,
-        ),
-        largeBuildMethod: (
-          enabled: rules['large_build_method']?['enabled'] as bool? ?? true,
-          maxLines: rules['large_build_method']?['maxLines'] as int? ?? 80,
-        ),
-        lifecycleResource: (
-          enabled: rules['lifecycle_resource']?['enabled'] as bool? ?? true,
-        ),
-        missingConstConstructor: (
-          enabled: rules['missing_const_constructor']?['enabled'] as bool? ?? true,
-        ),
-      );
+  static RulesConfig _parseRules(YamlMap rules) {
+    final largeFile = _optionalMap(rules['large_file'], 'rules.large_file');
+    final largeClass = _optionalMap(rules['large_class'], 'rules.large_class');
+    final largeBuildMethod = _optionalMap(
+      rules['large_build_method'],
+      'rules.large_build_method',
+    );
+    final lifecycleResource = _optionalMap(
+      rules['lifecycle_resource'],
+      'rules.lifecycle_resource',
+    );
+    final missingConstConstructor = _optionalMap(
+      rules['missing_const_constructor'],
+      'rules.missing_const_constructor',
+    );
+
+    return (
+      largeFile: (
+        enabled: _boolValue(largeFile, 'enabled', true),
+        maxLines: _intValue(largeFile, 'maxLines', 500),
+      ),
+      largeClass: (
+        enabled: _boolValue(largeClass, 'enabled', true),
+        maxLines: _intValue(largeClass, 'maxLines', 300),
+      ),
+      largeBuildMethod: (
+        enabled: _boolValue(largeBuildMethod, 'enabled', true),
+        maxLines: _intValue(largeBuildMethod, 'maxLines', 80),
+      ),
+      lifecycleResource: (
+        enabled: _boolValue(lifecycleResource, 'enabled', true),
+      ),
+      missingConstConstructor: (
+        enabled: _boolValue(missingConstConstructor, 'enabled', true),
+      ),
+    );
+  }
 
   static ArchitectureConfig _parseArchitecture(YamlMap arch) {
     final layers = <LayerConfig>[];
     if (arch['layers'] is YamlList) {
       for (final l in arch['layers'] as YamlList) {
+        if (l is! YamlMap) {
+          throw const FormatException('Each architecture layer must be a map.');
+        }
         layers.add((
-          name: l['name'] as String,
-          path: l['path'] as String,
-          allowedDeps: List<String>.from(l['allowed_deps'] as YamlList? ?? []),
+          name: _requiredString(l, 'name', 'architecture.layers'),
+          path: _requiredString(l, 'path', 'architecture.layers'),
+          allowedDeps: _parseStringList(l['allowed_deps']) ?? [],
         ));
       }
     }
@@ -167,20 +213,33 @@ class ScanConfig {
     final modules = <ModuleConfig>[];
     if (arch['modules'] is YamlList) {
       for (final m in arch['modules'] as YamlList) {
+        if (m is! YamlMap) {
+          throw const FormatException(
+              'Each architecture module must be a map.');
+        }
         modules.add((
-          name: m['name'] as String,
-          path: m['path'] as String,
-          allowedDeps: List<String>.from(m['allowed_deps'] as YamlList? ?? []),
+          name: _requiredString(m, 'name', 'architecture.modules'),
+          path: _requiredString(m, 'path', 'architecture.modules'),
+          allowedDeps: _parseStringList(m['allowed_deps']) ?? [],
         ));
       }
     }
 
+    final layerViolation = _optionalMap(
+      arch['layer_violation'],
+      'architecture.layer_violation',
+    );
+    final moduleViolation = _optionalMap(
+      arch['module_violation'],
+      'architecture.module_violation',
+    );
+
     return (
       layers: layers,
       modules: modules,
-      detectCycles: arch['detect_cycles'] as bool? ?? false,
-      layerViolationEnabled: arch['layer_violation']?['enabled'] as bool? ?? true,
-      moduleViolationEnabled: arch['module_violation']?['enabled'] as bool? ?? true,
+      detectCycles: _boolValue(arch, 'detect_cycles', false),
+      layerViolationEnabled: _boolValue(layerViolation, 'enabled', true),
+      moduleViolationEnabled: _boolValue(moduleViolation, 'enabled', true),
     );
   }
 
@@ -197,6 +256,35 @@ class ScanConfig {
     if (value is YamlList) {
       return value.map((e) => e.toString()).toList();
     }
+    if (value != null) {
+      throw const FormatException('Expected a YAML list of strings.');
+    }
     return null;
+  }
+
+  static YamlMap _optionalMap(dynamic value, String path) {
+    if (value == null) return YamlMap();
+    if (value is YamlMap) return value;
+    throw FormatException('$path must be a YAML map.');
+  }
+
+  static bool _boolValue(YamlMap map, String key, bool defaultValue) {
+    final value = map[key];
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    throw FormatException('$key must be a boolean.');
+  }
+
+  static int _intValue(YamlMap map, String key, int defaultValue) {
+    final value = map[key];
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    throw FormatException('$key must be an integer.');
+  }
+
+  static String _requiredString(YamlMap map, String key, String path) {
+    final value = map[key];
+    if (value is String && value.isNotEmpty) return value;
+    throw FormatException('$path.$key must be a non-empty string.');
   }
 }
