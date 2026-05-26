@@ -47,7 +47,27 @@ git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub global activate melos
 melos bootstrap
+dart pub get
 dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
+```
+
+On Windows, compile with an `.exe` output name and run the local binary with
+`.\flutterguard.exe`:
+
+```powershell
+dart pub get
+dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard.exe
+.\flutterguard.exe scan -p D:\path\to\flutter_app
+```
+
+If `flutterguard scan` prints `API key required` or mentions uploading APKs, the
+shell is resolving an old globally installed binary instead of this repository's
+static-analysis CLI. Check it with `where flutterguard`, then either run
+`.\flutterguard.exe` from the repo directory or reinstall the local CLI:
+
+```powershell
+dart pub global deactivate flutterguard_cli
+dart pub global activate --source path packages\flutterguard_cli
 ```
 
 ## Quick Start
@@ -244,6 +264,7 @@ git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub global activate melos
 melos bootstrap
+dart pub get
 
 dart run melos run analyze
 dart run melos run test:cli
