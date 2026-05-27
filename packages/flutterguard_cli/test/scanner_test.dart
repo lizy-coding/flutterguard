@@ -12,6 +12,7 @@ import 'package:flutterguard_cli/src/rules/layer_violation.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
 import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
+import 'package:flutterguard_cli/src/scanner.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -247,6 +248,53 @@ void main() {
       expect(json, contains('"issues"'));
       expect(json, contains('"byDomain"'));
       expect(json, contains('test_issue'));
+    });
+
+    test('stdout report uses scanned file count when provided', () {
+      final report = ReportGenerator.generateStdout(
+        projectPath: '/test',
+        issues: const [],
+        scannedFileCount: 3,
+      );
+
+      expect(report, contains('扫描文件: 3'));
+      expect(report, contains('问题总数: '));
+    });
+  });
+
+  group('Scanner Orchestration', () {
+    test('scanner runs all configured rules and returns sorted result', () {
+      final result = FlutterGuardScanner.scan(
+        projectPath: Directory.current.path,
+        configPath: p.join('test', 'fixtures', 'architecture_config.yaml'),
+      );
+
+      expect(result.files, isNotEmpty);
+      expect(result.issues, isNotEmpty);
+      expect(result.score, inInclusiveRange(0, 100));
+      expect(result.issues.first.level, RiskLevel.high);
+    });
+
+    test('scanner reports missing project path as scan exception', () {
+      expect(
+        () => FlutterGuardScanner.scan(
+          projectPath: p.join(fixturesPath, 'does_not_exist'),
+        ),
+        throwsA(isA<ScanException>()),
+      );
+    });
+
+    test('config parser rejects invalid rule values', () {
+      final file = File(p.join(fixturesPath, 'invalid_config.yaml'));
+      file.writeAsStringSync('rules:\n  large_file: false\n');
+      addTearDown(() {
+        if (file.existsSync()) file.deleteSync();
+      });
+
+      expect(
+        () => ScanConfig.fromFile(file.path),
+        throwsA(isA<FormatException>()),
+      );
     });
   });
 
