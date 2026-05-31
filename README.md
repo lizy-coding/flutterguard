@@ -17,6 +17,7 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 - Not a crash reporter
 - Not a general-purpose Dart linter
 - Not a web dashboard or Flutter widget library
+- Does not require an API key and does not upload APKs
 
 ## Requirements
 
@@ -68,6 +69,52 @@ static-analysis CLI. Check it with `where flutterguard`, then either run
 ```powershell
 dart pub global deactivate flutterguard_cli
 dart pub global activate --source path packages\flutterguard_cli
+```
+
+### Windows troubleshooting
+
+This FlutterGuard CLI is supported on Windows as a local static scanner. It uses
+Dart's cross-platform file APIs and has test coverage for Windows-style project
+paths and imports.
+
+The current static scanner does not read `FG_API_KEY` and does not accept
+`--api-key`. If PowerShell shows this output, you are running a different
+FlutterGuard binary:
+
+```powershell
+Error: API key required. Pass --api-key or set FG_API_KEY.
+```
+
+Do not run `flutterguard FG_API_KEY.`. That passes `FG_API_KEY.` as a command
+argument; it does not set an environment variable. For this repository's CLI,
+there is no key to bind. Confirm which executable is first on `PATH`:
+
+```powershell
+where flutterguard
+flutterguard --help
+```
+
+The expected help starts with:
+
+```text
+FlutterGuard — IoT Flutter architecture static analysis CLI
+No API key is required. This CLI scans local source code only.
+Usage: flutterguard <command> [options]
+```
+
+If `where flutterguard` points to an older global install, run the local compiled
+binary explicitly:
+
+```powershell
+.\flutterguard.exe scan -p D:\code\xstudio
+```
+
+Or reinstall this package as the global command:
+
+```powershell
+dart pub global deactivate flutterguard_cli
+dart pub global activate --source path packages\flutterguard_cli
+flutterguard scan -p D:\code\xstudio
 ```
 
 ## Quick Start

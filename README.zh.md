@@ -75,6 +75,45 @@ dart pub global deactivate flutterguard_cli
 dart pub global activate --source path packages\flutterguard_cli
 ```
 
+### Windows 排查
+
+当前 FlutterGuard CLI 支持 Windows，定位是本地静态扫描工具。实现使用 Dart 跨平台文件 API，并已有 Windows 风格项目路径和 import 解析测试覆盖。
+
+当前静态扫描 CLI 不读取 `FG_API_KEY`，也没有 `--api-key` 参数。如果 PowerShell 出现下面输出，说明运行的是另一个 FlutterGuard 二进制：
+
+```powershell
+Error: API key required. Pass --api-key or set FG_API_KEY.
+```
+
+不要执行 `flutterguard FG_API_KEY.`。这只是把 `FG_API_KEY.` 当作命令参数传给程序，不是在 PowerShell 里设置环境变量。对于本仓库 CLI，没有 key 需要绑定。先确认当前命中的可执行文件：
+
+```powershell
+where flutterguard
+flutterguard --help
+```
+
+正确 help 开头应为：
+
+```text
+FlutterGuard — IoT Flutter architecture static analysis CLI
+No API key is required. This CLI scans local source code only.
+Usage: flutterguard <command> [options]
+```
+
+如果 `where flutterguard` 指向旧版全局安装，优先显式运行当前目录编译产物：
+
+```powershell
+.\flutterguard.exe scan -p D:\code\xstudio
+```
+
+或者重新安装本仓库 CLI 作为全局命令：
+
+```powershell
+dart pub global deactivate flutterguard_cli
+dart pub global activate --source path packages\flutterguard_cli
+flutterguard scan -p D:\code\xstudio
+```
+
 ## 快速开始
 
 ```bash

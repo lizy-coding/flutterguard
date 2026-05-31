@@ -139,6 +139,8 @@ int? _parseMinScore(String? value) {
 
 void _printUsage(ArgParser parser) {
   stdout.writeln('FlutterGuard — IoT Flutter architecture static analysis CLI');
+  stdout.writeln(
+      'No API key is required. This CLI scans local source code only.');
   stdout.writeln();
   stdout.writeln('Usage: flutterguard <command> [options]');
   stdout.writeln();
