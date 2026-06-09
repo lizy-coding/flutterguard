@@ -5,7 +5,7 @@ import 'package:args/args.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 
-const _version = '0.1.0';
+const _version = '0.1.1';
 
 void main(List<String> args) {
   final scanParser = ArgParser()

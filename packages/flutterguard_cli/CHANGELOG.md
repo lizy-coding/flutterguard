@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.1 (2026-06-09)
+
+### pub.dev Publishing
+
+- **cli:** Published to pub.dev — `dart pub global activate flutterguard_cli`
+- **cli:** Added pubspec.yaml metadata (repository, issue_tracker, topics)
+- **cli:** Added package-level README, LICENSE, CHANGELOG
+- **cli:** Removed Flutter imports from test fixtures for pure Dart compatibility
+
+### Cross-Platform Documentation
+
+- **docs:** `USAGE.md` — comprehensive usage guide (macOS / Windows / Linux)
+- **docs:** `WINDOWS_ASSESSMENT.md` — full Windows compatibility audit
+- **docs:** Enhanced README.md and README.zh.md with platform-specific install/usage/troubleshooting sections
+
+### Fixes
+
+- **cli:** Fixed pub.dev topic count limit (5 max)
+- **cli:** Fixed test fixture Flutter dependency warnings
+
 ## 0.1.0 (2026-05-17)
 
 ### Initial Release — CLI Static Analysis
