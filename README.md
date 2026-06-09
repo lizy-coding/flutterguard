@@ -2,7 +2,13 @@
 
 > IoT Flutter project static analysis CLI for architecture enforcement, code quality, and CI gating.
 
+[English](README.md) | [中文](README.zh.md)
+
 FlutterGuard scans Flutter/Dart source code and reports architecture boundary breaches, lifecycle/resource leaks, dependency cycles, and size-related code quality issues. The active path is `packages/flutterguard_cli/`; the legacy runtime-tracing packages are archived under `archive/`.
+
+**Platforms**: macOS, Windows, Linux — pure Dart CLI, no native dependencies.
+
+**Docs**: [Usage Guide](docs/USAGE.md) | [Windows Assessment](docs/WINDOWS_ASSESSMENT.md) | [Spec](docs/FLUTTERGUARD_SPEC.md) | [Architecture](docs/ARCHITECTURE.md)
 
 ## What It Is
 
@@ -23,10 +29,12 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 
 - Dart SDK 3.3.0 or newer
 - `melos` for workspace bootstrap when running from source
+- Supported OS: macOS, Windows, Linux
 
 ## Install
 
-### From source
+<details open>
+<summary><b>macOS / Linux</b></summary>
 
 ```bash
 git clone https://github.com/lizy-coding/flutterguard.git
@@ -38,90 +46,51 @@ melos bootstrap
 dart pub global activate --source path packages/flutterguard_cli
 flutterguard --help
 ```
+</details>
 
-> Windows users may need `%USERPROFILE%\AppData\Local\Pub\Cache\bin` on `PATH` after global activation.
+<details>
+<summary><b>Windows (PowerShell)</b></summary>
 
-### Compile a native binary
-
-```bash
+```powershell
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
+
 dart pub global activate melos
 melos bootstrap
-dart pub get
-dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
-```
 
-On Windows, compile with an `.exe` output name and run the local binary with
-`.\flutterguard.exe`:
-
-```powershell
-dart pub get
-dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard.exe
-.\flutterguard.exe scan -p D:\path\to\flutter_app
-```
-
-If `flutterguard scan` prints `API key required` or mentions uploading APKs, the
-shell is resolving an old globally installed binary instead of this repository's
-static-analysis CLI. Check it with `where flutterguard`, then either run
-`.\flutterguard.exe` from the repo directory or reinstall the local CLI:
-
-```powershell
-dart pub global deactivate flutterguard_cli
-dart pub global activate --source path packages\flutterguard_cli
-```
-
-### Windows troubleshooting
-
-This FlutterGuard CLI is supported on Windows as a local static scanner. It uses
-Dart's cross-platform file APIs and has test coverage for Windows-style project
-paths and imports.
-
-The current static scanner does not read `FG_API_KEY` and does not accept
-`--api-key`. If PowerShell shows this output, you are running a different
-FlutterGuard binary:
-
-```powershell
-Error: API key required. Pass --api-key or set FG_API_KEY.
-```
-
-Do not run `flutterguard FG_API_KEY.`. That passes `FG_API_KEY.` as a command
-argument; it does not set an environment variable. For this repository's CLI,
-there is no key to bind. Confirm which executable is first on `PATH`:
-
-```powershell
-where flutterguard
+dart pub global activate --source path packages/flutterguard_cli
 flutterguard --help
 ```
 
-The expected help starts with:
+> Windows users may need `%USERPROFILE%\AppData\Local\Pub\Cache\bin` on `PATH` after global activation.
+</details>
 
-```text
-FlutterGuard — IoT Flutter architecture static analysis CLI
-No API key is required. This CLI scans local source code only.
-Usage: flutterguard <command> [options]
+### Compile a native binary
+
+<details open>
+<summary><b>macOS / Linux</b></summary>
+
+```bash
+dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
+./flutterguard --help
 ```
+</details>
 
-If `where flutterguard` points to an older global install, run the local compiled
-binary explicitly:
+<details>
+<summary><b>Windows (PowerShell)</b></summary>
 
 ```powershell
-.\flutterguard.exe scan -p D:\code\xstudio
+dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard.exe
+.\flutterguard.exe --help
 ```
-
-Or reinstall this package as the global command:
-
-```powershell
-dart pub global deactivate flutterguard_cli
-dart pub global activate --source path packages\flutterguard_cli
-flutterguard scan -p D:\code\xstudio
-```
+</details>
 
 ## Quick Start
 
 ```bash
-# Scan a Flutter project
-flutterguard scan -p /path/to/project
+# Scan a Flutter project (all platforms)
+flutterguard scan -p /path/to/project     # macOS / Linux
+flutterguard scan -p D:\path\to\project   # Windows
 
 # Write JSON report and fail on HIGH issues
 flutterguard scan -p . --format json --fail-on high
@@ -307,16 +276,65 @@ flutterguard/
 ## Development
 
 ```bash
+# macOS / Linux
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub global activate melos
 melos bootstrap
-dart pub get
 
+# Windows
+git clone https://github.com/lizy-coding/flutterguard.git
+cd flutterguard
+dart pub global activate melos
+melos bootstrap
+
+# Common commands
 dart run melos run analyze
 dart run melos run test:cli
 dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 ```
+
+## Troubleshooting
+
+### Windows: "API key required" error
+
+This means the shell is resolving an old globally-installed binary instead of this repository's static-analysis CLI. Run the local binary directly:
+
+```powershell
+.\flutterguard.exe scan -p D:\path\to\project
+```
+
+Or reinstall:
+
+```powershell
+dart pub global deactivate flutterguard_cli
+dart pub global activate --source path packages\flutterguard_cli
+```
+
+### Windows: garbled or invisible terminal colors
+
+Use **Windows Terminal** (built into Windows 10/11) instead of legacy `cmd.exe`. Legacy terminals may show raw ANSI escape codes.
+
+### glob patterns: always use forward slashes
+
+In `flutterguard.yaml`, use `/` for all path patterns regardless of platform:
+
+```yaml
+# Correct
+path: lib/presentation/**
+
+# Wrong (even on Windows)
+path: lib\presentation\**
+```
+
+## Further Reading
+
+| Document | Content |
+|----------|---------|
+| [docs/USAGE.md](docs/USAGE.md) | Full usage guide (all platforms) |
+| [docs/WINDOWS_ASSESSMENT.md](docs/WINDOWS_ASSESSMENT.md) | Windows compatibility assessment |
+| [docs/FLUTTERGUARD_SPEC.md](docs/FLUTTERGUARD_SPEC.md) | Technical specification |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture overview |
 
 ## License
 
