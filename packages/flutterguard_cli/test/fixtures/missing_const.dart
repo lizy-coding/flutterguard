@@ -1,27 +1,27 @@
-import 'package:flutter/material.dart';
+class Widget {}
+class BuildContext {}
+class StatelessWidget {}
+class StatefulWidget {}
+class State<T> {}
 
 class ValidWidget extends StatelessWidget {
-  const ValidWidget({super.key});
+  const ValidWidget();
 
-  @override
-  Widget build(BuildContext context) => const SizedBox();
+  Widget build(BuildContext context) => Widget();
 }
 
 class MissingConstWidget extends StatelessWidget {
-  MissingConstWidget({super.key});
+  MissingConstWidget();
 
-  @override
-  Widget build(BuildContext context) => const SizedBox();
+  Widget build(BuildContext context) => Widget();
 }
 
 class MyStatefulWidget extends StatefulWidget {
-  MyStatefulWidget({super.key});
+  MyStatefulWidget();
 
-  @override
   State<MyStatefulWidget> createState() => _MyStatefulWidgetState();
 }
 
 class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-  @override
-  Widget build(BuildContext context) => const SizedBox();
+  Widget build(BuildContext context) => Widget();
 }
