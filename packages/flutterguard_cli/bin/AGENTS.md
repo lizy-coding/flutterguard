@@ -5,9 +5,11 @@
 
 It should:
 - Parse commands and options with `package:args`.
+- Support positional path: `flutterguard scan ./my_project` (no `-p` required).
 - Print help/version text.
 - Convert validation or scan errors into documented exit codes.
 - Call `FlutterGuardScanner.scan()` for real work.
+- Pass `--no-color` flag through to `ReportGenerator`.
 
 It should not:
 - Implement rules.
