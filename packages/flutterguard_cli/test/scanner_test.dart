@@ -9,9 +9,14 @@ import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
 import 'package:flutterguard_cli/src/rules/layer_violation.dart';
+import 'package:flutterguard_cli/src/rules/ble_scanning.dart';
+import 'package:flutterguard_cli/src/rules/device_lifecycle.dart';
+import 'package:flutterguard_cli/src/rules/iot_security.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
 import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
+import 'package:flutterguard_cli/src/rules/mqtt_connection.dart';
+import 'package:flutterguard_cli/src/rules/pubspec_security.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
@@ -166,6 +171,95 @@ void main() {
           isTrue);
       expect(issues.any((i) => i.metadata['className'] == 'MyStatefulWidget'),
           isTrue);
+    });
+
+    test('scan detects iot security issues', () {
+      final files = [p.join(fixturesPath, 'iot_security_issue.dart')];
+      final config = (enabled: true, requireTls: true);
+
+      final issues = IotSecurityRule(config).analyze(files);
+
+      expect(issues.any((i) => i.metadata['securityCheck'] == 'hardcoded_secret'),
+          isTrue);
+      expect(issues.any((i) => i.metadata['securityCheck'] == 'cleartext_mqtt'),
+          isTrue);
+      expect(issues.any((i) => i.metadata['securityCheck'] == 'cleartext_http'),
+          isTrue);
+      expect(
+          issues.any((i) => i.metadata['securityCheck'] == 'insecure_ble'), isTrue);
+    });
+
+    test('scan detects device lifecycle issues', () {
+      final files = [p.join(fixturesPath, 'device_lifecycle_issue.dart')];
+      final config = (enabled: true);
+
+      final issues = DeviceLifecycleRule(config).analyze(files);
+
+      expect(issues.any((i) => i.id == 'device_lifecycle'), isTrue);
+      expect(issues.any((i) => i.metadata['initMethod'] == 'initState'), isTrue);
+      expect(
+          issues.any((i) => i.metadata['teardownMethod'] == 'dispose'), isTrue);
+    });
+
+    test('scan detects mqtt connection issues', () {
+      final files = [p.join(fixturesPath, 'mqtt_connection_issue.dart')];
+      final config = (enabled: true);
+
+      final issues = MqttConnectionRule(config).analyze(files);
+
+      expect(issues.any((i) => i.id == 'mqtt_connection'), isTrue);
+      expect(issues.any((i) => i.metadata['check'] == 'connect_without_disconnect'),
+          isTrue);
+      expect(
+          issues.any((i) => i.metadata['check'] == 'hardcoded_broker_url'), isTrue);
+    });
+
+    test('scan detects ble scanning issues', () {
+      final files = [p.join(fixturesPath, 'ble_scanning_issue.dart')];
+      final config = (enabled: true, maxScanDurationMs: 10000);
+
+      final issues = BleScanningRule(config).analyze(files);
+
+      expect(issues.any((i) => i.id == 'ble_scanning'), isTrue);
+      expect(
+          issues.any((i) => i.metadata['check'] == 'startScan_without_stopScan'),
+          isTrue);
+    });
+
+    test('scan detects pubspec security issues', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_test_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('''
+name: test_app
+dependencies:
+  mqtt_client: ^9.0.0
+  flutter_blue: ^0.8.0
+  path: any
+''');
+
+      File(p.join(dir.path, 'dummy.dart')).writeAsStringSync('// dummy');
+      final files = [p.join(dir.path, 'dummy.dart')];
+      final config = (enabled: true);
+
+      final issues = PubspecSecurityRule(config).analyze(files);
+
+      expect(issues.any((i) => i.id == 'pubspec_security'), isTrue);
+      expect(issues.any((i) => i.metadata['check'] == 'outdated_dependency'),
+          isTrue);
+      expect(issues.any((i) => i.metadata['check'] == 'deprecated_package'),
+          isTrue);
+      expect(issues.any((i) => i.metadata['check'] == 'unbounded_dependency'),
+          isTrue);
+    });
+
+    test('IoT rules respect disabled config', () {
+      final files = [p.join(fixturesPath, 'iot_security_issue.dart')];
+      final config = (enabled: false, requireTls: true);
+
+      final issues = IotSecurityRule(config).analyze(files);
+
+      expect(issues, isEmpty);
     });
 
     test('architecture config parses layer/module enabled flags', () {
