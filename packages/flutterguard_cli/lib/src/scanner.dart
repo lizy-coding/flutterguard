@@ -4,13 +4,19 @@ import 'package:path/path.dart' as p;
 
 import 'config_loader.dart';
 import 'file_collector.dart';
+import 'project_resolver.dart';
 import 'report_generator.dart';
+import 'rules/ble_scanning.dart';
 import 'rules/circular_dependency.dart';
+import 'rules/device_lifecycle.dart';
+import 'rules/iot_security.dart';
 import 'rules/large_units.dart';
 import 'rules/layer_violation.dart';
 import 'rules/lifecycle_resource.dart';
 import 'rules/missing_const_constructor.dart';
 import 'rules/module_violation.dart';
+import 'rules/mqtt_connection.dart';
+import 'rules/pubspec_security.dart';
 import 'static_issue.dart';
 
 class ScanException implements Exception {
@@ -44,17 +50,21 @@ class FlutterGuardScanner {
     String configPath = 'flutterguard.yaml',
     String outputDir = '.flutterguard',
     bool writeJson = false,
+    bool noColor = false,
   }) {
-    final resolvedProjectPath = p.normalize(p.absolute(projectPath));
+    final resolvedProjectPath =
+        ProjectResolver.resolveProjectPath(projectPath);
     if (!Directory(resolvedProjectPath).existsSync()) {
       throw ScanException(
         'Project path "$resolvedProjectPath" does not exist.',
       );
     }
 
-    final resolvedConfigPath = p.isAbsolute(configPath)
-        ? configPath
-        : p.join(resolvedProjectPath, configPath);
+    final resolvedConfigPath =
+        ProjectResolver.resolveConfigPath(
+          projectPath: resolvedProjectPath,
+          explicitConfig: configPath,
+        );
     final config = ScanConfig.fromFile(resolvedConfigPath);
     final files = FileCollector.collect(resolvedProjectPath, config);
 
@@ -122,6 +132,21 @@ class FlutterGuardScanner {
     allIssues.addAll(CircularDependencyRule(
       enabled: config.architecture.detectCycles,
       projectPath: projectPath,
+    ).analyze(files));
+    allIssues.addAll(DeviceLifecycleRule(
+      config.rules.deviceLifecycle,
+    ).analyze(files));
+    allIssues.addAll(MqttConnectionRule(
+      config.rules.mqttConnection,
+    ).analyze(files));
+    allIssues.addAll(BleScanningRule(
+      config.rules.bleScanning,
+    ).analyze(files));
+    allIssues.addAll(IotSecurityRule(
+      config.rules.iotSecurity,
+    ).analyze(files));
+    allIssues.addAll(PubspecSecurityRule(
+      config.rules.pubspecSecurity,
     ).analyze(files));
 
     allIssues.sort((a, b) {

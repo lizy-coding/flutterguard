@@ -5,10 +5,12 @@ import 'package:args/args.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 
-const _version = '0.1.1';
+const _version = '0.2.0';
 
 void main(List<String> args) {
-  final scanParser = ArgParser()
+  final normalizedArgs = _extractPositionalPath(args);
+
+  final scanParser = ArgParser(allowTrailingOptions: false)
     ..addOption('path',
         abbr: 'p', defaultsTo: '.', help: 'Project path to scan')
     ..addOption('config',
@@ -28,6 +30,9 @@ void main(List<String> args) {
         abbr: 'v',
         help: 'Show detailed output with code context',
         negatable: false)
+    ..addFlag('no-color',
+        help: 'Disable ANSI terminal colors',
+        negatable: false)
     ..addOption('fail-on',
         defaultsTo: 'none',
         allowed: ['none', 'high', 'medium', 'low'],
@@ -41,14 +46,14 @@ void main(List<String> args) {
     ..addFlag('version', abbr: 'V', help: 'Show version', negatable: false);
 
   try {
-    final results = parser.parse(args);
+    final results = parser.parse(normalizedArgs);
 
     if (results['version'] == true) {
       stdout.writeln('flutterguard $_version');
       exit(0);
     }
 
-    if (results['help'] == true || args.isEmpty || args.first == 'help') {
+    if (results['help'] == true || normalizedArgs.isEmpty) {
       _printUsage(parser);
       exit(0);
     }
@@ -77,9 +82,35 @@ void main(List<String> args) {
   }
 }
 
+List<String> _extractPositionalPath(List<String> args) {
+  if (args.isEmpty) return args;
+
+  final scanIndex = args.indexOf('scan');
+  if (scanIndex == -1) return args;
+
+  final positionalStart = scanIndex + 1;
+  if (positionalStart >= args.length) return args;
+
+  final candidate = args[positionalStart];
+  if (candidate.startsWith('-')) return args;
+
+  final positionalParts = <String>[candidate];
+  var i = positionalStart + 1;
+  while (i < args.length && !args[i].startsWith('-')) {
+    positionalParts.add(args[i]);
+    i++;
+  }
+
+  final before = args.sublist(0, positionalStart);
+  final after = args.sublist(positionalStart + positionalParts.length);
+  final result = [...before, '-p', ...positionalParts, ...after];
+  return result;
+}
+
 void _handleScan(ArgResults args) {
   final format = args['format'] as String;
   final verbose = args['verbose'] as bool;
+  final noColor = args['no-color'] as bool;
   final failOn = args['fail-on'] as String;
   final minScoreStr = args['min-score'] as String?;
   final minScore = _parseMinScore(minScoreStr);
@@ -91,6 +122,7 @@ void _handleScan(ArgResults args) {
       configPath: args['config'] as String,
       outputDir: args['output'] as String,
       writeJson: format == 'json',
+      noColor: noColor,
     );
   } on ScanException catch (e) {
     stderr.writeln('Error: ${e.message}');
@@ -110,6 +142,7 @@ void _handleScan(ArgResults args) {
     issues: result.issues,
     scannedFileCount: result.files.length,
     verbose: verbose,
+    noColor: noColor,
   );
   stdout.writeln(stdoutOutput);
 
@@ -145,33 +178,26 @@ void _printUsage(ArgParser parser) {
   stdout.writeln('Usage: flutterguard <command> [options]');
   stdout.writeln();
   stdout.writeln('Commands:');
-  stdout.writeln('  scan    Scan a Flutter project for architecture issues');
+  stdout.writeln('  scan [<path>]   Scan a Flutter project for architecture issues');
   stdout.writeln();
-  stdout.writeln('Scan Options:');
-  stdout.writeln('  -p, --path <path>       Project path to scan (default: .)');
-  stdout.writeln(
-      '  -c, --config <file>     Config file path (default: flutterguard.yaml)');
-  stdout.writeln(
-      '  -f, --format <fmt>      Output format: table | json (default: table)');
-  stdout.writeln(
-      '  -o, --output <dir>      Output directory (default: .flutterguard)');
-  stdout.writeln(
-      '  -v, --verbose           Show detailed output with code context');
-  stdout.writeln('  -V, --version           Show version');
-  stdout.writeln(
-      '      --fail-on <level>   CI gate: none | high | medium | low (default: none)');
-  stdout.writeln('      --min-score <num>   Minimum score threshold 0-100');
-  stdout.writeln('  -h, --help              Show this help message');
+  stdout.writeln('Global Options:');
+  stdout.writeln('  -h, --help      Show this help message');
+  stdout.writeln('  -V, --version   Show version');
   stdout.writeln();
   stdout.writeln('Examples:');
-  stdout.writeln('  flutterguard scan -p ./my_flutter_app');
-  stdout.writeln('  flutterguard scan -p . --format json --fail-on high');
+  stdout.writeln('  flutterguard scan                    # Scan current directory');
+  stdout.writeln('  flutterguard scan ./my_flutter_app   # Scan specific project');
+  stdout.writeln('  flutterguard scan -p /path/to/app    # Explicit path flag');
+  stdout.writeln(
+      '  flutterguard scan . --format json --fail-on high');
 }
 
 void _printScanUsage(ArgParser scanParser) {
   stdout.writeln('FlutterGuard — scan command');
   stdout.writeln();
-  stdout.writeln('Usage: flutterguard scan [options]');
+  stdout.writeln('Usage: flutterguard scan [<path>] [options]');
+  stdout.writeln();
+  stdout.writeln('  <path>            Project path to scan (default: current directory)');
   stdout.writeln();
   stdout.writeln(scanParser.usage);
 }
