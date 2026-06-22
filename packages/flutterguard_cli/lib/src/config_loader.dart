@@ -30,6 +30,11 @@ typedef RulesConfig = ({
   LargeBuildMethodRuleConfig largeBuildMethod,
   LifecycleResourceRuleConfig lifecycleResource,
   MissingConstConstructorRuleConfig missingConstConstructor,
+  DeviceLifecycleRuleConfig deviceLifecycle,
+  MqttConnectionRuleConfig mqttConnection,
+  BleScanningRuleConfig bleScanning,
+  IotSecurityRuleConfig iotSecurity,
+  PubspecSecurityRuleConfig pubspecSecurity,
 });
 
 typedef LargeFileRuleConfig = ({bool enabled, int maxLines});
@@ -37,6 +42,11 @@ typedef LargeClassRuleConfig = ({bool enabled, int maxLines});
 typedef LargeBuildMethodRuleConfig = ({bool enabled, int maxLines});
 typedef LifecycleResourceRuleConfig = ({bool enabled});
 typedef MissingConstConstructorRuleConfig = ({bool enabled});
+typedef DeviceLifecycleRuleConfig = ({bool enabled});
+typedef MqttConnectionRuleConfig = ({bool enabled});
+typedef BleScanningRuleConfig = ({bool enabled, int maxScanDurationMs});
+typedef IotSecurityRuleConfig = ({bool enabled, bool requireTls});
+typedef PubspecSecurityRuleConfig = ({bool enabled});
 
 class ScanConfig {
   final List<String> include;
@@ -63,6 +73,11 @@ class ScanConfig {
     'large_build_method',
     'lifecycle_resource',
     'missing_const_constructor',
+    'device_lifecycle',
+    'mqtt_connection',
+    'ble_scanning',
+    'iot_security',
+    'pubspec_security',
   };
   static const _knownLayerKeys = {
     'name',
@@ -147,6 +162,11 @@ class ScanConfig {
           largeBuildMethod: (enabled: true, maxLines: 80),
           lifecycleResource: (enabled: true),
           missingConstConstructor: (enabled: true),
+          deviceLifecycle: (enabled: true),
+          mqttConnection: (enabled: true),
+          bleScanning: (enabled: true, maxScanDurationMs: 10000),
+          iotSecurity: (enabled: true, requireTls: true),
+          pubspecSecurity: (enabled: true),
         ),
         architecture: (
           layers: [],
@@ -172,6 +192,26 @@ class ScanConfig {
       rules['missing_const_constructor'],
       'rules.missing_const_constructor',
     );
+    final deviceLifecycle = _optionalMap(
+      rules['device_lifecycle'],
+      'rules.device_lifecycle',
+    );
+    final mqttConnection = _optionalMap(
+      rules['mqtt_connection'],
+      'rules.mqtt_connection',
+    );
+    final bleScanning = _optionalMap(
+      rules['ble_scanning'],
+      'rules.ble_scanning',
+    );
+    final iotSecurity = _optionalMap(
+      rules['iot_security'],
+      'rules.iot_security',
+    );
+    final pubspecSecurity = _optionalMap(
+      rules['pubspec_security'],
+      'rules.pubspec_security',
+    );
 
     return (
       largeFile: (
@@ -191,6 +231,23 @@ class ScanConfig {
       ),
       missingConstConstructor: (
         enabled: _boolValue(missingConstConstructor, 'enabled', true),
+      ),
+      deviceLifecycle: (
+        enabled: _boolValue(deviceLifecycle, 'enabled', true),
+      ),
+      mqttConnection: (
+        enabled: _boolValue(mqttConnection, 'enabled', true),
+      ),
+      bleScanning: (
+        enabled: _boolValue(bleScanning, 'enabled', true),
+        maxScanDurationMs: _intValue(bleScanning, 'maxScanDurationMs', 10000),
+      ),
+      iotSecurity: (
+        enabled: _boolValue(iotSecurity, 'enabled', true),
+        requireTls: _boolValue(iotSecurity, 'requireTls', true),
+      ),
+      pubspecSecurity: (
+        enabled: _boolValue(pubspecSecurity, 'enabled', true),
       ),
     );
   }

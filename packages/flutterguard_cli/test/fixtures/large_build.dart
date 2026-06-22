@@ -1,7 +1,17 @@
-import 'package:flutter/material.dart';
+class Widget {}
+class BuildContext {}
+class StatelessWidget {}
+class SizedBox {
+  const SizedBox({double? height});
+}
+class Column {
+  const Column({List<Widget> children});
+}
+class Text {
+  const Text(String data);
+}
 
 class LargeBuildWidget extends StatelessWidget {
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: const [
@@ -80,6 +90,14 @@ class LargeBuildWidget extends StatelessWidget {
         SizedBox(height: 73),
         SizedBox(height: 74),
         SizedBox(height: 75),
+        SizedBox(height: 76),
+        SizedBox(height: 77),
+        SizedBox(height: 78),
+        SizedBox(height: 79),
+        SizedBox(height: 80),
+        SizedBox(height: 81),
+        SizedBox(height: 82),
+        SizedBox(height: 83),
         Text('end'),
       ],
     );
