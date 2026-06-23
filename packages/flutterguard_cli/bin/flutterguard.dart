@@ -31,8 +31,7 @@ void main(List<String> args) {
         help: 'Show detailed output with code context',
         negatable: false)
     ..addFlag('no-color',
-        help: 'Disable ANSI terminal colors',
-        negatable: false)
+        help: 'Disable ANSI terminal colors', negatable: false)
     ..addOption('fail-on',
         defaultsTo: 'none',
         allowed: ['none', 'high', 'medium', 'low'],
@@ -133,7 +132,11 @@ void _handleScan(ArgResults args) {
   }
 
   if (result.files.isEmpty) {
-    stderr.writeln('No Dart files found. Check your include/exclude patterns.');
+    stderr.writeln('No Dart files found.');
+    stderr.writeln(
+        'Check that the project path is correct and that include/exclude patterns match Dart files.');
+    stderr.writeln(
+        'Typical config: include: [lib/**], exclude generated files, then add architecture rules only when boundaries are known.');
     exit(0);
   }
 
@@ -178,18 +181,25 @@ void _printUsage(ArgParser parser) {
   stdout.writeln('Usage: flutterguard <command> [options]');
   stdout.writeln();
   stdout.writeln('Commands:');
-  stdout.writeln('  scan [<path>]   Scan a Flutter project for architecture issues');
+  stdout.writeln(
+      '  scan [<path>]   Scan a Flutter project for architecture issues');
   stdout.writeln();
   stdout.writeln('Global Options:');
   stdout.writeln('  -h, --help      Show this help message');
   stdout.writeln('  -V, --version   Show version');
   stdout.writeln();
   stdout.writeln('Examples:');
-  stdout.writeln('  flutterguard scan                    # Scan current directory');
-  stdout.writeln('  flutterguard scan ./my_flutter_app   # Scan specific project');
-  stdout.writeln('  flutterguard scan -p /path/to/app    # Explicit path flag');
   stdout.writeln(
-      '  flutterguard scan . --format json --fail-on high');
+      '  flutterguard scan                    # Scan current directory');
+  stdout.writeln(
+      '  flutterguard scan ./my_flutter_app   # Scan specific project');
+  stdout.writeln('  flutterguard scan -p /path/to/app    # Explicit path flag');
+  stdout.writeln('  flutterguard scan . --format json --fail-on high');
+  stdout.writeln();
+  stdout.writeln('Configuration strategy:');
+  stdout.writeln(
+      '  Start with zero config, add flutterguard.yaml only for thresholds, excludes,');
+  stdout.writeln('  CI gates, or explicit architecture layers/modules.');
 }
 
 void _printScanUsage(ArgParser scanParser) {
@@ -197,7 +207,19 @@ void _printScanUsage(ArgParser scanParser) {
   stdout.writeln();
   stdout.writeln('Usage: flutterguard scan [<path>] [options]');
   stdout.writeln();
-  stdout.writeln('  <path>            Project path to scan (default: current directory)');
+  stdout.writeln(
+      '  <path>            Project path to scan (default: current directory)');
   stdout.writeln();
   stdout.writeln(scanParser.usage);
+  stdout.writeln();
+  stdout.writeln('Configuration strategy:');
+  stdout.writeln('  1. Zero config: run scan with built-in defaults.');
+  stdout
+      .writeln('  2. Basic config: tune include/exclude and rule thresholds.');
+  stdout.writeln(
+      '  3. CI config: add --format json --fail-on high --min-score 80.');
+  stdout.writeln(
+      '  4. Architecture config: declare layers/modules explicitly before enabling boundary gates.');
+  stdout.writeln();
+  stdout.writeln('Docs: README.md and CONFIGURATION_STRATEGY.md');
 }

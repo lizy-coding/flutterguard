@@ -8,7 +8,7 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 
 **Platforms**: macOS, Windows, Linux — pure Dart CLI, no native dependencies.
 
-**Docs**: [Usage Guide](docs/USAGE.md) | [Windows Assessment](docs/WINDOWS_ASSESSMENT.md) | [Spec](docs/FLUTTERGUARD_SPEC.md) | [Architecture](docs/ARCHITECTURE.md)
+**Docs**: [Usage Guide](docs/USAGE.md) | [Configuration Strategy](CONFIGURATION_STRATEGY.md) | [Windows Assessment](docs/WINDOWS_ASSESSMENT.md) | [Spec](docs/FLUTTERGUARD_SPEC.md) | [Architecture](docs/ARCHITECTURE.md)
 
 ## What It Is
 
@@ -214,6 +214,15 @@ The `--config` path is resolved with this priority:
 ## Configuration
 
 Create `flutterguard.yaml` in your project root.
+
+Recommended strategy:
+
+1. Start with zero config: `flutterguard scan`.
+2. Add a basic config only when you need custom thresholds or excludes.
+3. Add CI gates with `--format json --fail-on high --min-score 80`.
+4. Add architecture layers/modules only after project boundaries are agreed.
+
+For the full decision model, see [Configuration Strategy](CONFIGURATION_STRATEGY.md).
 
 ### Basic config (for most users)
 

@@ -20,7 +20,7 @@ flutterguard scan -p /path/to/flutter_project
 flutterguard scan -p . --format json --fail-on high --min-score 80
 ```
 
-## Checks (8 rule IDs)
+## Checks
 
 | Rule | Level | What it checks |
 |------|-------|----------------|
@@ -32,10 +32,18 @@ flutterguard scan -p . --format json --fail-on high --min-score 80
 | `module_violation` | HIGH | Cross-module architecture import violations |
 | `circular_dependency` | MEDIUM | File-level import cycles |
 | `missing_const_constructor` | LOW | Widget classes missing `const` constructor |
+| `device_lifecycle` | HIGH | Unbalanced device init/teardown pairs |
+| `mqtt_connection` | HIGH | MQTT connect/disconnect and broker URL checks |
+| `iot_security` | HIGH | Hardcoded secrets, cleartext MQTT/HTTP, insecure BLE patterns |
+| `ble_scanning` | MEDIUM | BLE scan/stop and timeout checks |
+| `pubspec_security` | MEDIUM | Unbounded, deprecated, or outdated dependency checks |
 
 ## Configuration
 
 Create `flutterguard.yaml` in your project root:
+
+Start without config, then add YAML only when you need custom thresholds,
+excludes, CI gates, or explicit architecture boundaries.
 
 ```yaml
 rules:
@@ -60,7 +68,7 @@ architecture:
   detect_cycles: true
 ```
 
-If no config file exists, defaults are used (all rules enabled, no architecture constraints).
+If no config file exists, defaults are used (all default rules enabled, no architecture constraints).
 
 ## CLI Reference
 
