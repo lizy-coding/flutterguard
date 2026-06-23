@@ -16,6 +16,10 @@ dart pub global activate flutterguard_cli
 # Scan a Flutter project
 flutterguard scan -p /path/to/flutter_project
 
+# Create and validate a starter config
+flutterguard init
+flutterguard config doctor
+
 # JSON output with CI gate
 flutterguard scan -p . --format json --fail-on high --min-score 80
 ```
@@ -42,8 +46,10 @@ flutterguard scan -p . --format json --fail-on high --min-score 80
 
 Create `flutterguard.yaml` in your project root:
 
-Start without config, then add YAML only when you need custom thresholds,
-excludes, CI gates, or explicit architecture boundaries.
+Start without config, then run `flutterguard init` only when you need custom
+thresholds, excludes, CI gates, or explicit architecture boundaries. Use
+`flutterguard config print` to inspect merged defaults and
+`flutterguard config doctor` before enabling CI gates.
 
 ```yaml
 rules:
@@ -73,7 +79,7 @@ If no config file exists, defaults are used (all default rules enabled, no archi
 ## CLI Reference
 
 ```
-flutterguard scan [options]
+flutterguard scan [<path>] [options]
   -p, --path       Project path (default: .)
   -c, --config     Config file (default: flutterguard.yaml)
   -f, --format     table | json (default: table)
@@ -81,6 +87,10 @@ flutterguard scan [options]
   -v, --verbose    Show detailed context
   --fail-on        CI gate: none | high | medium | low
   --min-score      Minimum score threshold 0-100
+
+flutterguard init [--with-architecture] [--force]
+flutterguard config print
+flutterguard config doctor
 ```
 
 Exit codes: `0` success, `1` CI gate failed, `2` scan error.

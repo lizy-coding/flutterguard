@@ -143,6 +143,13 @@ flutterguard --help
 # Scan the current directory
 flutterguard scan
 
+# Create and validate a starter config
+flutterguard init
+flutterguard config doctor
+
+# Inspect the merged effective config
+flutterguard config print
+
 # Scan a specific project
 flutterguard scan ./my_flutter_app          # macOS / Linux
 flutterguard scan .\my_flutter_app          # Windows
@@ -174,6 +181,10 @@ Commands:
 | Command | Description |
 |---------|-------------|
 | `flutterguard scan [<path>]` | Scan a project (path defaults to current directory) |
+| `flutterguard init` | Create a starter `flutterguard.yaml` |
+| `flutterguard init --with-architecture` | Create config with architecture layer/module templates |
+| `flutterguard config print` | Print the merged effective configuration |
+| `flutterguard config doctor` | Validate config, globs, and architecture references |
 | `flutterguard --help` / `-h` | Show usage |
 | `flutterguard --version` / `-V` | Show version |
 
@@ -218,9 +229,10 @@ Create `flutterguard.yaml` in your project root.
 Recommended strategy:
 
 1. Start with zero config: `flutterguard scan`.
-2. Add a basic config only when you need custom thresholds or excludes.
-3. Add CI gates with `--format json --fail-on high --min-score 80`.
-4. Add architecture layers/modules only after project boundaries are agreed.
+2. Run `flutterguard init` when you need custom thresholds or excludes.
+3. Use `flutterguard config print` to inspect merged defaults.
+4. Use `flutterguard config doctor` before enabling CI gates.
+5. Add architecture layers/modules only after project boundaries are agreed.
 
 For the full decision model, see [Configuration Strategy](CONFIGURATION_STRATEGY.md).
 

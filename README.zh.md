@@ -142,6 +142,13 @@ flutterguard --help
 # 扫描当前目录
 flutterguard scan
 
+# 创建并检查基础配置
+flutterguard init
+flutterguard config doctor
+
+# 查看合并后的有效配置
+flutterguard config print
+
 # 扫描指定项目
 flutterguard scan ./my_flutter_app          # macOS / Linux
 flutterguard scan .\my_flutter_app          # Windows
@@ -173,6 +180,10 @@ flutterguard scan examples/scan_demo
 | 命令 | 说明 |
 |------|------|
 | `flutterguard scan [<path>]` | 扫描项目（路径默认为当前目录） |
+| `flutterguard init` | 创建基础 `flutterguard.yaml` |
+| `flutterguard init --with-architecture` | 创建包含架构层/模块模板的配置 |
+| `flutterguard config print` | 输出合并后的有效配置 |
+| `flutterguard config doctor` | 检查配置、glob 和架构引用 |
 | `flutterguard --help` / `-h` | 显示帮助 |
 | `flutterguard --version` / `-V` | 显示版本 |
 
@@ -217,9 +228,10 @@ FlutterGuard 从当前目录向上遍历，自动发现项目根目录（查找 
 推荐策略：
 
 1. 先零配置运行：`flutterguard scan`。
-2. 只有需要自定义阈值或排除文件时，再添加基础配置。
-3. CI 场景使用 `--format json --fail-on high --min-score 80`。
-4. 只有项目边界已经明确时，再添加 architecture layers/modules。
+2. 需要自定义阈值或排除文件时，运行 `flutterguard init`。
+3. 使用 `flutterguard config print` 查看合并后的默认值。
+4. 启用 CI 门禁前先运行 `flutterguard config doctor`。
+5. 只有项目边界已经明确时，再添加 architecture layers/modules。
 
 完整决策模型见 [配置策略](CONFIGURATION_STRATEGY.md)。
 

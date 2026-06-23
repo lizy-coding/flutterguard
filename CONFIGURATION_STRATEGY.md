@@ -37,7 +37,7 @@ Behavior:
 - Does not enforce layers/modules unless they are declared
 
 Use this level when the user wants a quick signal and has not agreed on project
-architecture boundaries yet.
+architecture boundaries yet. No YAML file is required.
 
 ### Level 1: Basic Project Config
 
@@ -83,6 +83,13 @@ rules:
 
 Use this level when teams want stable thresholds or custom excludes.
 
+Create it with:
+
+```bash
+flutterguard init
+flutterguard config doctor
+```
+
 ### Level 2: CI Gate Config
 
 Best for pull requests and release checks.
@@ -96,10 +103,17 @@ Recommended policy:
 - Start with `--fail-on high`
 - Add `--min-score 80` once the baseline is clean enough
 - Avoid `--fail-on low` early in adoption because it can create noisy rollouts
+- Run `flutterguard config doctor` before adding CI gates
 
 ### Level 3: Architecture Config
 
 Best when the project has agreed boundaries.
+
+Create a starter template with:
+
+```bash
+flutterguard init --with-architecture
+```
 
 ```yaml
 architecture:
@@ -154,9 +168,9 @@ CLI responses should stay short and operational:
 Avoid long explanations in command output. Point to this guide when the user
 needs examples or architecture detail.
 
-## Future Enhancements
+## Config Tooling
 
-The next usability improvements should be command-level helpers:
+The core configuration helpers are available as CLI commands:
 
 - `flutterguard init`: write a minimal `flutterguard.yaml`
 - `flutterguard init --with-architecture`: write a layered/module template
@@ -165,4 +179,4 @@ The next usability improvements should be command-level helpers:
   architecture overlap
 
 These commands are preferable to adding more prose to `scan`, because they keep
-the scan output focused while still making configuration discoverable.
+scan output focused while still making configuration discoverable.

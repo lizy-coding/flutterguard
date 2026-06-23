@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutterguard_cli/src/config_loader.dart';
+import 'package:flutterguard_cli/src/config_tools.dart';
 import 'package:flutterguard_cli/src/domain.dart';
 import 'package:flutterguard_cli/src/import_utils.dart';
 import 'package:flutterguard_cli/src/path_utils.dart';
@@ -179,14 +180,15 @@ void main() {
 
       final issues = IotSecurityRule(config).analyze(files);
 
-      expect(issues.any((i) => i.metadata['securityCheck'] == 'hardcoded_secret'),
+      expect(
+          issues.any((i) => i.metadata['securityCheck'] == 'hardcoded_secret'),
           isTrue);
       expect(issues.any((i) => i.metadata['securityCheck'] == 'cleartext_mqtt'),
           isTrue);
       expect(issues.any((i) => i.metadata['securityCheck'] == 'cleartext_http'),
           isTrue);
-      expect(
-          issues.any((i) => i.metadata['securityCheck'] == 'insecure_ble'), isTrue);
+      expect(issues.any((i) => i.metadata['securityCheck'] == 'insecure_ble'),
+          isTrue);
     });
 
     test('scan detects device lifecycle issues', () {
@@ -196,7 +198,8 @@ void main() {
       final issues = DeviceLifecycleRule(config).analyze(files);
 
       expect(issues.any((i) => i.id == 'device_lifecycle'), isTrue);
-      expect(issues.any((i) => i.metadata['initMethod'] == 'initState'), isTrue);
+      expect(
+          issues.any((i) => i.metadata['initMethod'] == 'initState'), isTrue);
       expect(
           issues.any((i) => i.metadata['teardownMethod'] == 'dispose'), isTrue);
     });
@@ -208,10 +211,12 @@ void main() {
       final issues = MqttConnectionRule(config).analyze(files);
 
       expect(issues.any((i) => i.id == 'mqtt_connection'), isTrue);
-      expect(issues.any((i) => i.metadata['check'] == 'connect_without_disconnect'),
-          isTrue);
       expect(
-          issues.any((i) => i.metadata['check'] == 'hardcoded_broker_url'), isTrue);
+          issues
+              .any((i) => i.metadata['check'] == 'connect_without_disconnect'),
+          isTrue);
+      expect(issues.any((i) => i.metadata['check'] == 'hardcoded_broker_url'),
+          isTrue);
     });
 
     test('scan detects ble scanning issues', () {
@@ -222,7 +227,8 @@ void main() {
 
       expect(issues.any((i) => i.id == 'ble_scanning'), isTrue);
       expect(
-          issues.any((i) => i.metadata['check'] == 'startScan_without_stopScan'),
+          issues
+              .any((i) => i.metadata['check'] == 'startScan_without_stopScan'),
           isTrue);
     });
 
@@ -389,6 +395,102 @@ dependencies:
         () => ScanConfig.fromFile(file.path),
         throwsA(isA<FormatException>()),
       );
+    });
+  });
+
+  group('Config Tools', () {
+    test('init template includes optional architecture block', () {
+      final basic = ConfigTools.initTemplate(withArchitecture: false);
+      final withArchitecture = ConfigTools.initTemplate(withArchitecture: true);
+
+      expect(basic, contains('large_file:'));
+      expect(basic, isNot(contains('architecture:')));
+      expect(withArchitecture, contains('architecture:'));
+      expect(withArchitecture, contains('mqtt_feature'));
+    });
+
+    test('effective config print includes merged defaults', () {
+      final config = ScanConfig.fromFile(
+        p.join(fixturesPath, 'does_not_exist.yaml'),
+      );
+
+      final yaml = ConfigTools.effectiveYaml(config);
+
+      expect(yaml, contains('include:'));
+      expect(yaml, contains('iot_security:'));
+      expect(yaml, contains('maxScanDurationMs: 10000'));
+      expect(yaml, contains('detect_cycles: false'));
+    });
+
+    test('doctor reports unknown architecture dependencies', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_doctor_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib', 'presentation'))
+          .createSync(recursive: true);
+      File(p.join(dir.path, 'lib', 'presentation', 'page.dart'))
+          .writeAsStringSync('class Page {}\n');
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include:
+  - lib/**
+architecture:
+  layers:
+    - name: presentation
+      path: lib/presentation/**
+      allowed_deps: [domain]
+''');
+
+      final result = ConfigTools.doctor(
+        projectPath: dir.path,
+        configPath: 'flutterguard.yaml',
+      );
+
+      expect(result.hasErrors, isTrue);
+      expect(
+        result.messages.any((message) =>
+            message.severity == DoctorSeverity.error &&
+            message.message.contains('unknown dependency "domain"')),
+        isTrue,
+      );
+    });
+
+    test('doctor warns when globs match no Dart files', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_empty_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('name: app\n');
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include:
+  - lib/**
+''');
+
+      final result = ConfigTools.doctor(
+        projectPath: dir.path,
+        configPath: 'flutterguard.yaml',
+      );
+
+      expect(result.hasErrors, isFalse);
+      expect(
+        result.messages.any((message) =>
+            message.severity == DoctorSeverity.warning &&
+            message.message.contains('No Dart files matched')),
+        isTrue,
+      );
+    });
+
+    test('config tools prefer project config for default config name', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_config_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('name: app\n');
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include:
+  - custom_lib/**
+''');
+
+      final resolved = ConfigTools.resolveConfigPathForProject(
+        projectPath: dir.path,
+        configPath: 'flutterguard.yaml',
+      );
+
+      expect(resolved, p.join(dir.path, 'flutterguard.yaml'));
     });
   });
 
