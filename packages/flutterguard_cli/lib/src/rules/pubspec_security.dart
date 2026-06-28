@@ -6,6 +6,7 @@ import 'package:yaml/yaml.dart';
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../static_issue.dart';
 
 const _vulnerableDeps = <String, String>{
@@ -103,7 +104,8 @@ class PubspecSecurityRule {
       if (_vulnerableDeps.containsKey(dep)) {
         final minVersion = _vulnerableDeps[dep]!;
         final currentVersion = _cleanVersion(version);
-        if (currentVersion.isNotEmpty && _compareVersion(currentVersion, minVersion) < 0) {
+        if (currentVersion.isNotEmpty &&
+            _compareVersion(currentVersion, minVersion) < 0) {
           issues.add(StaticIssue(
             id: 'pubspec_security',
             title: '依赖安全 — 过旧版本',
@@ -168,4 +170,17 @@ class PubspecSecurityRule {
       return true;
     }).toList();
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'pubspec_security',
+        name: '依赖安全风险',
+        domain: 'standards',
+        riskLevel: 'medium',
+        priority: 'p2',
+        purpose: '检测依赖版本无界、已废弃包、过旧版本',
+        riskReason: '无界依赖引入不兼容更新；废弃包存在安全漏洞',
+        badExample: 'mqtt_client: ^9.0.0（低于 10.0.0）；flutter_blue（已废弃）',
+        fixSuggestion: '固定大版本号；将 flutter_blue 迁移至 flutter_blue_plus',
+        cicdSafe: true,
+      );
 }

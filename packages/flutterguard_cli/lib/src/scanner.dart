@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import 'config_loader.dart';
 import 'file_collector.dart';
+import 'path_utils.dart';
 import 'project_resolver.dart';
 import 'report_generator.dart';
 import 'rules/ble_scanning.dart';
@@ -34,6 +35,7 @@ class ScanResult {
   final List<String> files;
   final List<StaticIssue> issues;
   final int score;
+  final String scanMode;
 
   const ScanResult({
     required this.projectPath,
@@ -41,6 +43,7 @@ class ScanResult {
     required this.files,
     required this.issues,
     required this.score,
+    required this.scanMode,
   });
 }
 
@@ -51,31 +54,46 @@ class FlutterGuardScanner {
     String outputDir = '.flutterguard',
     bool writeJson = false,
     bool noColor = false,
+    bool changedOnly = false,
+    String base = 'main',
   }) {
-    final resolvedProjectPath =
-        ProjectResolver.resolveProjectPath(projectPath);
+    final resolvedProjectPath = ProjectResolver.resolveProjectPath(projectPath);
     if (!Directory(resolvedProjectPath).existsSync()) {
       throw ScanException(
         'Project path "$resolvedProjectPath" does not exist.',
       );
     }
 
-    final resolvedConfigPath =
-        ProjectResolver.resolveConfigPath(
-          projectPath: resolvedProjectPath,
-          explicitConfig: configPath,
-        );
+    final resolvedConfigPath = ProjectResolver.resolveConfigPath(
+      projectPath: resolvedProjectPath,
+      explicitConfig: configPath,
+    );
     final config = ScanConfig.fromFile(resolvedConfigPath);
     final files = FileCollector.collect(resolvedProjectPath, config);
+    var scanMode = 'full';
+    var filesToScan = files;
+
+    if (changedOnly) {
+      final changed = FileCollector.getChangedFiles(resolvedProjectPath, base);
+      if (changed.isNotEmpty) {
+        final changedDart = changed
+            .where((f) => f.endsWith('.dart'))
+            .map(normalizePath)
+            .toSet();
+        filesToScan = files.where((f) => changedDart.contains(f)).toList();
+        scanMode = filesToScan.isNotEmpty ? 'changed' : 'full';
+      }
+    }
 
     final reportDir = p.isAbsolute(outputDir)
         ? outputDir
         : p.join(resolvedProjectPath, outputDir);
 
     final issues = _analyze(
-      files: files,
+      files: filesToScan,
       config: config,
       projectPath: resolvedProjectPath,
+      changedOnly: changedOnly,
     );
     final score = ReportGenerator.calculateScore(issues);
 
@@ -84,6 +102,7 @@ class FlutterGuardScanner {
       final json = ReportGenerator.generateJson(
         projectPath: resolvedProjectPath,
         issues: issues,
+        scanMode: scanMode,
       );
       File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
     }
@@ -91,9 +110,10 @@ class FlutterGuardScanner {
     return ScanResult(
       projectPath: resolvedProjectPath,
       reportDir: reportDir,
-      files: files,
+      files: filesToScan,
       issues: issues,
       score: score,
+      scanMode: scanMode,
     );
   }
 
@@ -101,6 +121,7 @@ class FlutterGuardScanner {
     required List<String> files,
     required ScanConfig config,
     required String projectPath,
+    bool changedOnly = false,
   }) {
     final allIssues = <StaticIssue>[];
 
@@ -130,7 +151,7 @@ class FlutterGuardScanner {
       config.rules.missingConstConstructor,
     ).analyze(files));
     allIssues.addAll(CircularDependencyRule(
-      enabled: config.architecture.detectCycles,
+      enabled: !changedOnly && config.architecture.detectCycles,
       projectPath: projectPath,
     ).analyze(files));
     allIssues.addAll(DeviceLifecycleRule(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -6,6 +7,7 @@ import 'package:flutterguard_cli/src/config_loader.dart';
 import 'package:flutterguard_cli/src/config_tools.dart';
 import 'package:flutterguard_cli/src/project_resolver.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
+import 'package:flutterguard_cli/src/rules/registry.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 
 const _version = '0.2.0';
@@ -35,6 +37,10 @@ void main(List<String> args) {
         negatable: false)
     ..addFlag('no-color',
         help: 'Disable ANSI terminal colors', negatable: false)
+    ..addFlag('changed-only',
+        help: 'Only scan files changed since --base', negatable: false)
+    ..addOption('base',
+        defaultsTo: 'main', help: 'Git base branch/ref for changed-only mode')
     ..addOption('fail-on',
         defaultsTo: 'none',
         allowed: ['none', 'high', 'medium', 'low'],
@@ -76,10 +82,23 @@ void main(List<String> args) {
     ..addCommand('doctor', configDoctorParser)
     ..addFlag('help', abbr: 'h', help: 'Show config usage', negatable: false);
 
+  final rulesParser = ArgParser()
+    ..addOption('format',
+        abbr: 'f',
+        defaultsTo: 'table',
+        allowed: ['table', 'json'],
+        help: 'Output format')
+    ..addFlag('help', abbr: 'h', help: 'Show rules usage', negatable: false);
+
+  final explainParser = ArgParser()
+    ..addFlag('help', abbr: 'h', help: 'Show explain usage', negatable: false);
+
   final parser = ArgParser()
     ..addCommand('scan', scanParser)
     ..addCommand('init', initParser)
     ..addCommand('config', configParser)
+    ..addCommand('rules', rulesParser)
+    ..addCommand('explain', explainParser)
     ..addFlag('help', abbr: 'h', help: 'Show usage', negatable: false)
     ..addFlag('version', abbr: 'V', help: 'Show version', negatable: false);
 
@@ -117,6 +136,18 @@ void main(List<String> args) {
     } else if (command.name == 'config') {
       _handleConfig(
           command, configParser, configPrintParser, configDoctorParser);
+    } else if (command.name == 'rules') {
+      if (command['help'] == true) {
+        _printRulesUsage(rulesParser);
+        exit(0);
+      }
+      _handleRules(command);
+    } else if (command.name == 'explain') {
+      if (command['help'] == true) {
+        _printExplainUsage(explainParser);
+        exit(0);
+      }
+      _handleExplain(command);
     } else {
       _printUsage(parser);
       exit(0);
@@ -253,6 +284,8 @@ void _handleScan(ArgResults args) {
       outputDir: args['output'] as String,
       writeJson: format == 'json',
       noColor: noColor,
+      changedOnly: args['changed-only'] as bool,
+      base: args['base'] as String,
     );
   } on ScanException catch (e) {
     stderr.writeln('Error: ${e.message}');
@@ -295,6 +328,73 @@ void _handleScan(ArgResults args) {
   }
 }
 
+void _handleRules(ArgResults args) {
+  final format = args['format'] as String;
+  final all = RuleRegistry.all();
+
+  if (format == 'json') {
+    stdout.writeln(const JsonEncoder.withIndent('  ').convert(
+      all.map((m) => m.toJson()).toList(),
+    ));
+    return;
+  }
+
+  all.sort((a, b) => a.id.compareTo(b.id));
+  stdout.writeln('可用规则 (${all.length}):');
+  stdout.writeln();
+  for (final rule in all) {
+    stdout.writeln(
+      '  ${rule.id.padRight(32)} ${rule.domain.padRight(14)} ${rule.name}',
+    );
+  }
+  stdout.writeln();
+  stdout.writeln('执行 flutterguard explain <rule-id> 查看详情');
+}
+
+void _handleExplain(ArgResults args) {
+  final rest = args.rest;
+  if (rest.isEmpty) {
+    stderr.writeln('Error: 请指定规则 ID');
+    stderr.writeln('用法: flutterguard explain <rule-id>');
+    stderr.writeln('可用规则: ${RuleRegistry.all().map((m) => m.id).join(", ")}');
+    exit(2);
+  }
+
+  final ruleId = rest.first;
+  final meta = RuleRegistry.find(ruleId);
+  if (meta == null) {
+    stderr.writeln('Error: 未找到规则 "$ruleId"');
+    stderr.writeln('可用规则: ${RuleRegistry.all().map((m) => m.id).join(", ")}');
+    exit(2);
+  }
+
+  stdout.writeln('规则: ${meta.id}');
+  stdout.writeln('名称: ${meta.name}');
+  stdout.writeln('领域: ${meta.domain}');
+  stdout.writeln('风险: ${meta.riskLevel}');
+  stdout.writeln('优先级: ${meta.priority}');
+  stdout.writeln('CI 阻断: ${meta.cicdSafe ? "是" : "否"}');
+  stdout.writeln();
+  stdout.writeln('检测目的:');
+  stdout.writeln('  ${meta.purpose}');
+  stdout.writeln();
+  stdout.writeln('风险原因:');
+  stdout.writeln('  ${meta.riskReason}');
+  stdout.writeln();
+  stdout.writeln('典型坏例子:');
+  stdout.writeln('  ${meta.badExample}');
+  stdout.writeln();
+  stdout.writeln('推荐修复:');
+  stdout.writeln('  ${meta.fixSuggestion}');
+  if (meta.configKeys.isNotEmpty) {
+    stdout.writeln();
+    stdout.writeln('配置项:');
+    for (final key in meta.configKeys) {
+      stdout.writeln('  - $key');
+    }
+  }
+}
+
 int? _parseMinScore(String? value) {
   if (value == null) return null;
   final score = int.tryParse(value);
@@ -316,6 +416,8 @@ void _printUsage(ArgParser parser) {
       '  scan [<path>]   Scan a Flutter project for architecture issues');
   stdout.writeln('  init            Create a starter flutterguard.yaml');
   stdout.writeln('  config          Print or validate effective configuration');
+  stdout.writeln('  rules           List available rules');
+  stdout.writeln('  explain         Explain a rule by ID');
   stdout.writeln();
   stdout.writeln('Global Options:');
   stdout.writeln('  -h, --help      Show this help message');
@@ -356,9 +458,29 @@ void _printScanUsage(ArgParser scanParser) {
   stdout.writeln(
       '  3. CI config: add --format json --fail-on high --min-score 80.');
   stdout.writeln(
-      '  4. Architecture config: declare layers/modules explicitly before enabling boundary gates.');
+      '  4. Changed-only: add --changed-only --base main to scan git changes.');
+  stdout.writeln(
+      '  5. Architecture config: declare layers/modules explicitly before enabling boundary gates.');
   stdout.writeln();
   stdout.writeln('Docs: README.md and CONFIGURATION_STRATEGY.md');
+}
+
+void _printRulesUsage(ArgParser parser) {
+  stdout.writeln('FlutterGuard — rules command');
+  stdout.writeln();
+  stdout.writeln('Usage: flutterguard rules [options]');
+  stdout.writeln();
+  stdout.writeln('List all available rules.');
+  stdout.writeln(parser.usage);
+}
+
+void _printExplainUsage(ArgParser parser) {
+  stdout.writeln('FlutterGuard — explain command');
+  stdout.writeln();
+  stdout.writeln('Usage: flutterguard explain <rule-id>');
+  stdout.writeln();
+  stdout.writeln('Show detailed explanation for a rule.');
+  stdout.writeln(parser.usage);
 }
 
 void _printInitUsage(ArgParser initParser) {

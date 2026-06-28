@@ -18,12 +18,36 @@ import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/rules/mqtt_connection.dart';
 import 'package:flutterguard_cli/src/rules/pubspec_security.dart';
+import 'package:flutterguard_cli/src/rules/registry.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 String get fixturesPath => p.join(Directory.current.path, 'test', 'fixtures');
+
+void _runGit(Directory dir, List<String> args) {
+  final result = Process.runSync('git', args, workingDirectory: dir.path);
+  if (result.exitCode != 0) {
+    throw StateError('git ${args.join(' ')} failed: ${result.stderr}');
+  }
+}
+
+void _writeMinimalProjectConfig(Directory dir) {
+  File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include:
+  - lib/**
+architecture:
+  detect_cycles: true
+''');
+}
+
+void _writeWidgetIssue(String path, String className) {
+  File(path).writeAsStringSync('''
+class StatelessWidget {}
+class $className extends StatelessWidget {}
+''');
+}
 
 void main() {
   group('Static Rules', () {
@@ -344,6 +368,7 @@ dependencies:
 
       expect(json, contains('"version"'));
       expect(json, contains('"projectPath"'));
+      expect(json, contains('"scanMode"'));
       expect(json, contains('"score"'));
       expect(json, contains('"issues"'));
       expect(json, contains('"byDomain"'));
@@ -395,6 +420,107 @@ dependencies:
         () => ScanConfig.fromFile(file.path),
         throwsA(isA<FormatException>()),
       );
+    });
+  });
+
+  group('Changed-only mode', () {
+    test('changed_only_filters_files', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_changed_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      final changedFile = p.join(dir.path, 'lib', 'changed.dart');
+      final unchangedFile = p.join(dir.path, 'lib', 'unchanged.dart');
+      _writeWidgetIssue(changedFile, 'ChangedWidget');
+      _writeWidgetIssue(unchangedFile, 'UnchangedWidget');
+
+      _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['add', '.']);
+      _runGit(dir, ['commit', '-m', 'initial']);
+      File(changedFile).writeAsStringSync('''
+class StatelessWidget {}
+class ChangedWidget extends StatelessWidget {}
+class AnotherChangedWidget extends StatelessWidget {}
+''');
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+        base: 'main',
+      );
+
+      expect(result.scanMode, 'changed');
+      expect(result.files, [changedFile]);
+      expect(result.issues, isNotEmpty);
+      expect(result.issues.every((i) => i.file == changedFile), isTrue);
+    });
+
+    test('changed_only_full_scan_when_no_git', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_no_git_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'one.dart'), 'OneWidget');
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'two.dart'), 'TwoWidget');
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+      );
+
+      expect(result.scanMode, 'full');
+      expect(result.files, hasLength(2));
+      expect(result.issues, hasLength(2));
+    });
+
+    test('changed_only_skips_circular_dependency', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_cycle_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      File(p.join(dir.path, 'lib', 'a.dart')).writeAsStringSync(
+        "import 'b.dart';\nclass A {}\n",
+      );
+      File(p.join(dir.path, 'lib', 'b.dart')).writeAsStringSync(
+        "import 'c.dart';\nclass B {}\n",
+      );
+      File(p.join(dir.path, 'lib', 'c.dart')).writeAsStringSync(
+        "import 'a.dart';\nclass C {}\n",
+      );
+      _runGit(dir, ['init', '-b', 'main']);
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+        base: 'main',
+      );
+
+      expect(result.scanMode, 'changed');
+      expect(result.files, hasLength(3));
+      expect(
+        result.issues.where((i) => i.id == 'circular_dependency'),
+        isEmpty,
+      );
+    });
+  });
+
+  group('Rules Registry', () {
+    test('registry_contains_all_13_rules', () {
+      expect(RuleRegistry.all(), hasLength(13));
+    });
+
+    test('registry_find_returns_correct_meta', () {
+      final meta = RuleRegistry.find('large_file');
+
+      expect(meta, isNotNull);
+      expect(meta!.id, 'large_file');
+      expect(meta.domain, 'standards');
+    });
+
+    test('registry_find_unknown_returns_null', () {
+      expect(RuleRegistry.find('nonexistent'), isNull);
     });
   });
 

@@ -57,6 +57,7 @@ class ReportGenerator {
   static String generateJson({
     required String projectPath,
     required List<StaticIssue> issues,
+    String scanMode = 'full',
   }) {
     final byDomain = _buildSummaryByDomain(issues);
     final score = calculateScore(issues);
@@ -65,6 +66,7 @@ class ReportGenerator {
       'version': '1.0.0',
       'generatedAt': DateTime.now().toIso8601String(),
       'projectPath': projectPath,
+      'scanMode': scanMode,
       'score': score,
       'summary': {
         'total': issues.length,
@@ -100,7 +102,9 @@ class ReportGenerator {
     );
 
     if (issues.isEmpty) {
-      final msg = noColor ? '未发现问题，代码质量良好。' : '${_Ansi.green}未发现问题，代码质量良好。${_Ansi.reset}';
+      final msg = noColor
+          ? '未发现问题，代码质量良好。'
+          : '${_Ansi.green}未发现问题，代码质量良好。${_Ansi.reset}';
       buf.writeln('  $msg');
       return buf.toString();
     }
@@ -141,13 +145,12 @@ class ReportGenerator {
             ? '需关注'
             : '需整改';
     buf.writeln(
-        ' ${bold}FlutterGuard Report$reset  ${gray}─$reset  $projectName');
+        ' ${bold}FlutterGuard Report$reset  $gray─$reset  $projectName');
     buf.writeln(
         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    buf.write(
-        ' 总评分:  $scoreAnsi$score/100$reset  $scoreAnsi$scoreLabel$reset');
+    buf.write(' 总评分:  $scoreAnsi$score/100$reset  $scoreAnsi$scoreLabel$reset');
     buf.writeln(
-        '      ${bold}扫描文件: $scannedFileCount$reset  问题总数: ${bold}${issues.length}$reset');
+        '      $bold扫描文件: $scannedFileCount$reset  问题总数: $bold${issues.length}$reset');
     buf.writeln(
         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     buf.writeln();
@@ -174,7 +177,7 @@ class ReportGenerator {
 
       buf.write('  $domainAnsi${_domainLabels[domain]}$reset');
       buf.write('  $count items  ');
-      buf.write('${gray}▰$reset  ');
+      buf.write('$gray▰$reset  ');
       buf.writeln('$levelAnsi$levelLabel$reset');
     }
     buf.writeln(
@@ -213,19 +216,18 @@ class ReportGenerator {
       final displayPath = _displayPath(issue.file, projectPath);
       final lineInfo = issue.line != null ? ':${issue.line}' : '';
 
-      buf.writeln(
-          '  $lvlAnsi$lvlLabel$reset $priAnsi$priLabel$reset');
-      buf.writeln('       ${bold}${issue.title}$reset');
-      buf.writeln('       ${gray}$displayPath$lineInfo$reset');
+      buf.writeln('  $lvlAnsi$lvlLabel$reset $priAnsi$priLabel$reset');
+      buf.writeln('       $bold${issue.title}$reset');
+      buf.writeln('       $gray$displayPath$lineInfo$reset');
       buf.writeln('       ${issue.message}');
 
       if (verbose && issue.detail.isNotEmpty) {
         buf.writeln();
         for (final line in issue.detail.split('\n')) {
-          buf.writeln('       ${dim}$line$reset');
+          buf.writeln('       $dim$line$reset');
         }
       }
-      buf.writeln('       修复: ${green}${issue.suggestion}$reset');
+      buf.writeln('       修复: $green${issue.suggestion}$reset');
       buf.writeln();
     }
     buf.writeln(

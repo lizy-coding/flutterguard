@@ -8,6 +8,7 @@ import '../domain.dart';
 import '../import_utils.dart';
 import '../path_utils.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../static_issue.dart';
 
 enum _Color { white, gray, black }
@@ -145,4 +146,17 @@ class CircularDependencyRule {
       },
     );
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'circular_dependency',
+        name: '循环依赖',
+        domain: 'architecture',
+        riskLevel: 'medium',
+        priority: 'p1',
+        purpose: '检测文件级别的循环 import',
+        riskReason: '循环依赖导致编译耦合、无法单独测试和复用',
+        badExample: 'a.dart → b.dart → c.dart → a.dart',
+        fixSuggestion: '将公共依赖提取到 core 层，或使用接口反转打破循环',
+        cicdSafe: false,
+      );
 }

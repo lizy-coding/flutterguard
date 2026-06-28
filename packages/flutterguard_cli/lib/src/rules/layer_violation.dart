@@ -10,6 +10,7 @@ import '../domain.dart';
 import '../import_utils.dart';
 import '../path_utils.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../source_utils.dart';
 import '../static_issue.dart';
 
@@ -123,4 +124,18 @@ class LayerViolationRule {
 
     return issues;
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'layer_violation',
+        name: '层间依赖违规',
+        domain: 'architecture',
+        riskLevel: 'high',
+        priority: 'p0',
+        purpose: '检测架构层之间的非法依赖',
+        riskReason: '违反分层架构导致耦合增加，难以维护和替换',
+        badExample: 'presentation 层直接导入 data 层的实现',
+        fixSuggestion: '将跨层调用通过抽象接口进行，或调整 allowed_deps 配置',
+        configKeys: ['architecture.layers'],
+        cicdSafe: true,
+      );
 }

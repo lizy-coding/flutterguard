@@ -7,6 +7,7 @@ import 'package:analyzer/source/line_info.dart';
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../source_utils.dart';
 import '../static_issue.dart';
 
@@ -80,4 +81,18 @@ class MissingConstConstructorRule {
 
     return issues;
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'missing_const_constructor',
+        name: '缺少 const 构造函数',
+        domain: 'standards',
+        riskLevel: 'low',
+        priority: 'p2',
+        purpose: '检测 Widget 子类是否缺少 const 构造函数',
+        riskReason: '缺少 const 构造函数导致 widget 无法复用实例，影响渲染性能',
+        badExample:
+            'class MyWidget extends StatelessWidget { ... } 无 const 构造函数',
+        fixSuggestion: '为 Widget 类添加 const 构造函数',
+        cicdSafe: true,
+      );
 }

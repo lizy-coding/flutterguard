@@ -3,6 +3,7 @@ import 'dart:io';
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../static_issue.dart';
 
 final _secretPattern = RegExp(
@@ -169,4 +170,19 @@ class IotSecurityRule {
       }
     }
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'iot_security',
+        name: 'IoT 安全风险',
+        domain: 'architecture',
+        riskLevel: 'high',
+        priority: 'p0',
+        purpose: '检测硬编码凭据、明文 MQTT/HTTP、不安全的 BLE 配置',
+        riskReason: '硬编码凭据泄露导致设备被入侵；明文传输导致数据窃听',
+        badExample:
+            'password: "123456"；tcp://broker:1883；BLE 使用 withoutBonding',
+        fixSuggestion: '使用环境变量或安全存储管理凭据；使用 TLS 加密通信',
+        configKeys: ['rules.iot_security.requireTls'],
+        cicdSafe: true,
+      );
 }

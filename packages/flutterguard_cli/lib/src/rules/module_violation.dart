@@ -10,6 +10,7 @@ import '../domain.dart';
 import '../import_utils.dart';
 import '../path_utils.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../source_utils.dart';
 import '../static_issue.dart';
 
@@ -123,4 +124,18 @@ class ModuleViolationRule {
 
     return issues;
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'module_violation',
+        name: '模块间依赖违规',
+        domain: 'architecture',
+        riskLevel: 'high',
+        priority: 'p0',
+        purpose: '检测业务模块之间的非法依赖',
+        riskReason: '模块间非法依赖破坏隔离性，导致耦合和回归风险',
+        badExample: 'mqtt 模块直接导入 ble 模块的类',
+        fixSuggestion: '提取公共依赖到 shared 模块，或通过事件总线解耦',
+        configKeys: ['architecture.modules'],
+        cicdSafe: true,
+      );
 }
