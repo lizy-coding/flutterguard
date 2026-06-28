@@ -10,7 +10,7 @@ import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/rules/registry.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 
-const _version = '0.2.0';
+const _version = '0.3.0';
 
 void main(List<String> args) {
   final normalizedArgs = _extractPositionalPath(args);

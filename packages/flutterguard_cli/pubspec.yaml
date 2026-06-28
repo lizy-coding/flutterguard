@@ -1,6 +1,6 @@
 name: flutterguard_cli
 description: IoT Flutter static analysis CLI for architecture enforcement, code quality, and CI gating. Scans Dart source for layer violations, lifecycle resource leaks, circular dependencies, and more.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/lizy-coding/flutterguard
 issue_tracker: https://github.com/lizy-coding/flutterguard/issues
 topics:

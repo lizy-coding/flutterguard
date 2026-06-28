@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.3.0 (2026-06-28)
+
+### Incremental Scan (--changed-only)
+
+- **cli:** New `--changed-only` flag — only scans `.dart` files changed since `--base` (default: `main`)
+- **cli:** Integrated `git diff --name-only` + `git ls-files --others` for change detection
+- **cli:** Non-git fallback: gracefully degrades to full scan
+- **cli:** `circular_dependency` auto-disabled in changed-only mode
+- **cli:** JSON report now includes `scanMode: full|changed` field
+
+### Rule Introspection (rules / explain)
+
+- **cli:** New `flutterguard rules` subcommand — list all 13 rules with ID, domain, name
+- **cli:** New `flutterguard explain <rule-id>` subcommand — detailed purpose, risk, example, fix, config
+- **cli:** New `RuleMeta` class in `lib/src/rule_meta.dart` — structured rule metadata
+- **cli:** New `RuleRegistry` singleton in `lib/src/rules/registry.dart` — registry with `all()` and `find()`
+- **cli:** Output supports both `table` (default) and `--format json`
+
+### Tests
+
+- **test:** 37 total tests (26 base + 6 new + 5 existing)
+- **test:** 3 `changed-only` tests: git repo filter, non-git fallback, skip cycle
+- **test:** 3 registry tests: all 13 rules, find by ID, unknown returns null
+
+### Infrastructure
+
+- **meta:** Version bumped to 0.3.0
+- **meta:** `AGENTS.md` and `FLUTTERGUARD_SPEC.md` updated for new features
+
 ## 0.1.1 (2026-06-09)
 
 ### pub.dev Publishing
