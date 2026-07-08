@@ -160,6 +160,13 @@ flutterguard scan -p D:\path\to\project     # Windows
 # JSON 输出 + CI 门禁
 flutterguard scan . --format json --fail-on high
 
+# 启用强门禁前先为历史问题创建 baseline
+flutterguard baseline create .
+flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
+
+# GitHub Code Scanning 输出
+flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+
 # 显示帮助
 flutterguard --help
 flutterguard scan --help
@@ -180,10 +187,13 @@ flutterguard scan examples/scan_demo
 | 命令 | 说明 |
 |------|------|
 | `flutterguard scan [<path>]` | 扫描项目（路径默认为当前目录） |
+| `flutterguard baseline create [<path>]` | 为现有问题创建 baseline JSON 文件 |
 | `flutterguard init` | 创建基础 `flutterguard.yaml` |
 | `flutterguard init --with-architecture` | 创建包含架构层/模块模板的配置 |
 | `flutterguard config print` | 输出合并后的有效配置 |
 | `flutterguard config doctor` | 检查配置、glob 和架构引用 |
+| `flutterguard rules` | 列出所有可用规则 |
+| `flutterguard explain <rule-id>` | 查看单条规则说明 |
 | `flutterguard --help` / `-h` | 显示帮助 |
 | `flutterguard --version` / `-V` | 显示版本 |
 
@@ -194,10 +204,13 @@ flutterguard scan examples/scan_demo
 | `<path>` | — | `.` | 位置参数，项目路径（可选，放在选项之前） |
 | `--path` | `-p` | `.` | 项目路径（被 `<path>` 位置参数覆盖） |
 | `--config` | `-c` | `flutterguard.yaml` | 配置文件路径 |
-| `--format` | `-f` | `table` | 输出格式：`table` 或 `json` |
+| `--format` | `-f` | `table` | 输出格式：`table`、`json` 或 `sarif` |
 | `--output` | `-o` | `.flutterguard` | 报告输出目录 |
 | `--verbose` | `-v` | 关闭 | 显示详细代码上下文 |
 | `--no-color` | — | 关闭 | 禁用 ANSI 终端颜色 |
+| `--changed-only` | — | 关闭 | 只扫描相对 `--base` 变更的 Dart 文件 |
+| `--base` | — | `main` | `--changed-only` 使用的 Git base ref |
+| `--baseline` | — | 不设 | 用于隐藏历史问题的 baseline JSON 文件 |
 | `--fail-on` | — | `none` | CI 门禁等级：`none` / `high` / `medium` / `low` |
 | `--min-score` | — | 不设 | 最低可接受评分，0–100 |
 | `--help` | `-h` | — | 显示 scan 帮助 |
@@ -361,12 +374,38 @@ architecture:
     "high": 1,
     "medium": 1,
     "low": 1,
+    "suppressed": 0,
+    "suppressedByBaseline": 0,
     "byDomain": {
       "architecture": { "high": 1, "medium": 0, "low": 0, "total": 1 }
     }
   },
   "issues": []
 }
+```
+
+### SARIF 报告
+
+`--format sarif` 会写入 `.flutterguard/report.sarif`，可上传到 GitHub Code Scanning。high、medium、low 分别映射为 SARIF `error`、`warning`、`note`。
+
+### Suppression 与 baseline
+
+对已确认的误报可以使用源码注释：
+
+```dart
+// flutterguard: ignore missing_const_constructor
+// flutterguard: ignore iot_security, mqtt_connection
+// flutterguard: ignore all
+```
+
+注释只作用于当前行和下一行。
+
+推荐 CI 接入顺序：
+
+```bash
+flutterguard config doctor
+flutterguard baseline create .
+flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
 ```
 
 ## 评分
@@ -406,7 +445,32 @@ jobs:
       - name: Install FlutterGuard
         run: dart pub global activate flutterguard_cli
       - name: Scan
-        run: flutterguard scan . --format json --fail-on high --min-score 80
+        run: flutterguard scan . --format json --baseline .flutterguard/baseline.json --fail-on high --min-score 80
+```
+
+### GitHub Code Scanning
+
+```yaml
+name: FlutterGuard SARIF
+
+on: [push, pull_request]
+
+jobs:
+  code-scanning:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.3.0
+      - run: dart pub global activate flutterguard_cli
+      - run: flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .flutterguard/report.sarif
 ```
 
 ### GitLab CI

@@ -58,6 +58,8 @@ class ReportGenerator {
     required String projectPath,
     required List<StaticIssue> issues,
     String scanMode = 'full',
+    int suppressedCount = 0,
+    int suppressedByBaselineCount = 0,
   }) {
     final byDomain = _buildSummaryByDomain(issues);
     final score = calculateScore(issues);
@@ -73,6 +75,8 @@ class ReportGenerator {
         'high': issues.where((i) => i.level == RiskLevel.high).length,
         'medium': issues.where((i) => i.level == RiskLevel.medium).length,
         'low': issues.where((i) => i.level == RiskLevel.low).length,
+        'suppressed': suppressedCount,
+        'suppressedByBaseline': suppressedByBaselineCount,
         'byDomain': byDomain,
       },
       'issues': issues.map((i) => i.toJson()).toList(),

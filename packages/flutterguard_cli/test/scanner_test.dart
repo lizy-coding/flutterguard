@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutterguard_cli/src/baseline.dart';
 import 'package:flutterguard_cli/src/config_loader.dart';
 import 'package:flutterguard_cli/src/config_tools.dart';
 import 'package:flutterguard_cli/src/domain.dart';
@@ -19,6 +21,7 @@ import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/rules/mqtt_connection.dart';
 import 'package:flutterguard_cli/src/rules/pubspec_security.dart';
 import 'package:flutterguard_cli/src/rules/registry.dart';
+import 'package:flutterguard_cli/src/sarif_report.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
@@ -385,6 +388,20 @@ dependencies:
       expect(report, contains('扫描文件: 3'));
       expect(report, contains('问题总数: '));
     });
+
+    test('json summary includes suppression counters', () {
+      final json = ReportGenerator.generateJson(
+        projectPath: '/test',
+        issues: const [],
+        suppressedCount: 2,
+        suppressedByBaselineCount: 3,
+      );
+      final decoded = jsonDecode(json) as Map<String, Object?>;
+      final summary = decoded['summary'] as Map<String, Object?>;
+
+      expect(summary['suppressed'], 2);
+      expect(summary['suppressedByBaseline'], 3);
+    });
   });
 
   group('Scanner Orchestration', () {
@@ -420,6 +437,153 @@ dependencies:
         () => ScanConfig.fromFile(file.path),
         throwsA(isA<FormatException>()),
       );
+    });
+
+    test('same-line suppression filters matching rule only', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_suppress_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      File(p.join(dir.path, 'lib', 'ignored.dart')).writeAsStringSync('''
+class StatelessWidget {}
+class IgnoredWidget extends StatelessWidget {} // flutterguard: ignore missing_const_constructor
+''');
+      File(p.join(dir.path, 'lib', 'visible.dart')).writeAsStringSync('''
+class StatelessWidget {}
+class VisibleWidget extends StatelessWidget {} // flutterguard: ignore large_file
+''');
+
+      final result = FlutterGuardScanner.scan(projectPath: dir.path);
+
+      expect(result.rawIssues, hasLength(2));
+      expect(result.issues, hasLength(1));
+      expect(result.suppressedCount, 1);
+      expect(result.issues.single.metadata['className'], 'VisibleWidget');
+    });
+
+    test('previous-line ignore all filters next line issues', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_ignore_all_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      File(p.join(dir.path, 'lib', 'widget.dart')).writeAsStringSync('''
+class StatelessWidget {}
+// flutterguard: ignore all
+class IgnoredWidget extends StatelessWidget {}
+''');
+
+      final result = FlutterGuardScanner.scan(projectPath: dir.path);
+
+      expect(result.rawIssues, hasLength(1));
+      expect(result.issues, isEmpty);
+      expect(result.suppressedCount, 1);
+    });
+
+    test('baseline filters matching fingerprints and leaves new issues visible',
+        () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_baseline_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'old.dart'), 'OldWidget');
+
+      final initial = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        applySuppression: false,
+      );
+      final baselinePath = p.join(dir.path, '.flutterguard', 'baseline.json');
+      Directory(p.dirname(baselinePath)).createSync(recursive: true);
+      File(baselinePath).writeAsStringSync(Baseline.encode(
+        projectPath: initial.projectPath,
+        issues: initial.rawIssues,
+      ));
+
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'new.dart'), 'NewWidget');
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        baselinePath: '.flutterguard/baseline.json',
+      );
+
+      expect(result.rawIssues, hasLength(2));
+      expect(result.suppressedByBaselineCount, 1);
+      expect(result.issues, hasLength(1));
+      expect(result.issues.single.file, endsWith('new.dart'));
+    });
+
+    test('missing baseline file fails the scan', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_no_base_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'one.dart'), 'OneWidget');
+
+      expect(
+        () => FlutterGuardScanner.scan(
+          projectPath: dir.path,
+          baselinePath: '.flutterguard/missing.json',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('sarif report contains rules results severity and line fallback', () {
+      final issues = [
+        StaticIssue(
+          id: 'iot_security',
+          title: 'High',
+          file: p.join('/repo', 'lib', 'a.dart'),
+          line: 12,
+          level: RiskLevel.high,
+          domain: IssueDomain.standards,
+          priority: Priority.p0,
+          message: 'high issue',
+          suggestion: 'fix',
+        ),
+        StaticIssue(
+          id: 'ble_scanning',
+          title: 'Medium',
+          file: p.join('/repo', 'lib', 'b.dart'),
+          level: RiskLevel.medium,
+          domain: IssueDomain.performance,
+          priority: Priority.p1,
+          message: 'medium issue',
+          suggestion: 'fix',
+        ),
+        StaticIssue(
+          id: 'missing_const_constructor',
+          title: 'Low',
+          file: p.join('/repo', 'lib', 'c.dart'),
+          line: 3,
+          level: RiskLevel.low,
+          domain: IssueDomain.standards,
+          priority: Priority.p2,
+          message: 'low issue',
+          suggestion: 'fix',
+        ),
+      ];
+
+      final decoded = jsonDecode(SarifReport.generate(
+        projectPath: '/repo',
+        issues: issues,
+      )) as Map<String, Object?>;
+      final runs = decoded['runs'] as List<Object?>;
+      final run = runs.single as Map<String, Object?>;
+      final results = run['results'] as List<Object?>;
+
+      expect(decoded['version'], '2.1.0');
+      expect(jsonEncode(run), contains('"rules"'));
+      expect(results.map((r) => (r as Map)['level']), [
+        'error',
+        'warning',
+        'note',
+      ]);
+      final second = results[1] as Map<String, Object?>;
+      final locations = second['locations'] as List<Object?>;
+      final physical = (locations.single as Map)['physicalLocation'] as Map;
+      final region = physical['region'] as Map;
+      expect(region['startLine'], 1);
+      expect(jsonEncode(second), contains('lib/b.dart'));
     });
   });
 

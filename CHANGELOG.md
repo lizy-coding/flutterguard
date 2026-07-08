@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 (2026-07-08)
+
+### CI Adoption
+
+- **cli:** Added baseline creation with `flutterguard baseline create [<path>]`.
+- **cli:** Added `scan --baseline <file>` so legacy issues can be filtered from reports, score, and CI gates.
+- **cli:** Added single-line / next-line suppression comments for false positive control.
+- **cli:** Added SARIF 2.1.0 output via `--format sarif` for GitHub Code Scanning upload.
+- **cli:** JSON summary now includes suppression and baseline suppression counters.
+- **docs:** Updated English, Chinese, and package README files with baseline, SARIF, `rules`, `explain`, and `--changed-only` usage.
+- **test:** Expanded CLI tests to cover suppression, baseline, missing baseline failures, SARIF, and JSON summary counters.
+
 ## 0.2.0 (2026-06-15)
 
 ### IoT Domain Rules (5 new rules)

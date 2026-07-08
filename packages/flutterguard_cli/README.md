@@ -22,6 +22,13 @@ flutterguard config doctor
 
 # JSON output with CI gate
 flutterguard scan -p . --format json --fail-on high --min-score 80
+
+# Baseline existing issues before enforcing CI
+flutterguard baseline create .
+flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
+
+# GitHub Code Scanning output
+flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
 ```
 
 ## Checks
@@ -82,15 +89,21 @@ If no config file exists, defaults are used (all default rules enabled, no archi
 flutterguard scan [<path>] [options]
   -p, --path       Project path (default: .)
   -c, --config     Config file (default: flutterguard.yaml)
-  -f, --format     table | json (default: table)
+  -f, --format     table | json | sarif (default: table)
   -o, --output     Output directory (default: .flutterguard)
   -v, --verbose    Show detailed context
+  --changed-only   Only scan changed Dart files
+  --base           Git base ref for changed-only mode
+  --baseline       Baseline JSON file for existing issues
   --fail-on        CI gate: none | high | medium | low
   --min-score      Minimum score threshold 0-100
 
+flutterguard baseline create [<path>] [--output .flutterguard/baseline.json]
 flutterguard init [--with-architecture] [--force]
 flutterguard config print
 flutterguard config doctor
+flutterguard rules [--format table|json]
+flutterguard explain <rule-id>
 ```
 
 Exit codes: `0` success, `1` CI gate failed, `2` scan error.
@@ -109,13 +122,38 @@ score = max(0, 100 - HIGH*10 - MEDIUM*4 - LOW*1)
 
 ## CI Integration
 
+Recommended adoption order:
+
+```bash
+flutterguard config doctor
+flutterguard baseline create .
+flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
+```
+
 ```yaml
 # GitHub Actions
 - uses: dart-lang/setup-dart@v1
   with:
     sdk: 3.3.0
 - run: dart pub global activate flutterguard_cli
-- run: flutterguard scan -p . --format json --fail-on high --min-score 80
+- run: flutterguard scan . --format json --baseline .flutterguard/baseline.json --fail-on high --min-score 80
+```
+
+For GitHub Code Scanning:
+
+```yaml
+- run: flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: .flutterguard/report.sarif
+```
+
+Known false positives can be suppressed on the same line or the next line:
+
+```dart
+// flutterguard: ignore missing_const_constructor
+// flutterguard: ignore iot_security, mqtt_connection
+// flutterguard: ignore all
 ```
 
 ## Requirements

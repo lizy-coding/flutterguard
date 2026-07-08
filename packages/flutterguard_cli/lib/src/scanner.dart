@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'baseline.dart';
 import 'config_loader.dart';
 import 'file_collector.dart';
 import 'path_utils.dart';
@@ -18,7 +19,9 @@ import 'rules/missing_const_constructor.dart';
 import 'rules/module_violation.dart';
 import 'rules/mqtt_connection.dart';
 import 'rules/pubspec_security.dart';
+import 'sarif_report.dart';
 import 'static_issue.dart';
+import 'suppression.dart';
 
 class ScanException implements Exception {
   final String message;
@@ -33,7 +36,10 @@ class ScanResult {
   final String projectPath;
   final String reportDir;
   final List<String> files;
+  final List<StaticIssue> rawIssues;
   final List<StaticIssue> issues;
+  final int suppressedCount;
+  final int suppressedByBaselineCount;
   final int score;
   final String scanMode;
 
@@ -41,7 +47,10 @@ class ScanResult {
     required this.projectPath,
     required this.reportDir,
     required this.files,
+    required this.rawIssues,
     required this.issues,
+    required this.suppressedCount,
+    required this.suppressedByBaselineCount,
     required this.score,
     required this.scanMode,
   });
@@ -53,9 +62,12 @@ class FlutterGuardScanner {
     String configPath = 'flutterguard.yaml',
     String outputDir = '.flutterguard',
     bool writeJson = false,
+    bool writeSarif = false,
     bool noColor = false,
     bool changedOnly = false,
     String base = 'main',
+    String? baselinePath,
+    bool applySuppression = true,
   }) {
     final resolvedProjectPath = ProjectResolver.resolveProjectPath(projectPath);
     if (!Directory(resolvedProjectPath).existsSync()) {
@@ -89,29 +101,76 @@ class FlutterGuardScanner {
         ? outputDir
         : p.join(resolvedProjectPath, outputDir);
 
-    final issues = _analyze(
+    final rawIssues = _analyze(
       files: filesToScan,
       config: config,
       projectPath: resolvedProjectPath,
       changedOnly: changedOnly,
     );
+
+    var issues = rawIssues;
+    var suppressedCount = 0;
+    if (applySuppression) {
+      final suppression = SuppressionFilter(filesToScan);
+      final visible = <StaticIssue>[];
+      for (final issue in issues) {
+        if (suppression.isSuppressed(issue)) {
+          suppressedCount++;
+        } else {
+          visible.add(issue);
+        }
+      }
+      issues = visible;
+    }
+
+    var suppressedByBaselineCount = 0;
+    if (baselinePath != null) {
+      final resolvedBaselinePath = p.isAbsolute(baselinePath)
+          ? baselinePath
+          : p.join(resolvedProjectPath, baselinePath);
+      final baseline = Baseline.load(resolvedBaselinePath);
+      final visible = <StaticIssue>[];
+      for (final issue in issues) {
+        if (baseline.contains(issue, resolvedProjectPath)) {
+          suppressedByBaselineCount++;
+        } else {
+          visible.add(issue);
+        }
+      }
+      issues = visible;
+    }
+
     final score = ReportGenerator.calculateScore(issues);
 
-    if (writeJson) {
+    if (writeJson || writeSarif) {
       Directory(reportDir).createSync(recursive: true);
+    }
+    if (writeJson) {
       final json = ReportGenerator.generateJson(
         projectPath: resolvedProjectPath,
         issues: issues,
         scanMode: scanMode,
+        suppressedCount: suppressedCount,
+        suppressedByBaselineCount: suppressedByBaselineCount,
       );
       File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
+    }
+    if (writeSarif) {
+      final sarif = SarifReport.generate(
+        projectPath: resolvedProjectPath,
+        issues: issues,
+      );
+      File(p.join(reportDir, 'report.sarif')).writeAsStringSync(sarif);
     }
 
     return ScanResult(
       projectPath: resolvedProjectPath,
       reportDir: reportDir,
       files: filesToScan,
+      rawIssues: rawIssues,
       issues: issues,
+      suppressedCount: suppressedCount,
+      suppressedByBaselineCount: suppressedByBaselineCount,
       score: score,
       scanMode: scanMode,
     );

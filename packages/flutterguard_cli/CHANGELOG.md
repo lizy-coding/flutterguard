@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 (2026-07-08)
+
+### CI Adoption
+
+- **cli:** Added `flutterguard baseline create [<path>]` to snapshot existing issues into `.flutterguard/baseline.json`.
+- **cli:** Added `scan --baseline <file>` to hide baseline-matched issues from stdout, JSON, SARIF, scoring, and CI gates.
+- **cli:** Added source suppression comments: `// flutterguard: ignore <rule_id>`, comma-separated IDs, and `ignore all`.
+- **cli:** Added `--format sarif` with SARIF 2.1.0 output at `.flutterguard/report.sarif` for GitHub Code Scanning.
+- **cli:** JSON summary now reports `suppressed` and `suppressedByBaseline` counts.
+- **docs:** Updated README command references, CI onboarding order, suppression examples, baseline usage, and SARIF upload workflow.
+
+### Tests
+
+- **test:** Added coverage for suppression matching, next-line `ignore all`, baseline filtering, missing baseline errors, JSON counters, and SARIF structure.
+- **test:** CLI test suite now covers 43 tests.
+
 ## 0.3.0 (2026-06-28)
 
 ### Incremental Scan (--changed-only)

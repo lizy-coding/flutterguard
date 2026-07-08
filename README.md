@@ -161,6 +161,13 @@ flutterguard scan -p D:\path\to\project     # Windows
 # JSON output with CI gate
 flutterguard scan . --format json --fail-on high
 
+# Baseline existing issues before enabling a hard CI gate
+flutterguard baseline create .
+flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
+
+# GitHub Code Scanning output
+flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+
 # Show help
 flutterguard --help
 flutterguard scan --help
@@ -181,10 +188,13 @@ Commands:
 | Command | Description |
 |---------|-------------|
 | `flutterguard scan [<path>]` | Scan a project (path defaults to current directory) |
+| `flutterguard baseline create [<path>]` | Create a baseline JSON file for existing issues |
 | `flutterguard init` | Create a starter `flutterguard.yaml` |
 | `flutterguard init --with-architecture` | Create config with architecture layer/module templates |
 | `flutterguard config print` | Print the merged effective configuration |
 | `flutterguard config doctor` | Validate config, globs, and architecture references |
+| `flutterguard rules` | List available rules |
+| `flutterguard explain <rule-id>` | Explain one rule |
 | `flutterguard --help` / `-h` | Show usage |
 | `flutterguard --version` / `-V` | Show version |
 
@@ -195,10 +205,13 @@ Commands:
 | `<path>` | — | `.` | Positional project path (optional, before options) |
 | `--path` | `-p` | `.` | Project path to scan (overridden by positional `<path>`) |
 | `--config` | `-c` | `flutterguard.yaml` | Config file path |
-| `--format` | `-f` | `table` | Output format: `table` or `json` |
+| `--format` | `-f` | `table` | Output format: `table`, `json`, or `sarif` |
 | `--output` | `-o` | `.flutterguard` | Output directory for reports |
 | `--verbose` | `-v` | off | Show detailed output with code context |
 | `--no-color` | — | off | Disable ANSI terminal colors |
+| `--changed-only` | — | off | Only scan Dart files changed since `--base` |
+| `--base` | — | `main` | Git base ref for `--changed-only` |
+| `--baseline` | — | unset | Baseline JSON file used to hide existing issues |
 | `--fail-on` | — | `none` | CI gate: `none` / `high` / `medium` / `low` |
 | `--min-score` | — | unset | Minimum score threshold 0–100 |
 | `--help` | `-h` | — | Show scan usage |
@@ -362,12 +375,38 @@ Example shape:
     "high": 1,
     "medium": 1,
     "low": 1,
+    "suppressed": 0,
+    "suppressedByBaseline": 0,
     "byDomain": {
       "architecture": { "high": 1, "medium": 0, "low": 0, "total": 1 }
     }
   },
   "issues": []
 }
+```
+
+### SARIF report
+
+`--format sarif` writes `.flutterguard/report.sarif` for GitHub Code Scanning. High, medium, and low map to SARIF `error`, `warning`, and `note`.
+
+### Suppression and baseline
+
+Use source suppression for known false positives:
+
+```dart
+// flutterguard: ignore missing_const_constructor
+// flutterguard: ignore iot_security, mqtt_connection
+// flutterguard: ignore all
+```
+
+Suppression applies only to the comment line and the following line.
+
+Recommended CI adoption order:
+
+```bash
+flutterguard config doctor
+flutterguard baseline create .
+flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
 ```
 
 ## Scoring
@@ -407,7 +446,32 @@ jobs:
       - name: Install FlutterGuard
         run: dart pub global activate flutterguard_cli
       - name: Scan
-        run: flutterguard scan . --format json --fail-on high --min-score 80
+        run: flutterguard scan . --format json --baseline .flutterguard/baseline.json --fail-on high --min-score 80
+```
+
+### GitHub Code Scanning
+
+```yaml
+name: FlutterGuard SARIF
+
+on: [push, pull_request]
+
+jobs:
+  code-scanning:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.3.0
+      - run: dart pub global activate flutterguard_cli
+      - run: flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .flutterguard/report.sarif
 ```
 
 ### GitLab CI

@@ -3,14 +3,16 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 
+import 'package:flutterguard_cli/src/baseline.dart';
 import 'package:flutterguard_cli/src/config_loader.dart';
 import 'package:flutterguard_cli/src/config_tools.dart';
 import 'package:flutterguard_cli/src/project_resolver.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
 import 'package:flutterguard_cli/src/rules/registry.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
+import 'package:path/path.dart' as p;
 
-const _version = '0.3.0';
+const _version = '0.4.0';
 
 void main(List<String> args) {
   final normalizedArgs = _extractPositionalPath(args);
@@ -25,7 +27,7 @@ void main(List<String> args) {
     ..addOption('format',
         abbr: 'f',
         defaultsTo: 'table',
-        allowed: ['table', 'json'],
+        allowed: ['table', 'json', 'sarif'],
         help: 'Output format')
     ..addOption('output',
         abbr: 'o',
@@ -46,7 +48,27 @@ void main(List<String> args) {
         allowed: ['none', 'high', 'medium', 'low'],
         help: 'Fail threshold for CI gate')
     ..addOption('min-score', help: 'Minimum score threshold (0-100)')
+    ..addOption('baseline',
+        help: 'Baseline JSON file used to hide existing issues')
     ..addFlag('help', abbr: 'h', help: 'Show scan usage', negatable: false);
+
+  final baselineCreateParser = ArgParser(allowTrailingOptions: false)
+    ..addOption('path',
+        abbr: 'p', defaultsTo: '.', help: 'Project path to scan')
+    ..addOption('config',
+        abbr: 'c',
+        defaultsTo: 'flutterguard.yaml',
+        help: 'Path to flutterguard.yaml config file')
+    ..addOption('output',
+        abbr: 'o',
+        defaultsTo: '.flutterguard/baseline.json',
+        help: 'Baseline file to create')
+    ..addFlag('help',
+        abbr: 'h', help: 'Show baseline create usage', negatable: false);
+
+  final baselineParser = ArgParser()
+    ..addCommand('create', baselineCreateParser)
+    ..addFlag('help', abbr: 'h', help: 'Show baseline usage', negatable: false);
 
   final initParser = ArgParser()
     ..addOption('path',
@@ -95,6 +117,7 @@ void main(List<String> args) {
 
   final parser = ArgParser()
     ..addCommand('scan', scanParser)
+    ..addCommand('baseline', baselineParser)
     ..addCommand('init', initParser)
     ..addCommand('config', configParser)
     ..addCommand('rules', rulesParser)
@@ -127,6 +150,8 @@ void main(List<String> args) {
         exit(0);
       }
       _handleScan(command);
+    } else if (command.name == 'baseline') {
+      _handleBaseline(command, baselineParser, baselineCreateParser);
     } else if (command.name == 'init') {
       if (command['help'] == true) {
         _printInitUsage(initParser);
@@ -283,9 +308,11 @@ void _handleScan(ArgResults args) {
       configPath: args['config'] as String,
       outputDir: args['output'] as String,
       writeJson: format == 'json',
+      writeSarif: format == 'sarif',
       noColor: noColor,
       changedOnly: args['changed-only'] as bool,
       base: args['base'] as String,
+      baselinePath: args['baseline'] as String?,
     );
   } on ScanException catch (e) {
     stderr.writeln('Error: ${e.message}');
@@ -304,14 +331,24 @@ void _handleScan(ArgResults args) {
     exit(0);
   }
 
-  final stdoutOutput = ReportGenerator.generateStdout(
-    projectPath: result.projectPath,
-    issues: result.issues,
-    scannedFileCount: result.files.length,
-    verbose: verbose,
-    noColor: noColor,
-  );
-  stdout.writeln(stdoutOutput);
+  if (format == 'sarif') {
+    stdout.writeln(
+      'FlutterGuard scanned ${result.files.length} files, found '
+      '${result.issues.length} visible issues '
+      '(${result.suppressedCount} suppressed, '
+      '${result.suppressedByBaselineCount} baseline).',
+    );
+    stdout.writeln('SARIF report: ${result.reportDir}/report.sarif');
+  } else {
+    final stdoutOutput = ReportGenerator.generateStdout(
+      projectPath: result.projectPath,
+      issues: result.issues,
+      scannedFileCount: result.files.length,
+      verbose: verbose,
+      noColor: noColor,
+    );
+    stdout.writeln(stdoutOutput);
+  }
 
   if (failOn != 'none') {
     if (ReportGenerator.shouldFail(result.issues, failOn)) {
@@ -325,6 +362,56 @@ void _handleScan(ArgResults args) {
     stderr.writeln(
         'CI gate failed: Score ${result.score} is below minimum $minScore.');
     exit(1);
+  }
+}
+
+void _handleBaseline(
+  ArgResults command,
+  ArgParser baselineParser,
+  ArgParser baselineCreateParser,
+) {
+  if (command['help'] == true || command.command == null) {
+    _printBaselineUsage(baselineParser);
+    exit(0);
+  }
+
+  final subcommand = command.command!;
+  if (subcommand.name != 'create') {
+    _printBaselineUsage(baselineParser);
+    exit(0);
+  }
+  if (subcommand['help'] == true) {
+    _printBaselineCreateUsage(baselineCreateParser);
+    exit(0);
+  }
+
+  final restPath = subcommand.rest.isNotEmpty ? subcommand.rest.first : null;
+  final projectPath = restPath ?? subcommand['path'] as String;
+  final output = subcommand['output'] as String;
+
+  try {
+    final result = FlutterGuardScanner.scan(
+      projectPath: projectPath,
+      configPath: subcommand['config'] as String,
+      applySuppression: false,
+    );
+    final outputPath =
+        p.isAbsolute(output) ? output : p.join(result.projectPath, output);
+    Directory(p.dirname(outputPath)).createSync(recursive: true);
+    File(outputPath).writeAsStringSync(Baseline.encode(
+      projectPath: result.projectPath,
+      issues: result.rawIssues,
+    ));
+    stdout.writeln(
+      'Created FlutterGuard baseline: $outputPath '
+      '(${result.rawIssues.length} issues)',
+    );
+  } on ScanException catch (e) {
+    stderr.writeln('Error: ${e.message}');
+    exit(2);
+  } on FormatException catch (e) {
+    stderr.writeln('Error: ${e.message}');
+    exit(2);
   }
 }
 
@@ -414,6 +501,7 @@ void _printUsage(ArgParser parser) {
   stdout.writeln('Commands:');
   stdout.writeln(
       '  scan [<path>]   Scan a Flutter project for architecture issues');
+  stdout.writeln('  baseline        Create a baseline for existing issues');
   stdout.writeln('  init            Create a starter flutterguard.yaml');
   stdout.writeln('  config          Print or validate effective configuration');
   stdout.writeln('  rules           List available rules');
@@ -434,6 +522,9 @@ void _printUsage(ArgParser parser) {
       '  flutterguard scan ./my_flutter_app   # Scan specific project');
   stdout.writeln('  flutterguard scan -p /path/to/app    # Explicit path flag');
   stdout.writeln('  flutterguard scan . --format json --fail-on high');
+  stdout.writeln('  flutterguard baseline create .');
+  stdout
+      .writeln('  flutterguard scan . --baseline .flutterguard/baseline.json');
   stdout.writeln();
   stdout.writeln('Configuration strategy:');
   stdout.writeln(
@@ -456,13 +547,34 @@ void _printScanUsage(ArgParser scanParser) {
   stdout
       .writeln('  2. Basic config: tune include/exclude and rule thresholds.');
   stdout.writeln(
-      '  3. CI config: add --format json --fail-on high --min-score 80.');
+      '  3. Baseline: run baseline create . before gating legacy projects.');
   stdout.writeln(
-      '  4. Changed-only: add --changed-only --base main to scan git changes.');
+      '  4. CI config: add --format json --baseline .flutterguard/baseline.json --fail-on high.');
   stdout.writeln(
-      '  5. Architecture config: declare layers/modules explicitly before enabling boundary gates.');
+      '  5. Changed-only: add --changed-only --base main to scan git changes.');
+  stdout.writeln(
+      '  6. Architecture config: declare layers/modules explicitly before enabling boundary gates.');
   stdout.writeln();
   stdout.writeln('Docs: README.md and CONFIGURATION_STRATEGY.md');
+}
+
+void _printBaselineUsage(ArgParser parser) {
+  stdout.writeln('FlutterGuard — baseline command');
+  stdout.writeln();
+  stdout.writeln('Usage: flutterguard baseline <command> [options]');
+  stdout.writeln();
+  stdout.writeln('Commands:');
+  stdout.writeln('  create [<path>]   Create a baseline for existing issues');
+  stdout.writeln();
+  stdout.writeln(parser.usage);
+}
+
+void _printBaselineCreateUsage(ArgParser parser) {
+  stdout.writeln('FlutterGuard — baseline create command');
+  stdout.writeln();
+  stdout.writeln('Usage: flutterguard baseline create [<path>] [options]');
+  stdout.writeln();
+  stdout.writeln(parser.usage);
 }
 
 void _printRulesUsage(ArgParser parser) {
