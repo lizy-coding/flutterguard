@@ -10,6 +10,7 @@
 - **cli:** Added `--format sarif` with SARIF 2.1.0 output at `.flutterguard/report.sarif` for GitHub Code Scanning.
 - **cli:** JSON summary now reports `suppressed` and `suppressedByBaseline` counts.
 - **docs:** Updated README command references, CI onboarding order, suppression examples, baseline usage, and SARIF upload workflow.
+- **release:** Documented source-checkout launcher usage to avoid stale global binaries.
 
 ### Tests
 

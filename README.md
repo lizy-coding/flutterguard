@@ -35,7 +35,7 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 
 ## Install
 
-### User install (recommended — from pub.dev)
+### Option A: pub.dev install (recommended)
 
 <details open>
 <summary><b>macOS / Linux</b></summary>
@@ -71,20 +71,18 @@ $env:Path += ";$env:USERPROFILE\AppData\Local\Pub\Cache\bin"
 ```
 </details>
 
-### Compile native binary (no Dart SDK required at runtime)
+### Option B: GitHub Release binary (no Dart SDK at runtime)
+
+Download the matching binary from the GitHub Releases page, then run it
+directly:
 
 <details open>
 <summary><b>macOS / Linux</b></summary>
 
 ```bash
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
-dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
-./flutterguard --help
+chmod +x flutterguard
+./flutterguard --version
+./flutterguard scan .
 ```
 </details>
 
@@ -92,18 +90,15 @@ dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 <summary><b>Windows (PowerShell)</b></summary>
 
 ```powershell
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
-dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart compile exe packages\flutterguard_cli\bin\flutterguard.dart -o flutterguard.exe
-.\flutterguard.exe --help
+.\flutterguard.exe --version
+.\flutterguard.exe scan .
 ```
 </details>
 
-### Developer install (from source)
+### Option C: source checkout for development
+
+Use the local launcher when you want to run the current checkout without
+installing or replacing the global `flutterguard` command.
 
 <details>
 <summary><b>macOS / Linux</b></summary>
@@ -112,11 +107,8 @@ dart compile exe packages\flutterguard_cli\bin\flutterguard.dart -o flutterguard
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart pub global activate --source path packages/flutterguard_cli
-flutterguard --help
+./scripts/flutterguard-dev --version
+./scripts/flutterguard-dev scan .
 ```
 </details>
 
@@ -127,11 +119,8 @@ flutterguard --help
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart pub global activate --source path packages\flutterguard_cli
-flutterguard --help
+.\scripts\flutterguard-dev.ps1 --version
+.\scripts\flutterguard-dev.ps1 scan .
 ```
 </details>
 

@@ -12,6 +12,7 @@ IoT Flutter project static analysis CLI for architecture enforcement, code quali
 ```bash
 # Install globally
 dart pub global activate flutterguard_cli
+flutterguard --version
 
 # Scan a Flutter project
 flutterguard scan -p /path/to/flutter_project
@@ -29,6 +30,14 @@ flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
 
 # GitHub Code Scanning output
 flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+```
+
+When working from a source checkout, prefer the local launcher so you always
+run the current files instead of an older global executable:
+
+```bash
+./scripts/flutterguard-dev --version
+./scripts/flutterguard-dev scan .
 ```
 
 ## Checks

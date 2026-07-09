@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.3.0"
+      - run: dart pub get
+      - run: dart run melos bootstrap
+      - run: dart run melos run analyze
+      - run: dart run melos run test:cli
+      - run: dart pub publish --server https://pub.dev --dry-run
+        working-directory: packages/flutterguard_cli
+
+  build:
+    needs: validate
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_glob: "dist/*.tar.gz"
+            script: "bash scripts/package_release.sh"
+          - os: macos-14
+            artifact_glob: "dist/*.tar.gz"
+            script: "bash scripts/package_release.sh"
+          - os: windows-latest
+            artifact_glob: "dist/*.zip"
+            script: "pwsh scripts/package_release.ps1"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.3.0"
+      - run: dart pub get
+      - run: ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutterguard-${{ matrix.os }}
+          path: ${{ matrix.artifact_glob }}
+
+  publish-github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/*
+          generate_release_notes: true
