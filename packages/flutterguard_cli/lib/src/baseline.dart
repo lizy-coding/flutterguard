@@ -35,7 +35,11 @@ class Baseline {
       throw FormatException('Baseline file "$path" does not exist.');
     }
 
-    final decoded = jsonDecode(file.readAsStringSync());
+    return loadFromString(file.readAsStringSync());
+  }
+
+  static Baseline loadFromString(String content) {
+    final decoded = jsonDecode(content);
     if (decoded is! Map<String, Object?>) {
       throw const FormatException('Baseline file must be a JSON object.');
     }
@@ -47,6 +51,58 @@ class Baseline {
     }
 
     return Baseline(fingerprints.map((v) => v.toString()).toSet());
+  }
+
+  static Map<String, Object?> stats(String path) {
+    final baseline = load(path);
+    return {
+      'path': path,
+      'fingerprints': baseline.fingerprints.length,
+    };
+  }
+
+  static List<String> newFingerprints({
+    required String projectPath,
+    required Baseline baseline,
+    required List<StaticIssue> issues,
+  }) {
+    final current = issues
+        .map((issue) => fingerprint(issue, projectPath))
+        .where((fingerprint) => !baseline.fingerprints.contains(fingerprint))
+        .toSet()
+        .toList()
+      ..sort();
+    return current;
+  }
+
+  static String encodeFingerprints({
+    required String projectPath,
+    required List<String> fingerprints,
+  }) {
+    final sorted = fingerprints.toSet().toList()..sort();
+    final payload = {
+      'version': '1.0.0',
+      'generatedAt': DateTime.now().toIso8601String(),
+      'projectPath': projectPath,
+      'issueCount': sorted.length,
+      'fingerprints': sorted,
+    };
+    return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  static String prune({
+    required String projectPath,
+    required Baseline baseline,
+    required List<StaticIssue> issues,
+  }) {
+    final current = issues
+        .map((issue) => fingerprint(issue, projectPath))
+        .where(baseline.fingerprints.contains)
+        .toList();
+    return encodeFingerprints(
+      projectPath: projectPath,
+      fingerprints: current,
+    );
   }
 
   static String encode({

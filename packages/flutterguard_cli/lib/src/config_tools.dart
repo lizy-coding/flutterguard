@@ -36,6 +36,15 @@ class DoctorResult {
 }
 
 class ConfigTools {
+  static const profiles = {
+    'recommended',
+    'strict',
+    'migration',
+    'iot-security',
+    'architecture-only',
+    'performance-only',
+  };
+
   static const minimalConfig = '''
 include:
   - lib/**
@@ -109,10 +118,25 @@ architecture:
     enabled: true
 ''';
 
-  static String initTemplate({required bool withArchitecture}) {
-    return withArchitecture
-        ? '$minimalConfig$architectureBlock'
-        : minimalConfig;
+  static String initTemplate({
+    required bool withArchitecture,
+    String profile = 'recommended',
+  }) {
+    if (!profiles.contains(profile)) {
+      throw FormatException(
+        'Unknown profile "$profile". Allowed: ${profiles.join(", ")}.',
+      );
+    }
+
+    final config = switch (profile) {
+      'strict' => _strictConfig,
+      'migration' => _migrationConfig,
+      'iot-security' => _iotSecurityConfig,
+      'architecture-only' => _architectureOnlyConfig,
+      'performance-only' => _performanceOnlyConfig,
+      _ => minimalConfig,
+    };
+    return withArchitecture ? '$config$architectureBlock' : config;
   }
 
   static String writeInitConfig({
@@ -120,6 +144,7 @@ architecture:
     required String configPath,
     required bool withArchitecture,
     required bool force,
+    String profile = 'recommended',
   }) {
     final resolvedProjectPath = ProjectResolver.resolveProjectPath(projectPath);
     final outputPath = p.isAbsolute(configPath)
@@ -132,9 +157,206 @@ architecture:
       );
     }
     file.parent.createSync(recursive: true);
-    file.writeAsStringSync(initTemplate(withArchitecture: withArchitecture));
+    file.writeAsStringSync(initTemplate(
+      withArchitecture: withArchitecture,
+      profile: profile,
+    ));
     return outputPath;
   }
+
+  static const _strictConfig = '''
+include:
+  - lib/**
+
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+
+rules:
+  large_file:
+    enabled: true
+    maxLines: 400
+  large_class:
+    enabled: true
+    maxLines: 240
+  large_build_method:
+    enabled: true
+    maxLines: 60
+  lifecycle_resource:
+    enabled: true
+  missing_const_constructor:
+    enabled: true
+  device_lifecycle:
+    enabled: true
+  mqtt_connection:
+    enabled: true
+  ble_scanning:
+    enabled: true
+    maxScanDurationMs: 10000
+  iot_security:
+    enabled: true
+    requireTls: true
+  pubspec_security:
+    enabled: true
+''';
+
+  static const _migrationConfig = '''
+include:
+  - lib/**
+
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+  - test/**
+  - example/**
+
+rules:
+  large_file:
+    enabled: true
+    maxLines: 800
+  large_class:
+    enabled: true
+    maxLines: 500
+  large_build_method:
+    enabled: true
+    maxLines: 120
+  lifecycle_resource:
+    enabled: true
+  missing_const_constructor:
+    enabled: false
+  device_lifecycle:
+    enabled: true
+  mqtt_connection:
+    enabled: true
+  ble_scanning:
+    enabled: true
+    maxScanDurationMs: 15000
+  iot_security:
+    enabled: true
+    requireTls: true
+  pubspec_security:
+    enabled: true
+''';
+
+  static const _iotSecurityConfig = '''
+include:
+  - lib/**
+
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+  - test/**
+  - example/**
+
+rules:
+  large_file:
+    enabled: false
+    maxLines: 500
+  large_class:
+    enabled: false
+    maxLines: 300
+  large_build_method:
+    enabled: false
+    maxLines: 80
+  lifecycle_resource:
+    enabled: true
+  missing_const_constructor:
+    enabled: false
+  device_lifecycle:
+    enabled: true
+  mqtt_connection:
+    enabled: true
+  ble_scanning:
+    enabled: true
+    maxScanDurationMs: 10000
+  iot_security:
+    enabled: true
+    requireTls: true
+  pubspec_security:
+    enabled: true
+''';
+
+  static const _architectureOnlyConfig = '''
+include:
+  - lib/**
+
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+
+rules:
+  large_file:
+    enabled: false
+    maxLines: 500
+  large_class:
+    enabled: false
+    maxLines: 300
+  large_build_method:
+    enabled: false
+    maxLines: 80
+  lifecycle_resource:
+    enabled: false
+  missing_const_constructor:
+    enabled: false
+  device_lifecycle:
+    enabled: false
+  mqtt_connection:
+    enabled: false
+  ble_scanning:
+    enabled: false
+    maxScanDurationMs: 10000
+  iot_security:
+    enabled: false
+    requireTls: true
+  pubspec_security:
+    enabled: false
+''';
+
+  static const _performanceOnlyConfig = '''
+include:
+  - lib/**
+
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+
+rules:
+  large_file:
+    enabled: true
+    maxLines: 500
+  large_class:
+    enabled: true
+    maxLines: 300
+  large_build_method:
+    enabled: true
+    maxLines: 80
+  lifecycle_resource:
+    enabled: true
+  missing_const_constructor:
+    enabled: false
+  device_lifecycle:
+    enabled: false
+  mqtt_connection:
+    enabled: false
+  ble_scanning:
+    enabled: false
+    maxScanDurationMs: 10000
+  iot_security:
+    enabled: false
+    requireTls: true
+  pubspec_security:
+    enabled: false
+''';
 
   static String resolveConfigPathForProject({
     required String projectPath,

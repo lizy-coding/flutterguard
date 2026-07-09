@@ -131,8 +131,9 @@ dart pub get
 flutterguard scan
 
 # 创建并检查基础配置
-flutterguard init
+flutterguard init --profile migration
 flutterguard config doctor
+flutterguard doctor install
 
 # 查看合并后的有效配置
 flutterguard config print
@@ -150,10 +151,15 @@ flutterguard scan . --format json --fail-on high
 
 # 启用强门禁前先为历史问题创建 baseline
 flutterguard baseline create .
+flutterguard baseline stats
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
 flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
 
 # GitHub Code Scanning 输出
 flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+
+# 导出单个问题用于误报反馈
+flutterguard issue export --rule mqtt_connection --file lib/device/mqtt.dart --line 42
 
 # 显示帮助
 flutterguard --help
@@ -176,10 +182,16 @@ flutterguard scan examples/scan_demo
 |------|------|
 | `flutterguard scan [<path>]` | 扫描项目（路径默认为当前目录） |
 | `flutterguard baseline create [<path>]` | 为现有问题创建 baseline JSON 文件 |
+| `flutterguard baseline stats` | 查看 baseline fingerprint 数量 |
+| `flutterguard baseline prune [<path>]` | 从 baseline 移除已修复问题 |
+| `flutterguard baseline check [<path>] --no-growth` | 当前问题未进入 baseline 时失败 |
+| `flutterguard doctor install` | 检查可执行文件版本和 PATH 冲突 |
 | `flutterguard init` | 创建基础 `flutterguard.yaml` |
+| `flutterguard init --profile migration` | 使用 profile 创建基础配置 |
 | `flutterguard init --with-architecture` | 创建包含架构层/模块模板的配置 |
 | `flutterguard config print` | 输出合并后的有效配置 |
 | `flutterguard config doctor` | 检查配置、glob 和架构引用 |
+| `flutterguard issue export` | 导出单个问题为本地反馈 JSON |
 | `flutterguard rules` | 列出所有可用规则 |
 | `flutterguard explain <rule-id>` | 查看单条规则说明 |
 | `flutterguard --help` / `-h` | 显示帮助 |
@@ -393,6 +405,7 @@ architecture:
 ```bash
 flutterguard config doctor
 flutterguard baseline create .
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
 flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
 ```
 

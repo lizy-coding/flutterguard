@@ -18,18 +18,24 @@ flutterguard --version
 flutterguard scan -p /path/to/flutter_project
 
 # Create and validate a starter config
-flutterguard init
+flutterguard init --profile migration
 flutterguard config doctor
+flutterguard doctor install
 
 # JSON output with CI gate
 flutterguard scan -p . --format json --fail-on high --min-score 80
 
 # Baseline existing issues before enforcing CI
 flutterguard baseline create .
+flutterguard baseline stats
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
 flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
 
 # GitHub Code Scanning output
 flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+
+# Export one finding for feedback
+flutterguard issue export --rule mqtt_connection --file lib/device/mqtt.dart --line 42
 ```
 
 When working from a source checkout, prefer the local launcher so you always
@@ -108,9 +114,15 @@ flutterguard scan [<path>] [options]
   --min-score      Minimum score threshold 0-100
 
 flutterguard baseline create [<path>] [--output .flutterguard/baseline.json]
+flutterguard baseline stats
+flutterguard baseline prune [<path>] [--dry-run]
+flutterguard baseline check [<path>] --no-growth
+flutterguard doctor install
 flutterguard init [--with-architecture] [--force]
+flutterguard init [<path>] [--profile recommended|migration|strict|iot-security|architecture-only|performance-only]
 flutterguard config print
 flutterguard config doctor
+flutterguard issue export [--rule <id>] [--file <path>] [--line <line>]
 flutterguard rules [--format table|json]
 flutterguard explain <rule-id>
 ```

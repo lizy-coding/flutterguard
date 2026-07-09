@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1 (2026-07-09)
+
+### Adoption Hardening
+
+- **cli:** Added `flutterguard doctor install` to diagnose executable version, Dart entrypoint, and PATH conflicts.
+- **cli:** Added `flutterguard issue export` to create a local JSON feedback bundle for one finding without uploading source code.
+- **cli:** Added baseline management commands: `baseline stats`, `baseline prune`, and `baseline check --no-growth`.
+- **cli:** Added `flutterguard init --profile` with recommended, strict, migration, IoT security, architecture-only, and performance-only starter profiles.
+- **cli:** `flutterguard init [<path>]` now supports a positional project path.
+- **test:** Expanded CLI coverage for install diagnostics, issue export, baseline management, and config profiles.
+
 ## 0.4.0 (2026-07-08)
 
 ### CI Adoption

@@ -6,6 +6,8 @@ import 'package:flutterguard_cli/src/config_loader.dart';
 import 'package:flutterguard_cli/src/config_tools.dart';
 import 'package:flutterguard_cli/src/domain.dart';
 import 'package:flutterguard_cli/src/import_utils.dart';
+import 'package:flutterguard_cli/src/install_doctor.dart';
+import 'package:flutterguard_cli/src/issue_export.dart';
 import 'package:flutterguard_cli/src/path_utils.dart';
 import 'package:flutterguard_cli/src/priority.dart';
 import 'package:flutterguard_cli/src/report_generator.dart';
@@ -511,6 +513,57 @@ class IgnoredWidget extends StatelessWidget {}
       expect(result.issues.single.file, endsWith('new.dart'));
     });
 
+    test('baseline stats prune and no-growth helpers work', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_baseline_tools_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'old.dart'), 'OldWidget');
+
+      final initial = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        applySuppression: false,
+      );
+      final staleIssue = StaticIssue(
+        id: 'missing_const_constructor',
+        title: 'Stale',
+        file: p.join(dir.path, 'lib', 'deleted.dart'),
+        line: 2,
+        level: RiskLevel.low,
+        domain: IssueDomain.standards,
+        priority: Priority.p2,
+        message: 'stale issue',
+        suggestion: 'fix',
+      );
+      final baselineJson = Baseline.encode(
+        projectPath: initial.projectPath,
+        issues: [...initial.rawIssues, staleIssue],
+      );
+      final baseline = Baseline.loadFromString(baselineJson);
+
+      expect(baseline.fingerprints, hasLength(2));
+
+      final pruned = Baseline.loadFromString(Baseline.prune(
+        projectPath: initial.projectPath,
+        baseline: baseline,
+        issues: initial.rawIssues,
+      ));
+      expect(pruned.fingerprints, hasLength(1));
+
+      _writeWidgetIssue(p.join(dir.path, 'lib', 'new.dart'), 'NewWidget');
+      final current = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        applySuppression: false,
+      );
+      final newFingerprints = Baseline.newFingerprints(
+        projectPath: current.projectPath,
+        baseline: pruned,
+        issues: current.rawIssues,
+      );
+      expect(newFingerprints, hasLength(1));
+    });
+
     test('missing baseline file fails the scan', () {
       final dir = Directory.systemTemp.createTempSync('flutterguard_no_base_');
       addTearDown(() => dir.deleteSync(recursive: true));
@@ -584,6 +637,34 @@ class IgnoredWidget extends StatelessWidget {}
       final region = physical['region'] as Map;
       expect(region['startLine'], 1);
       expect(jsonEncode(second), contains('lib/b.dart'));
+    });
+
+    test('issue export includes rule metadata context and fingerprint', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_export_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      final file = p.join(dir.path, 'lib', 'widget.dart');
+      _writeWidgetIssue(file, 'ExportedWidget');
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        applySuppression: false,
+      );
+      final exported = IssueExporter.export(
+        projectPath: result.projectPath,
+        issues: result.rawIssues,
+        ruleId: 'missing_const_constructor',
+        filePath: 'lib/widget.dart',
+        line: 2,
+      );
+      final decoded = jsonDecode(exported) as Map<String, Object?>;
+
+      expect(decoded['fingerprint'], isA<String>());
+      expect(
+          jsonEncode(decoded['rule']), contains('missing_const_constructor'));
+      expect(jsonEncode(decoded['context']), contains('ExportedWidget'));
+      expect(jsonEncode(decoded['issue']), contains('lib/widget.dart'));
     });
   });
 
@@ -699,6 +780,30 @@ class AnotherChangedWidget extends StatelessWidget {}
       expect(withArchitecture, contains('mqtt_feature'));
     });
 
+    test('init template profiles tune rule defaults', () {
+      final migration = ConfigTools.initTemplate(
+        withArchitecture: false,
+        profile: 'migration',
+      );
+      final security = ConfigTools.initTemplate(
+        withArchitecture: false,
+        profile: 'iot-security',
+      );
+
+      expect(migration, contains('maxLines: 800'));
+      expect(migration, contains('missing_const_constructor:'));
+      expect(migration, contains('enabled: false'));
+      expect(security, contains('iot_security:'));
+      expect(security, contains('requireTls: true'));
+      expect(
+        () => ConfigTools.initTemplate(
+          withArchitecture: false,
+          profile: 'unknown',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('effective config print includes merged defaults', () {
       final config = ScanConfig.fromFile(
         p.join(fixturesPath, 'does_not_exist.yaml'),
@@ -781,6 +886,14 @@ include:
       );
 
       expect(resolved, p.join(dir.path, 'flutterguard.yaml'));
+    });
+
+    test('install doctor reports version and path checks', () {
+      final report = InstallDoctor.generate(version: '0.4.0-test');
+
+      expect(report, contains('FlutterGuard install doctor'));
+      expect(report, contains('0.4.0-test'));
+      expect(report, contains('PATH entries named flutterguard'));
     });
   });
 

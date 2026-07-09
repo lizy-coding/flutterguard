@@ -133,8 +133,9 @@ dart pub get
 flutterguard scan
 
 # Create and validate a starter config
-flutterguard init
+flutterguard init --profile migration
 flutterguard config doctor
+flutterguard doctor install
 
 # Inspect the merged effective config
 flutterguard config print
@@ -152,10 +153,15 @@ flutterguard scan . --format json --fail-on high
 
 # Baseline existing issues before enabling a hard CI gate
 flutterguard baseline create .
+flutterguard baseline stats
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
 flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
 
 # GitHub Code Scanning output
 flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+
+# Export one finding for false-positive feedback
+flutterguard issue export --rule mqtt_connection --file lib/device/mqtt.dart --line 42
 
 # Show help
 flutterguard --help
@@ -178,10 +184,16 @@ Commands:
 |---------|-------------|
 | `flutterguard scan [<path>]` | Scan a project (path defaults to current directory) |
 | `flutterguard baseline create [<path>]` | Create a baseline JSON file for existing issues |
+| `flutterguard baseline stats` | Show baseline fingerprint counts |
+| `flutterguard baseline prune [<path>]` | Remove fixed issues from a baseline |
+| `flutterguard baseline check [<path>] --no-growth` | Fail when current issues are missing from baseline |
+| `flutterguard doctor install` | Diagnose executable version and PATH conflicts |
 | `flutterguard init` | Create a starter `flutterguard.yaml` |
+| `flutterguard init --profile migration` | Create a starter config from a profile |
 | `flutterguard init --with-architecture` | Create config with architecture layer/module templates |
 | `flutterguard config print` | Print the merged effective configuration |
 | `flutterguard config doctor` | Validate config, globs, and architecture references |
+| `flutterguard issue export` | Export one issue as a local feedback JSON bundle |
 | `flutterguard rules` | List available rules |
 | `flutterguard explain <rule-id>` | Explain one rule |
 | `flutterguard --help` / `-h` | Show usage |
@@ -395,6 +407,7 @@ Recommended CI adoption order:
 ```bash
 flutterguard config doctor
 flutterguard baseline create .
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
 flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
 ```
 
