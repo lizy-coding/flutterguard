@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **fix:** Prevent successful no-op full scans and preserve setup-error exit codes in local CI scripts.
+- **fix:** Anchor configuration policy to the target project and require explicitly selected config files.
+- **ci:** Run analyze, tests, and the demo scan against the current checkout on the OS matrix.
+
 ## 0.4.1 (2026-07-09)
 
 ### Adoption Hardening

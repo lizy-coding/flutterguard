@@ -43,8 +43,8 @@ IoT: DeviceLifecycleRule, MqttConnectionRule, BleScanningRule, IotSecurityRule
 
 ## Test
 - command: `melos run test:cli`
-- test file: `test/scanner_test.dart` (26 tests)
-- fixtures: `test/fixtures/` (17 fixture files)
+- test files: `test/scanner_test.dart` (53 tests) and `test/cli_test.dart` (4 process-level tests)
+- fixtures: `test/fixtures/` (16 functional fixture files)
 - every new rule needs: spec entry → config typedef → class → fixture → test → wire in scanner.dart
 
 ## Current Toolchain Flow

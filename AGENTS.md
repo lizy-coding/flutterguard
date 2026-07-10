@@ -19,7 +19,7 @@ IoT/smart home Flutter project static analysis CLI plugin. NOT an observability 
 |---------|---------|
 | `dart run melos bootstrap` | Install workspace dependencies |
 | `dart run melos run analyze` | dart analyze on all packages |
-| `dart run melos run test:cli` | CLI tests only (37 tests) |
+| `dart run melos run test:cli` | CLI tests only (57 tests) |
 | `flutterguard scan [<path>]` | Run scan on a project (path defaults to current dir) |
 | `flutterguard scan <path> --format json --fail-on high` | JSON output with CI gate |
 | `flutterguard scan --changed-only` | Incremental scan of git-changed files |

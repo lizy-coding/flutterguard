@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **fix:** Reject full scans whose include/exclude policy matches no Dart files instead of returning a successful empty report.
+- **fix:** Resolve relative configs from the target project and reject missing explicitly selected config files.
+- **fix:** Treat clean changed-only scans as successful empty incremental reports and reject invalid Git base refs.
+- **ci:** Validate the current checkout on all supported CI operating systems instead of scanning with a pub.dev installation.
+
 ## 0.4.1 (2026-07-09)
 
 ### Adoption Hardening
