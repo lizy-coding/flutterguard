@@ -407,6 +407,54 @@ dependencies:
   });
 
   group('Scanner Orchestration', () {
+    test('scanner allows built-in defaults when the default config is absent',
+        () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_no_config_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync();
+      File(p.join(dir.path, 'lib', 'plain.dart'))
+          .writeAsStringSync('class Plain {}\n');
+
+      final result = FlutterGuardScanner.scan(projectPath: dir.path);
+
+      expect(result.files, [p.join(dir.path, 'lib', 'plain.dart')]);
+    });
+
+    test('scanner rejects a missing custom config', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_custom_config_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      expect(
+        () => FlutterGuardScanner.scan(
+          projectPath: dir.path,
+          configPath: 'policy/flutterguard.yaml',
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('does not exist'),
+          ),
+        ),
+      );
+    });
+
+    test('scanner rejects a missing explicitly selected default config', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_required_config_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      expect(
+        () => FlutterGuardScanner.scan(
+          projectPath: dir.path,
+          configPath: 'flutterguard.yaml',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('scanner runs all configured rules and returns sorted result', () {
       final result = FlutterGuardScanner.scan(
         projectPath: Directory.current.path,
@@ -437,6 +485,16 @@ dependencies:
 
       expect(
         () => ScanConfig.fromFile(file.path),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('config parser rejects a required file that is absent', () {
+      expect(
+        () => ScanConfig.fromFile(
+          p.join(fixturesPath, 'does_not_exist.yaml'),
+          requireFile: true,
+        ),
         throwsA(isA<FormatException>()),
       );
     });
@@ -674,7 +732,7 @@ class IgnoredWidget extends StatelessWidget {}
       addTearDown(() => dir.deleteSync(recursive: true));
       Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
       _writeMinimalProjectConfig(dir);
-      final changedFile = p.join(dir.path, 'lib', 'changed.dart');
+      final changedFile = p.join(dir.path, 'lib', 'changed 设备.dart');
       final unchangedFile = p.join(dir.path, 'lib', 'unchanged.dart');
       _writeWidgetIssue(changedFile, 'ChangedWidget');
       _writeWidgetIssue(unchangedFile, 'UnchangedWidget');
@@ -707,8 +765,12 @@ class AnotherChangedWidget extends StatelessWidget {}
       addTearDown(() => dir.deleteSync(recursive: true));
       Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
       _writeMinimalProjectConfig(dir);
-      _writeWidgetIssue(p.join(dir.path, 'lib', 'one.dart'), 'OneWidget');
-      _writeWidgetIssue(p.join(dir.path, 'lib', 'two.dart'), 'TwoWidget');
+      File(p.join(dir.path, 'lib', 'one.dart')).writeAsStringSync(
+        "import 'two.dart';\nclass One {}\n",
+      );
+      File(p.join(dir.path, 'lib', 'two.dart')).writeAsStringSync(
+        "import 'one.dart';\nclass Two {}\n",
+      );
 
       final result = FlutterGuardScanner.scan(
         projectPath: dir.path,
@@ -717,7 +779,79 @@ class AnotherChangedWidget extends StatelessWidget {}
 
       expect(result.scanMode, 'full');
       expect(result.files, hasLength(2));
-      expect(result.issues, hasLength(2));
+      expect(
+        result.issues.where((issue) => issue.id == 'circular_dependency'),
+        isNotEmpty,
+      );
+    });
+
+    test('changed_only clean repository returns an empty changed scan', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_clean_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      File(p.join(dir.path, 'lib', 'clean.dart'))
+          .writeAsStringSync('class Clean {}\n');
+      _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['add', '.']);
+      _runGit(dir, ['commit', '-m', 'initial']);
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+        base: 'main',
+      );
+
+      expect(result.scanMode, 'changed');
+      expect(result.files, isEmpty);
+      expect(result.issues, isEmpty);
+    });
+
+    test('changed_only rejects invalid or option-like base refs', () {
+      final dir = Directory.systemTemp.createTempSync(
+        'flutterguard_invalid_base_',
+      );
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      File(p.join(dir.path, 'lib', 'tracked.dart'))
+          .writeAsStringSync('class Tracked {}\n');
+      _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['add', '.']);
+      _runGit(dir, ['commit', '-m', 'initial']);
+
+      expect(
+        () => FlutterGuardScanner.scan(
+          projectPath: dir.path,
+          changedOnly: true,
+          base: 'missing-ref',
+        ),
+        throwsA(
+          isA<ScanException>().having(
+            (error) => error.message,
+            'message',
+            contains('Invalid Git base'),
+          ),
+        ),
+      );
+      expect(
+        () => FlutterGuardScanner.scan(
+          projectPath: dir.path,
+          changedOnly: true,
+          base: '--cached',
+        ),
+        throwsA(
+          isA<ScanException>().having(
+            (error) => error.message,
+            'message',
+            contains('Invalid Git base'),
+          ),
+        ),
+      );
     });
 
     test('changed_only_skips_circular_dependency', () {
@@ -735,6 +869,9 @@ class AnotherChangedWidget extends StatelessWidget {}
         "import 'a.dart';\nclass C {}\n",
       );
       _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['commit', '--allow-empty', '-m', 'initial']);
 
       final result = FlutterGuardScanner.scan(
         projectPath: dir.path,
@@ -848,7 +985,7 @@ architecture:
       );
     });
 
-    test('doctor warns when globs match no Dart files', () {
+    test('doctor rejects configs that match no Dart files', () {
       final dir = Directory.systemTemp.createTempSync('flutterguard_empty_');
       addTearDown(() => dir.deleteSync(recursive: true));
       File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('name: app\n');
@@ -862,10 +999,10 @@ include:
         configPath: 'flutterguard.yaml',
       );
 
-      expect(result.hasErrors, isFalse);
+      expect(result.hasErrors, isTrue);
       expect(
         result.messages.any((message) =>
-            message.severity == DoctorSeverity.warning &&
+            message.severity == DoctorSeverity.error &&
             message.message.contains('No Dart files matched')),
         isTrue,
       );
