@@ -335,11 +335,15 @@ void _handleConfigPrint(ArgResults args) {
     final projectPath = ProjectResolver.resolveProjectPath(
       args['path'] as String,
     );
+    final explicitConfig = _explicitConfigPath(args);
     final configPath = ConfigTools.resolveConfigPathForProject(
       projectPath: projectPath,
-      configPath: args['config'] as String,
+      configPath: explicitConfig,
     );
-    final config = ScanConfig.fromFile(configPath);
+    final config = ScanConfig.fromFile(
+      configPath,
+      requireFile: explicitConfig != null,
+    );
     stdout.write(ConfigTools.effectiveYaml(config));
   } on FormatException catch (e) {
     stderr.writeln('Error: ${e.message}');
@@ -351,7 +355,7 @@ void _handleConfigDoctor(ArgResults args) {
   try {
     final result = ConfigTools.doctor(
       projectPath: args['path'] as String,
-      configPath: args['config'] as String,
+      configPath: _explicitConfigPath(args),
     );
     stdout.write(ConfigTools.formatDoctorResult(result));
     if (result.hasErrors) exit(1);
@@ -401,7 +405,7 @@ void _handleScan(ArgResults args) {
   try {
     result = FlutterGuardScanner.scan(
       projectPath: args['path'] as String,
-      configPath: args['config'] as String,
+      configPath: _explicitConfigPath(args),
       outputDir: args['output'] as String,
       writeJson: format == 'json',
       writeSarif: format == 'sarif',
@@ -419,12 +423,11 @@ void _handleScan(ArgResults args) {
   }
 
   if (result.files.isEmpty) {
-    stderr.writeln('No Dart files found.');
-    stderr.writeln(
-        'Check that the project path is correct and that include/exclude patterns match Dart files.');
-    stderr.writeln(
-        'Typical config: include: [lib/**], exclude generated files, then add architecture rules only when boundaries are known.');
-    exit(0);
+    stdout.writeln('No changed Dart files matched the scan configuration.');
+    if (format == 'sarif') {
+      stdout.writeln('SARIF report: ${result.reportDir}/report.sarif');
+    }
+    return;
   }
 
   if (format == 'sarif') {
@@ -520,7 +523,7 @@ void _handleBaselineCreate(ArgResults args) {
   try {
     final result = FlutterGuardScanner.scan(
       projectPath: projectPath,
-      configPath: args['config'] as String,
+      configPath: _explicitConfigPath(args),
       applySuppression: false,
     );
     final outputPath =
@@ -560,7 +563,7 @@ void _handleBaselinePrune(ArgResults args) {
   try {
     final result = FlutterGuardScanner.scan(
       projectPath: projectPath,
-      configPath: args['config'] as String,
+      configPath: _explicitConfigPath(args),
       applySuppression: false,
     );
     final resolvedBaselinePath = _resolveProjectFile(
@@ -604,7 +607,7 @@ void _handleBaselineCheck(ArgResults args) {
   try {
     final result = FlutterGuardScanner.scan(
       projectPath: projectPath,
-      configPath: args['config'] as String,
+      configPath: _explicitConfigPath(args),
       applySuppression: false,
     );
     final baseline = Baseline.load(_resolveProjectFile(
@@ -690,7 +693,7 @@ void _handleIssue(
 
     final result = FlutterGuardScanner.scan(
       projectPath: subcommand['path'] as String,
-      configPath: subcommand['config'] as String,
+      configPath: _explicitConfigPath(subcommand),
       applySuppression: false,
     );
     final exported = IssueExporter.export(
@@ -721,6 +724,10 @@ void _handleIssue(
 
 String _resolveProjectFile(String projectPath, String filePath) {
   return p.isAbsolute(filePath) ? filePath : p.join(projectPath, filePath);
+}
+
+String? _explicitConfigPath(ArgResults args) {
+  return args.wasParsed('config') ? args['config'] as String : null;
 }
 
 void _handleRules(ArgResults args) {

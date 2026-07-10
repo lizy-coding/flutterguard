@@ -219,18 +219,18 @@ flutterguard scan examples/scan_demo
 
 | 退出码 | 含义 |
 |--------|------|
-| `0` | 成功（含 help/version 输出及未找到文件的情况） |
+| `0` | 成功，包含 help/version 以及增量扫描没有相关变更的情况 |
 | `1` | CI 门禁失败（存在超过 `--fail-on` 的问题，或评分低于 `--min-score`）|
-| `2` | 扫描错误（路径不存在、配置文件解析错误等） |
+| `2` | 扫描设置错误（路径不存在、显式配置缺失、配置无效或未匹配到配置范围内的 Dart 文件） |
 
 ### 路径解析
 
 FlutterGuard 从当前目录向上遍历，自动发现项目根目录（查找 `flutterguard.yaml`、`pubspec.yaml` 或 `lib/` 目录）。若未找到，则退化为当前目录。
 
-`--config` 路径按以下优先级解析：
-1. 绝对路径（`-c /path/to/config.yaml`）— 直接使用
-2. 相对 CWD 匹配到的文件（`-c my_config.yaml`）— 从 CWD 解析
-3. 相对项目根目录匹配到的文件 — 兜底
+`--config` 路径始终针对目标项目解析：
+1. 绝对路径直接使用，且文件必须存在。
+2. 相对路径从目标项目根目录解析，不再读取 CWD 下的同名文件。
+3. 未显式指定且默认 `flutterguard.yaml` 不存在时使用内置默认值；任何显式选择的配置都必须存在。
 
 ---
 
@@ -511,12 +511,12 @@ repos:
 ```bash
 #!/usr/bin/env bash
 # scan_ci.sh
-flutterguard scan . --format json --fail-on high --min-score 80
-if [ $? -eq 0 ]; then
+if flutterguard scan . --format json --fail-on high --min-score 80; then
     echo "All checks passed!"
 else
-    echo "CI gate failed! Check .flutterguard/report.json for details."
-    exit 1
+    status=$?
+    echo "FlutterGuard failed with exit code $status."
+    exit "$status"
 fi
 ```
 </details>
@@ -528,12 +528,13 @@ fi
 # scan_ci.ps1
 $ErrorActionPreference = "Stop"
 flutterguard scan . --format json --fail-on high --min-score 80
+$status = $LASTEXITCODE
 
-if ($LASTEXITCODE -eq 0) {
+if ($status -eq 0) {
     Write-Host "All checks passed!" -ForegroundColor Green
 } else {
-    Write-Host "CI gate failed! Check .flutterguard/report.json for details." -ForegroundColor Red
-    exit 1
+    Write-Host "FlutterGuard failed with exit code $status." -ForegroundColor Red
+    exit $status
 }
 ```
 </details>

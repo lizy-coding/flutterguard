@@ -96,7 +96,7 @@ architecture:
   detect_cycles: true
 ```
 
-If no config file exists, defaults are used (all default rules enabled, no architecture constraints).
+If the default config is omitted, built-in defaults are used (all default rules enabled, no architecture constraints). Any path explicitly passed with `--config` must exist and relative paths resolve from the target project root.
 
 ## CLI Reference
 
@@ -127,7 +127,7 @@ flutterguard rules [--format table|json]
 flutterguard explain <rule-id>
 ```
 
-Exit codes: `0` success, `1` CI gate failed, `2` scan error.
+Exit codes: `0` success, `1` CI gate failed, `2` scan setup error. A full scan that matches no configured Dart files exits with `2`; a changed-only scan with no relevant changes exits with `0`.
 
 ## Scoring
 

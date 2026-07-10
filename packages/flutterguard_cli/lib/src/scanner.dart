@@ -59,7 +59,7 @@ class ScanResult {
 class FlutterGuardScanner {
   static ScanResult scan({
     required String projectPath,
-    String configPath = 'flutterguard.yaml',
+    String? configPath,
     String outputDir = '.flutterguard',
     bool writeJson = false,
     bool writeSarif = false,
@@ -80,20 +80,35 @@ class FlutterGuardScanner {
       projectPath: resolvedProjectPath,
       explicitConfig: configPath,
     );
-    final config = ScanConfig.fromFile(resolvedConfigPath);
+    final config = ScanConfig.fromFile(
+      resolvedConfigPath,
+      requireFile: configPath != null,
+    );
     final files = FileCollector.collect(resolvedProjectPath, config);
+    if (files.isEmpty) {
+      throw const ScanException(
+        'No Dart files matched the configured include/exclude patterns.',
+      );
+    }
     var scanMode = 'full';
     var filesToScan = files;
 
     if (changedOnly) {
-      final changed = FileCollector.getChangedFiles(resolvedProjectPath, base);
-      if (changed.isNotEmpty) {
-        final changedDart = changed
-            .where((f) => f.endsWith('.dart'))
-            .map(normalizePath)
-            .toSet();
-        filesToScan = files.where((f) => changedDart.contains(f)).toList();
-        scanMode = filesToScan.isNotEmpty ? 'changed' : 'full';
+      try {
+        final changed = FileCollector.getChangedFiles(
+          resolvedProjectPath,
+          base,
+        );
+        if (changed != null) {
+          final changedDart = changed
+              .where((f) => f.endsWith('.dart'))
+              .map(normalizePath)
+              .toSet();
+          filesToScan = files.where((f) => changedDart.contains(f)).toList();
+          scanMode = 'changed';
+        }
+      } on ChangedFilesException catch (e) {
+        throw ScanException(e.message);
       }
     }
 
@@ -105,7 +120,7 @@ class FlutterGuardScanner {
       files: filesToScan,
       config: config,
       projectPath: resolvedProjectPath,
-      changedOnly: changedOnly,
+      changedOnly: scanMode == 'changed',
     );
 
     var issues = rawIssues;

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:glob/glob.dart';
@@ -6,6 +7,15 @@ import 'package:path/path.dart' as p;
 
 import 'config_loader.dart';
 import 'path_utils.dart';
+
+class ChangedFilesException implements Exception {
+  final String message;
+
+  const ChangedFilesException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class FileCollector {
   static List<String> collect(String projectPath, ScanConfig config) {
@@ -32,38 +42,108 @@ class FileCollector {
     return allFiles.toList()..sort();
   }
 
-  static Set<String> getChangedFiles(String projectPath, String base) {
-    final gitDir = Directory(p.join(projectPath, '.git'));
-    if (!gitDir.existsSync()) return {};
-
+  static Set<String>? getChangedFiles(String projectPath, String base) {
     try {
+      final rootResult = Process.runSync(
+        'git',
+        ['rev-parse', '--show-toplevel'],
+        workingDirectory: projectPath,
+        stdoutEncoding: utf8,
+      );
+      if (rootResult.exitCode != 0) return null;
+
+      final gitRoot = (rootResult.stdout as String).trim();
+      final canonicalGitRoot = Directory(gitRoot).resolveSymbolicLinksSync();
+      final canonicalProjectPath =
+          Directory(projectPath).resolveSymbolicLinksSync();
+      if (base.startsWith('-')) {
+        throw ChangedFilesException('Invalid Git base "$base".');
+      }
+      final refResult = Process.runSync(
+        'git',
+        ['rev-parse', '--verify', '$base^{commit}'],
+        workingDirectory: gitRoot,
+        stdoutEncoding: utf8,
+      );
+      if (refResult.exitCode != 0) {
+        throw ChangedFilesException(
+          _gitFailureMessage('Invalid Git base "$base"', refResult.stderr),
+        );
+      }
+      final verifiedRef = (refResult.stdout as String).trim();
       final result = Process.runSync(
         'git',
-        ['diff', '--name-only', base, '--diff-filter=ACMR'],
-        workingDirectory: projectPath,
+        [
+          'diff',
+          '--name-only',
+          '--diff-filter=ACMR',
+          '-z',
+          verifiedRef,
+          '--',
+        ],
+        workingDirectory: gitRoot,
+        stdoutEncoding: utf8,
       );
+      if (result.exitCode != 0) {
+        throw ChangedFilesException(
+          _gitFailureMessage('git diff', result.stderr),
+        );
+      }
       final untracked = Process.runSync(
         'git',
-        ['ls-files', '--others', '--exclude-standard'],
-        workingDirectory: projectPath,
+        ['ls-files', '--others', '--exclude-standard', '-z'],
+        workingDirectory: gitRoot,
+        stdoutEncoding: utf8,
       );
+      if (untracked.exitCode != 0) {
+        throw ChangedFilesException(
+          _gitFailureMessage('git ls-files', untracked.stderr),
+        );
+      }
 
       final changed = <String>{};
-      for (final line in (result.stdout as String).split('\n')) {
-        final trimmed = line.trim();
-        if (trimmed.isNotEmpty) {
-          changed.add(p.normalize(p.join(projectPath, trimmed)));
+      for (final path in (result.stdout as String).split('\x00')) {
+        if (path.isNotEmpty) {
+          changed.add(_projectAnchoredGitPath(
+            projectPath: projectPath,
+            canonicalProjectPath: canonicalProjectPath,
+            canonicalGitRoot: canonicalGitRoot,
+            gitRelativePath: path,
+          ));
         }
       }
-      for (final line in (untracked.stdout as String).split('\n')) {
-        final trimmed = line.trim();
-        if (trimmed.isNotEmpty) {
-          changed.add(p.normalize(p.join(projectPath, trimmed)));
+      for (final path in (untracked.stdout as String).split('\x00')) {
+        if (path.isNotEmpty) {
+          changed.add(_projectAnchoredGitPath(
+            projectPath: projectPath,
+            canonicalProjectPath: canonicalProjectPath,
+            canonicalGitRoot: canonicalGitRoot,
+            gitRelativePath: path,
+          ));
         }
       }
       return changed;
-    } catch (_) {
-      return {};
+    } on ProcessException {
+      return null;
     }
+  }
+
+  static String _gitFailureMessage(String command, Object stderr) {
+    final detail = stderr.toString().trim();
+    return detail.isEmpty ? '$command failed.' : '$command failed: $detail';
+  }
+
+  static String _projectAnchoredGitPath({
+    required String projectPath,
+    required String canonicalProjectPath,
+    required String canonicalGitRoot,
+    required String gitRelativePath,
+  }) {
+    final canonicalPath = p.join(canonicalGitRoot, gitRelativePath);
+    final projectRelativePath = p.relative(
+      canonicalPath,
+      from: canonicalProjectPath,
+    );
+    return p.normalize(p.join(projectPath, projectRelativePath));
   }
 }

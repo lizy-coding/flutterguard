@@ -221,18 +221,18 @@ Commands:
 
 | Code | Meaning |
 |------|---------|
-| `0` | Success (includes help/version output and no-files-found) |
+| `0` | Success, including help/version and a changed-only scan with no relevant changes |
 | `1` | CI gate failed (issues at/above `--fail-on` level, or score below `--min-score`) |
-| `2` | Scan error (bad path, config parse error) |
+| `2` | Scan setup error (bad path, missing explicit config, invalid config, or no configured Dart files) |
 
 ### Path resolution
 
 FlutterGuard auto-discovers the project root by walking up from the current directory, looking for `flutterguard.yaml`, `pubspec.yaml`, or a `lib/` directory. If none are found, it falls back to the current directory.
 
-The `--config` path is resolved with this priority:
-1. Absolute path (`-c /path/to/config.yaml`) — used as-is
-2. Relative path matching a file from CWD (`-c my_config.yaml`) — resolved from CWD
-3. Relative path matching a file from the project root — fallback
+The `--config` path is resolved against the target project:
+1. Absolute paths are used as-is and must exist.
+2. Relative paths are resolved from the target project root, never from CWD.
+3. An omitted default `flutterguard.yaml` uses built-in defaults; any explicitly selected config must exist.
 
 ---
 
@@ -513,12 +513,12 @@ repos:
 ```bash
 #!/usr/bin/env bash
 # scan_ci.sh
-flutterguard scan . --format json --fail-on high --min-score 80
-if [ $? -eq 0 ]; then
+if flutterguard scan . --format json --fail-on high --min-score 80; then
     echo "All checks passed!"
 else
-    echo "CI gate failed! Check .flutterguard/report.json for details."
-    exit 1
+    status=$?
+    echo "FlutterGuard failed with exit code $status."
+    exit "$status"
 fi
 ```
 </details>
@@ -530,12 +530,13 @@ fi
 # scan_ci.ps1
 $ErrorActionPreference = "Stop"
 flutterguard scan . --format json --fail-on high --min-score 80
+$status = $LASTEXITCODE
 
-if ($LASTEXITCODE -eq 0) {
+if ($status -eq 0) {
     Write-Host "All checks passed!" -ForegroundColor Green
 } else {
-    Write-Host "CI gate failed! Check .flutterguard/report.json for details." -ForegroundColor Red
-    exit 1
+    Write-Host "FlutterGuard failed with exit code $status." -ForegroundColor Red
+    exit $status
 }
 ```
 </details>

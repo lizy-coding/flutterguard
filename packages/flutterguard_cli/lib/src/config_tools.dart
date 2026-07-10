@@ -360,12 +360,8 @@ rules:
 
   static String resolveConfigPathForProject({
     required String projectPath,
-    required String configPath,
+    String? configPath,
   }) {
-    if (p.isAbsolute(configPath)) return configPath;
-    final fromProject = p.join(projectPath, configPath);
-    if (configPath == 'flutterguard.yaml') return fromProject;
-    if (File(fromProject).existsSync()) return fromProject;
     return ProjectResolver.resolveConfigPath(
       projectPath: projectPath,
       explicitConfig: configPath,
@@ -430,7 +426,7 @@ rules:
 
   static DoctorResult doctor({
     required String projectPath,
-    required String configPath,
+    String? configPath,
   }) {
     final resolvedProjectPath = ProjectResolver.resolveProjectPath(projectPath);
     if (!Directory(resolvedProjectPath).existsSync()) {
@@ -442,7 +438,10 @@ rules:
       configPath: configPath,
     );
     final configExists = File(resolvedConfigPath).existsSync();
-    final config = ScanConfig.fromFile(resolvedConfigPath);
+    final config = ScanConfig.fromFile(
+      resolvedConfigPath,
+      requireFile: configPath != null,
+    );
     final files = FileCollector.collect(resolvedProjectPath, config);
 
     final messages = <DoctorMessage>[];
@@ -454,7 +453,7 @@ rules:
     }
     if (files.isEmpty) {
       messages.add(DoctorMessage(
-        DoctorSeverity.warning,
+        DoctorSeverity.error,
         'No Dart files matched include/exclude patterns.',
       ));
     }
