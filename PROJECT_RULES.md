@@ -70,9 +70,10 @@ root/analysis_options.yaml          # strict-casts + strict-inference + 6 lint r
 
 ### 9.3 flutterguard.yaml Config Override Chain
 ```
-root/flutterguard.yaml                          # development defaults (maxLines: 500/300/80)
-└── <user_project>/flutterguard.yaml             # per-scan override (merges over root)
-    └── (injected via CLI --config flag)          # explicit path override
+<target_project>
+├── --config <path>                              # explicit project-relative or absolute config
+├── flutterguard.yaml                            # default project config when no override is given
+└── built-in defaults                            # only when no override is given and the default file is absent
 ```
 
-**Rule**: Root config serves as documented example. User projects may override all fields.
+**Rule**: Config files do not merge across projects. Relative paths resolve from the target project root, and explicitly selected files must exist.

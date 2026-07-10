@@ -161,7 +161,8 @@ Important distinction:
 CLI responses should stay short and operational:
 
 - `--help`: show common commands, option summary, and the four-level config path
-- no files found: mention project path plus include/exclude patterns
+- full scan with no matched files: fail as a setup error and point to include/exclude patterns
+- changed-only scan with no relevant changes: succeed with an empty changed-mode report
 - config parse error: show the failing config key and expected value type
 - CI gate failure: show the failing threshold and direct the user to JSON output
 
