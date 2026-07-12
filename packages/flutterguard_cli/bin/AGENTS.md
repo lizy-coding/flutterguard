@@ -1,15 +1,14 @@
 # CLI Entry Layer
 
 ## Responsibility
-`flutterguard.dart` is only the command-line adapter.
+`flutterguard.dart` is only the top-level command router.
 
 It should:
-- Parse commands and options with `package:args`.
+- Use the parser tree from `lib/src/cli/cli_parsers.dart`.
 - Support positional path: `flutterguard scan ./my_project` (no `-p` required).
 - Print help/version text.
 - Convert validation or scan errors into documented exit codes.
-- Call `FlutterGuardScanner.scan()` for real work.
-- Pass `--no-color` flag through to `ReportGenerator`.
+- Delegate functional command behavior to `lib/src/cli/`.
 
 It should not:
 - Implement rules.

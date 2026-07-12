@@ -25,6 +25,7 @@ import 'package:flutterguard_cli/src/rules/pubspec_security.dart';
 import 'package:flutterguard_cli/src/rules/registry.dart';
 import 'package:flutterguard_cli/src/sarif_report.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
+import 'package:flutterguard_cli/src/source_workspace.dart';
 import 'package:flutterguard_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -397,12 +398,17 @@ dependencies:
         issues: const [],
         suppressedCount: 2,
         suppressedByBaselineCount: 3,
+        diagnostics: const [
+          ScanDiagnostic(stage: 'read', message: 'unreadable'),
+        ],
       );
       final decoded = jsonDecode(json) as Map<String, Object?>;
       final summary = decoded['summary'] as Map<String, Object?>;
 
       expect(summary['suppressed'], 2);
       expect(summary['suppressedByBaseline'], 3);
+      expect(summary['diagnostics'], 1);
+      expect(decoded['diagnostics'], hasLength(1));
     });
   });
 
@@ -419,6 +425,35 @@ dependencies:
       final result = FlutterGuardScanner.scan(projectPath: dir.path);
 
       expect(result.files, [p.join(dir.path, 'lib', 'plain.dart')]);
+    });
+
+    test('scanner analyzes the project-root pubspec', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_root_pubspec_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync();
+      File(p.join(dir.path, 'lib', 'plain.dart'))
+          .writeAsStringSync('class Plain {}\n');
+      File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('''
+name: root_pubspec_test
+dependencies:
+  mqtt_client: ^9.0.0
+''');
+
+      final result = FlutterGuardScanner.scan(projectPath: dir.path);
+
+      expect(
+        result.issues.where((issue) => issue.id == 'pubspec_security'),
+        isNotEmpty,
+      );
+    });
+
+    test('source workspace retains read failures as diagnostics', () {
+      final workspace = SourceWorkspace();
+
+      expect(workspace.source(p.join(fixturesPath, 'missing.dart')), isNull);
+      expect(workspace.diagnostics, hasLength(1));
+      expect(workspace.diagnostics.single.stage, 'read');
     });
 
     test('scanner rejects a missing custom config', () {
@@ -760,6 +795,53 @@ class AnotherChangedWidget extends StatelessWidget {}
       expect(result.issues.every((i) => i.file == changedFile), isTrue);
     });
 
+    test('changed_only resolves imports to unchanged architecture targets', () {
+      final dir = Directory.systemTemp.createTempSync(
+        'flutterguard_changed_boundary_',
+      );
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib', 'ui')).createSync(recursive: true);
+      Directory(p.join(dir.path, 'lib', 'data')).createSync(recursive: true);
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include:
+  - lib/**
+architecture:
+  layers:
+    - name: ui
+      path: lib/ui/**
+      allowed_deps: []
+    - name: data
+      path: lib/data/**
+      allowed_deps: []
+''');
+      final source = p.join(dir.path, 'lib', 'ui', 'screen.dart');
+      final target = p.join(dir.path, 'lib', 'data', 'repository.dart');
+      File(source).writeAsStringSync(
+        "import '../data/repository.dart';\nclass Screen {}\n",
+      );
+      File(target).writeAsStringSync('class Repository {}\n');
+      _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['add', '.']);
+      _runGit(dir, ['commit', '-m', 'initial']);
+      File(source).writeAsStringSync(
+        "import '../data/repository.dart';\nclass Screen {}\n// changed\n",
+      );
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+        base: 'main',
+      );
+
+      expect(result.files, [source]);
+      expect(
+        result.issues.where((issue) => issue.id == 'layer_violation'),
+        hasLength(1),
+      );
+    });
+
     test('changed_only_full_scan_when_no_git', () {
       final dir = Directory.systemTemp.createTempSync('flutterguard_no_git_');
       addTearDown(() => dir.deleteSync(recursive: true));
@@ -807,6 +889,41 @@ class AnotherChangedWidget extends StatelessWidget {}
       expect(result.scanMode, 'changed');
       expect(result.files, isEmpty);
       expect(result.issues, isEmpty);
+    });
+
+    test('changed_only runs project rules when pubspec changes', () {
+      final dir = Directory.systemTemp.createTempSync(
+        'flutterguard_changed_pubspec_',
+      );
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync(recursive: true);
+      _writeMinimalProjectConfig(dir);
+      File(p.join(dir.path, 'lib', 'clean.dart'))
+          .writeAsStringSync('class Clean {}\n');
+      final pubspec = File(p.join(dir.path, 'pubspec.yaml'))
+        ..writeAsStringSync('name: changed_pubspec_test\n');
+      _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['add', '.']);
+      _runGit(dir, ['commit', '-m', 'initial']);
+      pubspec.writeAsStringSync('''
+name: changed_pubspec_test
+dependencies:
+  mqtt_client: ^9.0.0
+''');
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+        base: 'main',
+      );
+
+      expect(result.files, isEmpty);
+      expect(
+        result.issues.where((issue) => issue.id == 'pubspec_security'),
+        isNotEmpty,
+      );
     });
 
     test('changed_only rejects invalid or option-like base refs', () {

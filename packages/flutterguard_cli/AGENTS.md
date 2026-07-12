@@ -8,13 +8,18 @@ Primary CLI tool for IoT Flutter static architecture scanning and CI gating.
 - depended by: nothing
 
 ## Entry Points
-- bin: `bin/flutterguard.dart` — CLI entry, arg parsing, rule wiring
+- bin: `bin/flutterguard.dart` — thin CLI router, help, and exit codes
 - lib barrel: `lib/flutterguard_cli.dart`
 
 ## Key Source Files
 | File | Responsibility |
 |------|---------------|
-| `bin/flutterguard.dart` | Arg parsing, positional path, scan orchestration, exit codes, `--no-color` |
+| `bin/flutterguard.dart` | Top-level routing, positional path, help, exit codes |
+| `src/cli/` | Parser tree and functional command handlers |
+| `src/scan_context.dart` | Project/all/target file scope and scan mode |
+| `src/source_workspace.dart` | Shared source/AST cache and diagnostics |
+| `src/import_graph.dart` | Shared import graph for architecture rules |
+| `src/rules/catalog.dart` | Explicit metadata and execution wiring |
 | `src/config_loader.dart` | YAML → ScanConfig typedef parsing (11 rule configs + architecture) |
 | `src/file_collector.dart` | Glob-based .dart file discovery |
 | `src/project_resolver.dart` | Project auto-discovery (walk-up flutterguard.yaml / pubspec.yaml / lib/) |
@@ -43,21 +48,22 @@ IoT: DeviceLifecycleRule, MqttConnectionRule, BleScanningRule, IotSecurityRule
 
 ## Test
 - command: `melos run test:cli`
-- test files: `test/scanner_test.dart` (53 tests) and `test/cli_test.dart` (4 process-level tests)
+- test files: `test/scanner_test.dart` (57 tests) and `test/cli_test.dart` (4 process-level tests)
 - fixtures: `test/fixtures/` (16 functional fixture files)
-- every new rule needs: spec entry → config typedef → class → fixture → test → wire in scanner.dart
+- every new rule needs: spec entry → config typedef → class → fixture → test → wire in rules/catalog.dart
 
 ## Current Toolchain Flow
-1. `bin/flutterguard.dart` parses CLI arguments (supports positional `<path>`), maps validation errors to exit codes.
+1. `bin/flutterguard.dart` routes CLI commands (supports positional `<path>`) and maps validation errors to exit codes; `lib/src/cli/` owns parser and command-family behavior.
 2. `lib/src/project_resolver.dart` auto-discovers project root by walking up for flutterguard.yaml / pubspec.yaml / lib/.
 3. `lib/src/scanner.dart` owns scan orchestration: config loading, file collection, rule execution, issue sorting, and optional JSON writing.
 4. `lib/src/config_loader.dart` parses `flutterguard.yaml` into typed record configs.
 5. `lib/src/file_collector.dart` resolves include/exclude globs to Dart files.
-6. `lib/src/rules/` contains explicit rule classes. Do not add reflection or dynamic plugin loading.
-7. `lib/src/report_generator.dart` renders table output (with optional `--no-color`) and JSON report payloads.
+6. `lib/src/rules/catalog.dart` explicitly registers metadata and execution. Do not add reflection or dynamic plugin loading.
+7. `SourceWorkspace` and `ImportGraph` provide per-scan shared analysis data.
+8. `lib/src/report_generator.dart` renders table output (with optional `--no-color`) and JSON report payloads.
 
 ## Change Boundaries
-- Put user-facing CLI parsing and exit-code behavior in `bin/`.
+- Put top-level CLI routing/help in `bin/`; put functional command parsing and behavior in `lib/src/cli/`.
 - Put reusable scan behavior in `lib/src/scanner.dart`, not in `bin/`.
 - Put rule-specific detection in `lib/src/rules/`.
 - Put shared path/import/source helpers in `lib/src/*_utils.dart`.
