@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-07-12)
 
+### Architecture Refactor
+
+- **cli:** Introduced shared scan analysis infrastructure: `ScanContext`, `SourceWorkspace`, `ImportGraph`, and `DependencyBoundaryEngine`.
+- **cli:** Added `rules/catalog.dart` as the single source of truth for rule metadata and execution, routing all rules through the shared workspace.
+- **cli:** Split command handlers into `lib/src/cli/`, reducing `bin/flutterguard.dart` to routing, help, and exit codes.
+- **ci:** Aligned the release workflow Dart SDK with the workspace `^3.11.5` constraint.
 - **fix:** Reject full scans whose include/exclude policy matches no Dart files instead of returning a successful empty report.
 - **fix:** Resolve relative configs from the target project and reject missing explicitly selected config files.
 - **fix:** Treat clean changed-only scans as successful empty incremental reports and reject invalid Git base refs.
