@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import 'domain.dart';
 import 'priority.dart';
+import 'source_workspace.dart';
 import 'static_issue.dart';
 
 class _Ansi {
@@ -60,6 +61,7 @@ class ReportGenerator {
     String scanMode = 'full',
     int suppressedCount = 0,
     int suppressedByBaselineCount = 0,
+    List<ScanDiagnostic> diagnostics = const [],
   }) {
     final byDomain = _buildSummaryByDomain(issues);
     final score = calculateScore(issues);
@@ -77,9 +79,12 @@ class ReportGenerator {
         'low': issues.where((i) => i.level == RiskLevel.low).length,
         'suppressed': suppressedCount,
         'suppressedByBaseline': suppressedByBaselineCount,
+        'diagnostics': diagnostics.length,
         'byDomain': byDomain,
       },
       'issues': issues.map((i) => i.toJson()).toList(),
+      'diagnostics':
+          diagnostics.map((diagnostic) => diagnostic.toJson()).toList(),
     };
 
     return const JsonEncoder.withIndent('  ').convert(payload);

@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
 import '../rule_meta.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 final _secretPattern = RegExp(
@@ -19,16 +18,19 @@ class IotSecurityRule {
 
   const IotSecurityRule(this.config);
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    SourceWorkspace? workspace,
+  }) {
     if (!config.enabled) return [];
 
     final issues = <StaticIssue>[];
+    final sources = workspace ?? SourceWorkspace();
 
     for (final file in files) {
-      try {
-        final content = File(file).readAsStringSync();
-        issues.addAll(_checkFile(file, content));
-      } catch (_) {}
+      final source = sources.source(file);
+      if (source == null) continue;
+      issues.addAll(_checkFile(file, source.content));
     }
 
     return issues;

@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 
@@ -8,6 +5,7 @@ import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
 import '../rule_meta.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 class LargeUnitsRule {
@@ -21,55 +19,54 @@ class LargeUnitsRule {
     required this.largeBuildMethodConfig,
   });
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    SourceWorkspace? workspace,
+  }) {
     final issues = <StaticIssue>[];
+    final sources = workspace ?? SourceWorkspace();
 
     for (final file in files) {
+      final source = sources.source(file);
+      if (source == null) continue;
       if (largeFileConfig.enabled) {
-        issues.addAll(_checkLargeFile(file));
+        issues.addAll(_checkLargeFile(file, source.lines.length));
       }
 
       if (largeClassConfig.enabled || largeBuildMethodConfig.enabled) {
-        try {
-          final content = File(file).readAsStringSync();
-          final result = parseString(content: content, path: file);
-          if (largeClassConfig.enabled) {
-            issues.addAll(_checkLargeClass(file, content, result.unit));
-          }
-          if (largeBuildMethodConfig.enabled) {
-            issues.addAll(_checkLargeBuild(file, content, result.unit));
-          }
-        } catch (_) {}
+        if (largeClassConfig.enabled) {
+          issues.addAll(_checkLargeClass(file, source.content, source.unit));
+        }
+        if (largeBuildMethodConfig.enabled) {
+          issues.addAll(_checkLargeBuild(file, source.content, source.unit));
+        }
       }
     }
 
     return issues;
   }
 
-  List<StaticIssue> _checkLargeFile(String file) {
-    try {
-      final lines = File(file).readAsLinesSync();
-      if (lines.length > largeFileConfig.maxLines) {
-        return [
-          StaticIssue(
-            id: 'large_file',
-            title: '文件过大',
-            file: file,
-            line: null,
-            level: RiskLevel.low,
-            domain: IssueDomain.standards,
-            priority: Priority.p2,
-            message: '文件 ${lines.length} 行（阈值: ${largeFileConfig.maxLines} 行）',
-            detail: '',
-            suggestion: '建议将 ${p.basename(file)} 拆分为更小的模块文件',
-            metadata: {
-              'actual': lines.length,
-              'threshold': largeFileConfig.maxLines,
-            },
-          ),
-        ];
-      }
-    } catch (_) {}
+  List<StaticIssue> _checkLargeFile(String file, int lineCount) {
+    if (lineCount > largeFileConfig.maxLines) {
+      return [
+        StaticIssue(
+          id: 'large_file',
+          title: '文件过大',
+          file: file,
+          line: null,
+          level: RiskLevel.low,
+          domain: IssueDomain.standards,
+          priority: Priority.p2,
+          message: '文件 $lineCount 行（阈值: ${largeFileConfig.maxLines} 行）',
+          detail: '',
+          suggestion: '建议将 ${p.basename(file)} 拆分为更小的模块文件',
+          metadata: {
+            'actual': lineCount,
+            'threshold': largeFileConfig.maxLines,
+          },
+        ),
+      ];
+    }
     return [];
   }
 

@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import 'baseline.dart';
 import 'rules/registry.dart';
+import 'source_workspace.dart';
 import 'static_issue.dart';
 
 class IssueExporter {
@@ -15,6 +16,7 @@ class IssueExporter {
     String? filePath,
     int? line,
     int contextLines = 2,
+    SourceWorkspace? workspace,
   }) {
     final issue = _findIssue(
       projectPath: projectPath,
@@ -36,7 +38,7 @@ class IssueExporter {
       'fingerprint': Baseline.fingerprint(issue, projectPath),
       'issue': issue.toJson()..['file'] = relativePath,
       'rule': meta?.toJson(),
-      'context': _context(issue, contextLines),
+      'context': _context(issue, contextLines, workspace: workspace),
       'feedbackTemplate': {
         'whyFalsePositiveOrFalseNegative': '',
         'expectedBehavior': '',
@@ -70,7 +72,11 @@ class IssueExporter {
     return null;
   }
 
-  static Map<String, Object?> _context(StaticIssue issue, int contextLines) {
+  static Map<String, Object?> _context(
+    StaticIssue issue,
+    int contextLines, {
+    SourceWorkspace? workspace,
+  }) {
     final line = issue.line;
     final file = File(issue.file);
     if (line == null || !file.existsSync()) {
@@ -80,7 +86,8 @@ class IssueExporter {
       };
     }
 
-    final lines = file.readAsLinesSync();
+    final lines =
+        workspace?.source(issue.file)?.lines ?? file.readAsLinesSync();
     final start = (line - contextLines).clamp(1, lines.length);
     final end = (line + contextLines).clamp(1, lines.length);
     return {

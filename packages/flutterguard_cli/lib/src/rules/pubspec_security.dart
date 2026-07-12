@@ -7,6 +7,7 @@ import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
 import '../rule_meta.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 const _vulnerableDeps = <String, String>{
@@ -23,14 +24,20 @@ class PubspecSecurityRule {
 
   const PubspecSecurityRule(this.config);
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    String? projectPath,
+    SourceWorkspace? workspace,
+  }) {
     if (!config.enabled) return [];
 
     final issues = <StaticIssue>[];
+    final candidateDirectories = projectPath == null
+        ? {for (final file in files) p.dirname(file)}
+        : {projectPath};
 
-    for (final file in files) {
-      final dir = p.dirname(file);
-      final pubspec = p.join(dir, 'pubspec.yaml');
+    for (final directory in candidateDirectories) {
+      final pubspec = p.join(directory, 'pubspec.yaml');
       if (!File(pubspec).existsSync()) continue;
 
       try {
@@ -38,7 +45,14 @@ class PubspecSecurityRule {
         final yaml = loadYaml(content);
         if (yaml is! YamlMap) continue;
         issues.addAll(_checkPubspec(pubspec, yaml));
-      } catch (_) {}
+      } on Object catch (error) {
+        workspace?.addDiagnostic(ScanDiagnostic(
+          stage: 'pubspec_parse',
+          file: pubspec,
+          message: error.toString(),
+          severity: ScanDiagnosticSeverity.error,
+        ));
+      }
     }
 
     return _deduplicate(issues);

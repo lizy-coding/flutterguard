@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/source/line_info.dart';
 
@@ -9,6 +6,7 @@ import '../domain.dart';
 import '../priority.dart';
 import '../rule_meta.dart';
 import '../source_utils.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 const _bleTypePatterns = ['Ble', 'Ble', 'BluetoothDevice', 'Bluetooth'];
@@ -18,17 +16,21 @@ class BleScanningRule {
 
   const BleScanningRule(this.config);
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    SourceWorkspace? workspace,
+  }) {
     if (!config.enabled) return [];
 
     final issues = <StaticIssue>[];
+    final sources = workspace ?? SourceWorkspace();
 
     for (final file in files) {
-      try {
-        final content = File(file).readAsStringSync();
-        final result = parseString(content: content, path: file);
-        issues.addAll(_checkFile(file, content, result.unit, result.lineInfo));
-      } catch (_) {}
+      final source = sources.source(file);
+      if (source == null) continue;
+      issues.addAll(
+        _checkFile(file, source.content, source.unit, source.lineInfo),
+      );
     }
 
     return issues;

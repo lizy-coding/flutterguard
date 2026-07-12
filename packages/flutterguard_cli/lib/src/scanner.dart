@@ -8,19 +8,11 @@ import 'file_collector.dart';
 import 'path_utils.dart';
 import 'project_resolver.dart';
 import 'report_generator.dart';
-import 'rules/ble_scanning.dart';
-import 'rules/circular_dependency.dart';
-import 'rules/device_lifecycle.dart';
-import 'rules/iot_security.dart';
-import 'rules/large_units.dart';
-import 'rules/layer_violation.dart';
-import 'rules/lifecycle_resource.dart';
-import 'rules/missing_const_constructor.dart';
-import 'rules/module_violation.dart';
-import 'rules/mqtt_connection.dart';
-import 'rules/pubspec_security.dart';
+import 'scan_context.dart';
+import 'rules/catalog.dart';
 import 'sarif_report.dart';
 import 'static_issue.dart';
+import 'source_workspace.dart';
 import 'suppression.dart';
 
 class ScanException implements Exception {
@@ -42,6 +34,8 @@ class ScanResult {
   final int suppressedByBaselineCount;
   final int score;
   final String scanMode;
+  final List<ScanDiagnostic> diagnostics;
+  final SourceWorkspace sources;
 
   const ScanResult({
     required this.projectPath,
@@ -53,6 +47,8 @@ class ScanResult {
     required this.suppressedByBaselineCount,
     required this.score,
     required this.scanMode,
+    required this.sources,
+    this.diagnostics = const [],
   });
 }
 
@@ -63,6 +59,7 @@ class FlutterGuardScanner {
     String outputDir = '.flutterguard',
     bool writeJson = false,
     bool writeSarif = false,
+    @Deprecated('Color is a presentation concern; pass it to ReportGenerator.')
     bool noColor = false,
     bool changedOnly = false,
     String base = 'main',
@@ -90,8 +87,9 @@ class FlutterGuardScanner {
         'No Dart files matched the configured include/exclude patterns.',
       );
     }
-    var scanMode = 'full';
+    var scanMode = ScanMode.full;
     var filesToScan = files;
+    var changedFiles = <String>{};
 
     if (changedOnly) {
       try {
@@ -100,12 +98,11 @@ class FlutterGuardScanner {
           base,
         );
         if (changed != null) {
-          final changedDart = changed
-              .where((f) => f.endsWith('.dart'))
-              .map(normalizePath)
-              .toSet();
+          changedFiles = changed.map(normalizePath).toSet();
+          final changedDart =
+              changedFiles.where((f) => f.endsWith('.dart')).toSet();
           filesToScan = files.where((f) => changedDart.contains(f)).toList();
-          scanMode = 'changed';
+          scanMode = ScanMode.changed;
         }
       } on ChangedFilesException catch (e) {
         throw ScanException(e.message);
@@ -116,17 +113,25 @@ class FlutterGuardScanner {
         ? outputDir
         : p.join(resolvedProjectPath, outputDir);
 
-    final rawIssues = _analyze(
-      files: filesToScan,
-      config: config,
+    final sources = SourceWorkspace();
+    final context = ScanContext(
       projectPath: resolvedProjectPath,
-      changedOnly: scanMode == 'changed',
+      config: config,
+      allFiles: files,
+      targetFiles: filesToScan,
+      mode: scanMode,
+      sources: sources,
+      changedFiles: changedFiles,
     );
+    final rawIssues = _analyze(context);
 
     var issues = rawIssues;
     var suppressedCount = 0;
     if (applySuppression) {
-      final suppression = SuppressionFilter(filesToScan);
+      final suppression = SuppressionFilter(
+        filesToScan,
+        workspace: sources,
+      );
       final visible = <StaticIssue>[];
       for (final issue in issues) {
         if (suppression.isSuppressed(issue)) {
@@ -164,9 +169,10 @@ class FlutterGuardScanner {
       final json = ReportGenerator.generateJson(
         projectPath: resolvedProjectPath,
         issues: issues,
-        scanMode: scanMode,
+        scanMode: scanMode.name,
         suppressedCount: suppressedCount,
         suppressedByBaselineCount: suppressedByBaselineCount,
+        diagnostics: sources.diagnostics,
       );
       File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
     }
@@ -187,62 +193,14 @@ class FlutterGuardScanner {
       suppressedCount: suppressedCount,
       suppressedByBaselineCount: suppressedByBaselineCount,
       score: score,
-      scanMode: scanMode,
+      scanMode: scanMode.name,
+      sources: sources,
+      diagnostics: sources.diagnostics,
     );
   }
 
-  static List<StaticIssue> _analyze({
-    required List<String> files,
-    required ScanConfig config,
-    required String projectPath,
-    bool changedOnly = false,
-  }) {
-    final allIssues = <StaticIssue>[];
-
-    allIssues.addAll(LargeUnitsRule(
-      largeFileConfig: config.rules.largeFile,
-      largeClassConfig: config.rules.largeClass,
-      largeBuildMethodConfig: config.rules.largeBuildMethod,
-    ).analyze(files));
-    allIssues.addAll(
-      LifecycleResourceRule(config.rules.lifecycleResource).analyze(files),
-    );
-
-    if (config.architecture.layerViolationEnabled) {
-      allIssues.addAll(LayerViolationRule(
-        config.architecture.layers,
-        projectPath: projectPath,
-      ).analyze(files));
-    }
-    if (config.architecture.moduleViolationEnabled) {
-      allIssues.addAll(ModuleViolationRule(
-        config.architecture.modules,
-        projectPath: projectPath,
-      ).analyze(files));
-    }
-
-    allIssues.addAll(MissingConstConstructorRule(
-      config.rules.missingConstConstructor,
-    ).analyze(files));
-    allIssues.addAll(CircularDependencyRule(
-      enabled: !changedOnly && config.architecture.detectCycles,
-      projectPath: projectPath,
-    ).analyze(files));
-    allIssues.addAll(DeviceLifecycleRule(
-      config.rules.deviceLifecycle,
-    ).analyze(files));
-    allIssues.addAll(MqttConnectionRule(
-      config.rules.mqttConnection,
-    ).analyze(files));
-    allIssues.addAll(BleScanningRule(
-      config.rules.bleScanning,
-    ).analyze(files));
-    allIssues.addAll(IotSecurityRule(
-      config.rules.iotSecurity,
-    ).analyze(files));
-    allIssues.addAll(PubspecSecurityRule(
-      config.rules.pubspecSecurity,
-    ).analyze(files));
+  static List<StaticIssue> _analyze(ScanContext context) {
+    final allIssues = RuleCatalog.analyze(context);
 
     allIssues.sort((a, b) {
       final levelOrder = {

@@ -1,13 +1,17 @@
 import 'dart:io';
 
+import 'source_workspace.dart';
 import 'static_issue.dart';
 
 class SuppressionFilter {
   final Map<String, Map<int, Set<String>>> _rulesByFileAndLine = {};
 
-  SuppressionFilter(Iterable<String> files) {
+  SuppressionFilter(
+    Iterable<String> files, {
+    SourceWorkspace? workspace,
+  }) {
     for (final file in files) {
-      _rulesByFileAndLine[file] = _parseFile(file);
+      _rulesByFileAndLine[file] = _parseFile(file, workspace: workspace);
     }
   }
 
@@ -21,12 +25,22 @@ class SuppressionFilter {
     return rules.contains('all') || rules.contains(issue.id);
   }
 
-  static Map<int, Set<String>> _parseFile(String path) {
-    final file = File(path);
-    if (!file.existsSync()) return const {};
+  static Map<int, Set<String>> _parseFile(
+    String path, {
+    SourceWorkspace? workspace,
+  }) {
+    final List<String> lines;
+    if (workspace == null) {
+      final file = File(path);
+      if (!file.existsSync()) return const {};
+      lines = file.readAsLinesSync();
+    } else {
+      final source = workspace.source(path);
+      if (source == null) return const {};
+      lines = source.lines;
+    }
 
     final result = <int, Set<String>>{};
-    final lines = file.readAsLinesSync();
     for (var index = 0; index < lines.length; index++) {
       final parsed = _parseLine(lines[index]);
       if (parsed == null) continue;
