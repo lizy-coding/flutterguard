@@ -14,30 +14,41 @@ observability, APM, cloud dashboards, crash reporting, or SDK instrumentation.
   management, and actionable reports.
 - Avoid archived runtime packages for new feature work.
 
-## Milestone 0.4.x — CI Adoption Hardening
+## Architecture Invariants (do not violate)
 
-Goal: Make the existing CLI reliable and low-friction in real CI pipelines.
+These were established by the v0.5.0 refactor and are binding for all future
+work. New agents MUST follow them instead of reintroducing pre-0.5.0 patterns.
 
-Deliverables:
+- Rule metadata and execution are wired through `lib/src/rules/catalog.dart`.
+  It is the single source of truth. Do NOT wire rules directly in
+  `bin/flutterguard.dart` or `scanner.dart`, and do NOT add reflection or
+  dynamic plugin loading.
+- `bin/flutterguard.dart` is thin: top-level routing, help, positional path,
+  and exit codes only. Functional command behavior lives in `lib/src/cli/`
+  (`scan_command`, `baseline_commands`, `config_commands`, `issue_commands`,
+  `rule_commands`, `cli_parsers`).
+- Rules consume shared analysis state, not ad-hoc file reads:
+  - `SourceWorkspace` for source/AST caching and diagnostics.
+  - `ImportGraph` for resolved Dart imports.
+  - `DependencyBoundaryEngine` for layer/module boundary checks.
+  - `ScanContext` for scan scope/mode (project/all/target files).
+- Each rule keeps the standalone `analyze(List<String> files, {SourceWorkspace?
+  workspace})` API so direct rule tests and programmatic consumers keep working.
+- New rule flow is unchanged: spec entry → config typedef → rule class →
+  fixture → test → wire into `rules/catalog.dart`.
+- Workspace SDK constraint is `^3.11.5`; keep CI (`release.yml`,
+  `flutterguard.yml`) SDK aligned when it changes.
 
-- Improve rule accuracy with more real-world IoT Flutter fixtures.
-- Add baseline management commands:
-  - `flutterguard baseline diff`
-  - `flutterguard baseline prune`
-  - `flutterguard baseline stats`
-- Add CI guardrails to prevent baseline growth.
-- Enhance SARIF output with richer rule metadata and precise locations where
-  available.
-- Add checked-in GitHub Actions examples for JSON gates and SARIF upload.
-- Add more suppression tests around comments, whitespace, and adjacent issues.
+## Current State (as of v0.5.0)
 
-Exit Criteria:
+- Milestone 0.4.x (CI Adoption Hardening) is DONE: baseline `stats` / `prune` /
+  `check --no-growth`, config profiles, install diagnostics, issue export, and
+  no-match / changed-only scan policy hardening all shipped in 0.4.0–0.4.1.
+- v0.5.0 was consumed by the internal architecture refactor above rather than
+  the originally planned developer-workflow integrations. Those integrations
+  now move to Milestone 0.6.
 
-- CI users can onboard existing projects without blocking on historical issues.
-- Baseline files can be reviewed and reduced over time.
-- SARIF uploads cleanly to GitHub Code Scanning.
-
-## Milestone 0.5 — Developer Workflow Integrations
+## Milestone 0.6 — Developer Workflow Integrations
 
 Goal: Surface FlutterGuard findings before CI by integrating with developer
 tools.
@@ -68,7 +79,7 @@ Exit Criteria:
 - Developers can see and suppress findings in VS Code without reading CI logs.
 - Teams can start from a profile instead of hand-authoring every rule setting.
 
-## Milestone 0.6 — Fixes, Reports, and Workspace Scale
+## Milestone 0.7 — Fixes, Reports, and Workspace Scale
 
 Goal: Move from reporting issues to helping teams reduce them across larger
 Flutter codebases.
@@ -97,7 +108,7 @@ Exit Criteria:
 - Large Flutter workspaces can run FlutterGuard package-by-package.
 - Architecture violations can be reviewed visually during refactors.
 
-## Milestone 0.7 — Deeper Static Analysis
+## Milestone 0.8 — Deeper Static Analysis
 
 Goal: Reduce false positives and expand IoT-specific detection using stronger
 AST and project context.
@@ -127,7 +138,7 @@ Exit Criteria:
 - Monorepo package imports are handled consistently.
 - New IoT checks remain static-only and CI-safe.
 
-## Milestone 0.8+ — Extensibility and Team Governance
+## Milestone 0.9+ — Extensibility and Team Governance
 
 Goal: Support mature teams that need reusable governance policies without
 turning FlutterGuard into a hosted platform.
