@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+- **fix:** Prevent successful no-op full scans and preserve setup-error exit codes in local CI scripts.
+- **fix:** Anchor configuration policy to the target project and require explicitly selected config files.
+- **ci:** Run analyze, tests, and the demo scan against the current checkout on the OS matrix.
+
+## 0.4.1 (2026-07-09)
+
+### Adoption Hardening
+
+- **cli:** Added `flutterguard doctor install` to diagnose executable version, Dart entrypoint, and PATH conflicts.
+- **cli:** Added `flutterguard issue export` to create a local JSON feedback bundle for one finding without uploading source code.
+- **cli:** Added baseline management commands: `baseline stats`, `baseline prune`, and `baseline check --no-growth`.
+- **cli:** Added `flutterguard init --profile` with recommended, strict, migration, IoT security, architecture-only, and performance-only starter profiles.
+- **cli:** `flutterguard init [<path>]` now supports a positional project path.
+- **test:** Expanded CLI coverage for install diagnostics, issue export, baseline management, and config profiles.
+
+## 0.4.0 (2026-07-08)
+
+### CI Adoption
+
+- **cli:** Added baseline creation with `flutterguard baseline create [<path>]`.
+- **cli:** Added `scan --baseline <file>` so legacy issues can be filtered from reports, score, and CI gates.
+- **cli:** Added single-line / next-line suppression comments for false positive control.
+- **cli:** Added SARIF 2.1.0 output via `--format sarif` for GitHub Code Scanning upload.
+- **cli:** JSON summary now includes suppression and baseline suppression counters.
+- **docs:** Updated English, Chinese, and package README files with baseline, SARIF, `rules`, `explain`, and `--changed-only` usage.
+- **release:** Added local source launchers and cross-platform release packaging scripts.
+- **release:** Added tag-triggered GitHub Release workflow for native binaries.
+- **test:** Expanded CLI tests to cover suppression, baseline, missing baseline failures, SARIF, and JSON summary counters.
+
 ## 0.2.0 (2026-06-15)
 
 ### IoT Domain Rules (5 new rules)

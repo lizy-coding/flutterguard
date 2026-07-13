@@ -7,8 +7,9 @@ on:
     branches: [main, develop]
 
 jobs:
-  scan:
+  validate:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -18,18 +19,27 @@ jobs:
 
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: "3.3.0"
+          sdk: stable
 
-      - name: Install FlutterGuard
-        run: dart pub global activate flutterguard_cli
+      - name: Install workspace dependencies
+        run: dart pub get
 
-      - name: Scan
-        run: flutterguard scan . --format json --fail-on high --min-score 80
-        continue-on-error: true
+      - name: Bootstrap workspace
+        run: dart run melos bootstrap
+
+      - name: Analyze workspace
+        run: dart run melos run analyze
+
+      - name: Test CLI
+        run: dart run melos run test:cli
+
+      - name: Scan demo with current checkout
+        run: dart run flutterguard_cli:flutterguard scan examples/scan_demo --format json --output .flutterguard/ci --fail-on high --min-score 80 --no-color
 
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutterguard-report-${{ matrix.os }}
-          path: .flutterguard/report.json
+          path: examples/scan_demo/.flutterguard/ci/report.json
+          if-no-files-found: error

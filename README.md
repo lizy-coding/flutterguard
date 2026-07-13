@@ -8,7 +8,7 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 
 **Platforms**: macOS, Windows, Linux — pure Dart CLI, no native dependencies.
 
-**Docs**: [Usage Guide](docs/USAGE.md) | [Windows Assessment](docs/WINDOWS_ASSESSMENT.md) | [Spec](docs/FLUTTERGUARD_SPEC.md) | [Architecture](docs/ARCHITECTURE.md)
+**Docs**: [Usage Guide](docs/USAGE.md) | [Configuration Strategy](CONFIGURATION_STRATEGY.md) | [Windows Assessment](docs/WINDOWS_ASSESSMENT.md) | [Spec](docs/FLUTTERGUARD_SPEC.md) | [Architecture](docs/ARCHITECTURE.md)
 
 ## What It Is
 
@@ -35,7 +35,7 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 
 ## Install
 
-### User install (recommended — from pub.dev)
+### Option A: pub.dev install (recommended)
 
 <details open>
 <summary><b>macOS / Linux</b></summary>
@@ -71,20 +71,18 @@ $env:Path += ";$env:USERPROFILE\AppData\Local\Pub\Cache\bin"
 ```
 </details>
 
-### Compile native binary (no Dart SDK required at runtime)
+### Option B: GitHub Release binary (no Dart SDK at runtime)
+
+Download the matching binary from the GitHub Releases page, then run it
+directly:
 
 <details open>
 <summary><b>macOS / Linux</b></summary>
 
 ```bash
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
-dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
-./flutterguard --help
+chmod +x flutterguard
+./flutterguard --version
+./flutterguard scan .
 ```
 </details>
 
@@ -92,18 +90,15 @@ dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
 <summary><b>Windows (PowerShell)</b></summary>
 
 ```powershell
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
-dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart compile exe packages\flutterguard_cli\bin\flutterguard.dart -o flutterguard.exe
-.\flutterguard.exe --help
+.\flutterguard.exe --version
+.\flutterguard.exe scan .
 ```
 </details>
 
-### Developer install (from source)
+### Option C: source checkout for development
+
+Use the local launcher when you want to run the current checkout without
+installing or replacing the global `flutterguard` command.
 
 <details>
 <summary><b>macOS / Linux</b></summary>
@@ -112,11 +107,8 @@ dart compile exe packages\flutterguard_cli\bin\flutterguard.dart -o flutterguard
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart pub global activate --source path packages/flutterguard_cli
-flutterguard --help
+./scripts/flutterguard-dev --version
+./scripts/flutterguard-dev scan .
 ```
 </details>
 
@@ -127,11 +119,8 @@ flutterguard --help
 git clone https://github.com/lizy-coding/flutterguard.git
 cd flutterguard
 dart pub get
-dart pub global activate melos
-melos bootstrap
-
-dart pub global activate --source path packages\flutterguard_cli
-flutterguard --help
+.\scripts\flutterguard-dev.ps1 --version
+.\scripts\flutterguard-dev.ps1 scan .
 ```
 </details>
 
@@ -143,6 +132,14 @@ flutterguard --help
 # Scan the current directory
 flutterguard scan
 
+# Create and validate a starter config
+flutterguard init --profile migration
+flutterguard config doctor
+flutterguard doctor install
+
+# Inspect the merged effective config
+flutterguard config print
+
 # Scan a specific project
 flutterguard scan ./my_flutter_app          # macOS / Linux
 flutterguard scan .\my_flutter_app          # Windows
@@ -153,6 +150,18 @@ flutterguard scan -p D:\path\to\project     # Windows
 
 # JSON output with CI gate
 flutterguard scan . --format json --fail-on high
+
+# Baseline existing issues before enabling a hard CI gate
+flutterguard baseline create .
+flutterguard baseline stats
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
+flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
+
+# GitHub Code Scanning output
+flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+
+# Export one finding for false-positive feedback
+flutterguard issue export --rule mqtt_connection --file lib/device/mqtt.dart --line 42
 
 # Show help
 flutterguard --help
@@ -174,6 +183,19 @@ Commands:
 | Command | Description |
 |---------|-------------|
 | `flutterguard scan [<path>]` | Scan a project (path defaults to current directory) |
+| `flutterguard baseline create [<path>]` | Create a baseline JSON file for existing issues |
+| `flutterguard baseline stats` | Show baseline fingerprint counts |
+| `flutterguard baseline prune [<path>]` | Remove fixed issues from a baseline |
+| `flutterguard baseline check [<path>] --no-growth` | Fail when current issues are missing from baseline |
+| `flutterguard doctor install` | Diagnose executable version and PATH conflicts |
+| `flutterguard init` | Create a starter `flutterguard.yaml` |
+| `flutterguard init --profile migration` | Create a starter config from a profile |
+| `flutterguard init --with-architecture` | Create config with architecture layer/module templates |
+| `flutterguard config print` | Print the merged effective configuration |
+| `flutterguard config doctor` | Validate config, globs, and architecture references |
+| `flutterguard issue export` | Export one issue as a local feedback JSON bundle |
+| `flutterguard rules` | List available rules |
+| `flutterguard explain <rule-id>` | Explain one rule |
 | `flutterguard --help` / `-h` | Show usage |
 | `flutterguard --version` / `-V` | Show version |
 
@@ -184,10 +206,13 @@ Commands:
 | `<path>` | — | `.` | Positional project path (optional, before options) |
 | `--path` | `-p` | `.` | Project path to scan (overridden by positional `<path>`) |
 | `--config` | `-c` | `flutterguard.yaml` | Config file path |
-| `--format` | `-f` | `table` | Output format: `table` or `json` |
+| `--format` | `-f` | `table` | Output format: `table`, `json`, or `sarif` |
 | `--output` | `-o` | `.flutterguard` | Output directory for reports |
 | `--verbose` | `-v` | off | Show detailed output with code context |
 | `--no-color` | — | off | Disable ANSI terminal colors |
+| `--changed-only` | — | off | Only scan Dart files changed since `--base` |
+| `--base` | — | `main` | Git base ref for `--changed-only` |
+| `--baseline` | — | unset | Baseline JSON file used to hide existing issues |
 | `--fail-on` | — | `none` | CI gate: `none` / `high` / `medium` / `low` |
 | `--min-score` | — | unset | Minimum score threshold 0–100 |
 | `--help` | `-h` | — | Show scan usage |
@@ -196,24 +221,34 @@ Commands:
 
 | Code | Meaning |
 |------|---------|
-| `0` | Success (includes help/version output and no-files-found) |
+| `0` | Success, including help/version and a changed-only scan with no relevant changes |
 | `1` | CI gate failed (issues at/above `--fail-on` level, or score below `--min-score`) |
-| `2` | Scan error (bad path, config parse error) |
+| `2` | Scan setup error (bad path, missing explicit config, invalid config, or no configured Dart files) |
 
 ### Path resolution
 
 FlutterGuard auto-discovers the project root by walking up from the current directory, looking for `flutterguard.yaml`, `pubspec.yaml`, or a `lib/` directory. If none are found, it falls back to the current directory.
 
-The `--config` path is resolved with this priority:
-1. Absolute path (`-c /path/to/config.yaml`) — used as-is
-2. Relative path matching a file from CWD (`-c my_config.yaml`) — resolved from CWD
-3. Relative path matching a file from the project root — fallback
+The `--config` path is resolved against the target project:
+1. Absolute paths are used as-is and must exist.
+2. Relative paths are resolved from the target project root, never from CWD.
+3. An omitted default `flutterguard.yaml` uses built-in defaults; any explicitly selected config must exist.
 
 ---
 
 ## Configuration
 
 Create `flutterguard.yaml` in your project root.
+
+Recommended strategy:
+
+1. Start with zero config: `flutterguard scan`.
+2. Run `flutterguard init` when you need custom thresholds or excludes.
+3. Use `flutterguard config print` to inspect merged defaults.
+4. Use `flutterguard config doctor` before enabling CI gates.
+5. Add architecture layers/modules only after project boundaries are agreed.
+
+For the full decision model, see [Configuration Strategy](CONFIGURATION_STRATEGY.md).
 
 ### Basic config (for most users)
 
@@ -341,12 +376,39 @@ Example shape:
     "high": 1,
     "medium": 1,
     "low": 1,
+    "suppressed": 0,
+    "suppressedByBaseline": 0,
     "byDomain": {
       "architecture": { "high": 1, "medium": 0, "low": 0, "total": 1 }
     }
   },
   "issues": []
 }
+```
+
+### SARIF report
+
+`--format sarif` writes `.flutterguard/report.sarif` for GitHub Code Scanning. High, medium, and low map to SARIF `error`, `warning`, and `note`.
+
+### Suppression and baseline
+
+Use source suppression for known false positives:
+
+```dart
+// flutterguard: ignore missing_const_constructor
+// flutterguard: ignore iot_security, mqtt_connection
+// flutterguard: ignore all
+```
+
+Suppression applies only to the comment line and the following line.
+
+Recommended CI adoption order:
+
+```bash
+flutterguard config doctor
+flutterguard baseline create .
+flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
+flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
 ```
 
 ## Scoring
@@ -386,7 +448,32 @@ jobs:
       - name: Install FlutterGuard
         run: dart pub global activate flutterguard_cli
       - name: Scan
-        run: flutterguard scan . --format json --fail-on high --min-score 80
+        run: flutterguard scan . --format json --baseline .flutterguard/baseline.json --fail-on high --min-score 80
+```
+
+### GitHub Code Scanning
+
+```yaml
+name: FlutterGuard SARIF
+
+on: [push, pull_request]
+
+jobs:
+  code-scanning:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.3.0
+      - run: dart pub global activate flutterguard_cli
+      - run: flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .flutterguard/report.sarif
 ```
 
 ### GitLab CI
@@ -426,12 +513,12 @@ repos:
 ```bash
 #!/usr/bin/env bash
 # scan_ci.sh
-flutterguard scan . --format json --fail-on high --min-score 80
-if [ $? -eq 0 ]; then
+if flutterguard scan . --format json --fail-on high --min-score 80; then
     echo "All checks passed!"
 else
-    echo "CI gate failed! Check .flutterguard/report.json for details."
-    exit 1
+    status=$?
+    echo "FlutterGuard failed with exit code $status."
+    exit "$status"
 fi
 ```
 </details>
@@ -443,12 +530,13 @@ fi
 # scan_ci.ps1
 $ErrorActionPreference = "Stop"
 flutterguard scan . --format json --fail-on high --min-score 80
+$status = $LASTEXITCODE
 
-if ($LASTEXITCODE -eq 0) {
+if ($status -eq 0) {
     Write-Host "All checks passed!" -ForegroundColor Green
 } else {
-    Write-Host "CI gate failed! Check .flutterguard/report.json for details." -ForegroundColor Red
-    exit 1
+    Write-Host "FlutterGuard failed with exit code $status." -ForegroundColor Red
+    exit $status
 }
 ```
 </details>

@@ -2,22 +2,18 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'baseline.dart';
 import 'config_loader.dart';
 import 'file_collector.dart';
+import 'path_utils.dart';
 import 'project_resolver.dart';
 import 'report_generator.dart';
-import 'rules/ble_scanning.dart';
-import 'rules/circular_dependency.dart';
-import 'rules/device_lifecycle.dart';
-import 'rules/iot_security.dart';
-import 'rules/large_units.dart';
-import 'rules/layer_violation.dart';
-import 'rules/lifecycle_resource.dart';
-import 'rules/missing_const_constructor.dart';
-import 'rules/module_violation.dart';
-import 'rules/mqtt_connection.dart';
-import 'rules/pubspec_security.dart';
+import 'scan_context.dart';
+import 'rules/catalog.dart';
+import 'sarif_report.dart';
 import 'static_issue.dart';
+import 'source_workspace.dart';
+import 'suppression.dart';
 
 class ScanException implements Exception {
   final String message;
@@ -32,122 +28,179 @@ class ScanResult {
   final String projectPath;
   final String reportDir;
   final List<String> files;
+  final List<StaticIssue> rawIssues;
   final List<StaticIssue> issues;
+  final int suppressedCount;
+  final int suppressedByBaselineCount;
   final int score;
+  final String scanMode;
+  final List<ScanDiagnostic> diagnostics;
+  final SourceWorkspace sources;
 
   const ScanResult({
     required this.projectPath,
     required this.reportDir,
     required this.files,
+    required this.rawIssues,
     required this.issues,
+    required this.suppressedCount,
+    required this.suppressedByBaselineCount,
     required this.score,
+    required this.scanMode,
+    required this.sources,
+    this.diagnostics = const [],
   });
 }
 
 class FlutterGuardScanner {
   static ScanResult scan({
     required String projectPath,
-    String configPath = 'flutterguard.yaml',
+    String? configPath,
     String outputDir = '.flutterguard',
     bool writeJson = false,
+    bool writeSarif = false,
+    @Deprecated('Color is a presentation concern; pass it to ReportGenerator.')
     bool noColor = false,
+    bool changedOnly = false,
+    String base = 'main',
+    String? baselinePath,
+    bool applySuppression = true,
   }) {
-    final resolvedProjectPath =
-        ProjectResolver.resolveProjectPath(projectPath);
+    final resolvedProjectPath = ProjectResolver.resolveProjectPath(projectPath);
     if (!Directory(resolvedProjectPath).existsSync()) {
       throw ScanException(
         'Project path "$resolvedProjectPath" does not exist.',
       );
     }
 
-    final resolvedConfigPath =
-        ProjectResolver.resolveConfigPath(
-          projectPath: resolvedProjectPath,
-          explicitConfig: configPath,
-        );
-    final config = ScanConfig.fromFile(resolvedConfigPath);
+    final resolvedConfigPath = ProjectResolver.resolveConfigPath(
+      projectPath: resolvedProjectPath,
+      explicitConfig: configPath,
+    );
+    final config = ScanConfig.fromFile(
+      resolvedConfigPath,
+      requireFile: configPath != null,
+    );
     final files = FileCollector.collect(resolvedProjectPath, config);
+    if (files.isEmpty) {
+      throw const ScanException(
+        'No Dart files matched the configured include/exclude patterns.',
+      );
+    }
+    var scanMode = ScanMode.full;
+    var filesToScan = files;
+    var changedFiles = <String>{};
+
+    if (changedOnly) {
+      try {
+        final changed = FileCollector.getChangedFiles(
+          resolvedProjectPath,
+          base,
+        );
+        if (changed != null) {
+          changedFiles = changed.map(normalizePath).toSet();
+          final changedDart =
+              changedFiles.where((f) => f.endsWith('.dart')).toSet();
+          filesToScan = files.where((f) => changedDart.contains(f)).toList();
+          scanMode = ScanMode.changed;
+        }
+      } on ChangedFilesException catch (e) {
+        throw ScanException(e.message);
+      }
+    }
 
     final reportDir = p.isAbsolute(outputDir)
         ? outputDir
         : p.join(resolvedProjectPath, outputDir);
 
-    final issues = _analyze(
-      files: files,
-      config: config,
+    final sources = SourceWorkspace();
+    final context = ScanContext(
       projectPath: resolvedProjectPath,
+      config: config,
+      allFiles: files,
+      targetFiles: filesToScan,
+      mode: scanMode,
+      sources: sources,
+      changedFiles: changedFiles,
     );
+    final rawIssues = _analyze(context);
+
+    var issues = rawIssues;
+    var suppressedCount = 0;
+    if (applySuppression) {
+      final suppression = SuppressionFilter(
+        filesToScan,
+        workspace: sources,
+      );
+      final visible = <StaticIssue>[];
+      for (final issue in issues) {
+        if (suppression.isSuppressed(issue)) {
+          suppressedCount++;
+        } else {
+          visible.add(issue);
+        }
+      }
+      issues = visible;
+    }
+
+    var suppressedByBaselineCount = 0;
+    if (baselinePath != null) {
+      final resolvedBaselinePath = p.isAbsolute(baselinePath)
+          ? baselinePath
+          : p.join(resolvedProjectPath, baselinePath);
+      final baseline = Baseline.load(resolvedBaselinePath);
+      final visible = <StaticIssue>[];
+      for (final issue in issues) {
+        if (baseline.contains(issue, resolvedProjectPath)) {
+          suppressedByBaselineCount++;
+        } else {
+          visible.add(issue);
+        }
+      }
+      issues = visible;
+    }
+
     final score = ReportGenerator.calculateScore(issues);
 
-    if (writeJson) {
+    if (writeJson || writeSarif) {
       Directory(reportDir).createSync(recursive: true);
+    }
+    if (writeJson) {
       final json = ReportGenerator.generateJson(
         projectPath: resolvedProjectPath,
         issues: issues,
+        scanMode: scanMode.name,
+        suppressedCount: suppressedCount,
+        suppressedByBaselineCount: suppressedByBaselineCount,
+        diagnostics: sources.diagnostics,
       );
       File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
+    }
+    if (writeSarif) {
+      final sarif = SarifReport.generate(
+        projectPath: resolvedProjectPath,
+        issues: issues,
+      );
+      File(p.join(reportDir, 'report.sarif')).writeAsStringSync(sarif);
     }
 
     return ScanResult(
       projectPath: resolvedProjectPath,
       reportDir: reportDir,
-      files: files,
+      files: filesToScan,
+      rawIssues: rawIssues,
       issues: issues,
+      suppressedCount: suppressedCount,
+      suppressedByBaselineCount: suppressedByBaselineCount,
       score: score,
+      scanMode: scanMode.name,
+      sources: sources,
+      diagnostics: sources.diagnostics,
     );
   }
 
-  static List<StaticIssue> _analyze({
-    required List<String> files,
-    required ScanConfig config,
-    required String projectPath,
-  }) {
-    final allIssues = <StaticIssue>[];
-
-    allIssues.addAll(LargeUnitsRule(
-      largeFileConfig: config.rules.largeFile,
-      largeClassConfig: config.rules.largeClass,
-      largeBuildMethodConfig: config.rules.largeBuildMethod,
-    ).analyze(files));
-    allIssues.addAll(
-      LifecycleResourceRule(config.rules.lifecycleResource).analyze(files),
-    );
-
-    if (config.architecture.layerViolationEnabled) {
-      allIssues.addAll(LayerViolationRule(
-        config.architecture.layers,
-        projectPath: projectPath,
-      ).analyze(files));
-    }
-    if (config.architecture.moduleViolationEnabled) {
-      allIssues.addAll(ModuleViolationRule(
-        config.architecture.modules,
-        projectPath: projectPath,
-      ).analyze(files));
-    }
-
-    allIssues.addAll(MissingConstConstructorRule(
-      config.rules.missingConstConstructor,
-    ).analyze(files));
-    allIssues.addAll(CircularDependencyRule(
-      enabled: config.architecture.detectCycles,
-      projectPath: projectPath,
-    ).analyze(files));
-    allIssues.addAll(DeviceLifecycleRule(
-      config.rules.deviceLifecycle,
-    ).analyze(files));
-    allIssues.addAll(MqttConnectionRule(
-      config.rules.mqttConnection,
-    ).analyze(files));
-    allIssues.addAll(BleScanningRule(
-      config.rules.bleScanning,
-    ).analyze(files));
-    allIssues.addAll(IotSecurityRule(
-      config.rules.iotSecurity,
-    ).analyze(files));
-    allIssues.addAll(PubspecSecurityRule(
-      config.rules.pubspecSecurity,
-    ).analyze(files));
+  static List<StaticIssue> _analyze(ScanContext context) {
+    final allIssues = RuleCatalog.analyze(context);
 
     allIssues.sort((a, b) {
       final levelOrder = {

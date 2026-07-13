@@ -1,13 +1,12 @@
-import 'dart:io';
-
-import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/source/line_info.dart';
 
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../source_utils.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 const _mqttClientTypes = ['MqttClient', 'MQTT', 'MqttConnect'];
@@ -18,17 +17,21 @@ class MqttConnectionRule {
 
   const MqttConnectionRule(this.config);
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    SourceWorkspace? workspace,
+  }) {
     if (!config.enabled) return [];
 
     final issues = <StaticIssue>[];
+    final sources = workspace ?? SourceWorkspace();
 
     for (final file in files) {
-      try {
-        final content = File(file).readAsStringSync();
-        final result = parseString(content: content, path: file);
-        issues.addAll(_checkFile(file, content, result.unit, result.lineInfo));
-      } catch (_) {}
+      final source = sources.source(file);
+      if (source == null) continue;
+      issues.addAll(
+        _checkFile(file, source.content, source.unit, source.lineInfo),
+      );
     }
 
     return issues;
@@ -45,21 +48,20 @@ class MqttConnectionRule {
     _checkHardcodedBroker(file, rawContent, lineInfo, issues);
 
     for (final cls in unit.declarations.whereType<ClassDeclaration>()) {
-      final hasMqttField = cls.members
-          .whereType<FieldDeclaration>()
-          .where((f) {
-            final type = f.fields.type?.toString() ?? '';
-            return _mqttClientTypes.any((t) => type.contains(t));
-          })
-          .isNotEmpty;
+      final hasMqttField = cls.members.whereType<FieldDeclaration>().where((f) {
+        final type = f.fields.type?.toString() ?? '';
+        return _mqttClientTypes.any((t) => type.contains(t));
+      }).isNotEmpty;
 
       if (!hasMqttField) continue;
 
       final methods = cls.members.whereType<MethodDeclaration>().toList();
       final methodNames = methods.map((m) => m.name.lexeme).toSet();
 
-      if (methodNames.contains('connect') && !methodNames.contains('disconnect')) {
-        final connectMethod = methods.firstWhere((m) => m.name.lexeme == 'connect');
+      if (methodNames.contains('connect') &&
+          !methodNames.contains('disconnect')) {
+        final connectMethod =
+            methods.firstWhere((m) => m.name.lexeme == 'connect');
         final line = lineNumberForOffset(lineInfo, connectMethod.name.offset);
         issues.add(StaticIssue(
           id: 'mqtt_connection',
@@ -69,7 +71,8 @@ class MqttConnectionRule {
           level: RiskLevel.high,
           domain: IssueDomain.architecture,
           priority: Priority.p0,
-          message: '类 "${cls.name.lexeme}" 包含 MQTT connect() 调用但缺少 disconnect()',
+          message:
+              '类 "${cls.name.lexeme}" 包含 MQTT connect() 调用但缺少 disconnect()',
           detail: '类: ${cls.name.lexeme}\n'
               'MqttClient 需要连接与断开配对',
           suggestion: '在类中添加 disconnect() 方法并在 dispose 中调用',
@@ -80,8 +83,10 @@ class MqttConnectionRule {
         ));
       }
 
-      if (methodNames.contains('subscribe') && !methodNames.contains('unsubscribe')) {
-        final subscribeMethod = methods.firstWhere((m) => m.name.lexeme == 'subscribe');
+      if (methodNames.contains('subscribe') &&
+          !methodNames.contains('unsubscribe')) {
+        final subscribeMethod =
+            methods.firstWhere((m) => m.name.lexeme == 'subscribe');
         final line = lineNumberForOffset(lineInfo, subscribeMethod.name.offset);
         issues.add(StaticIssue(
           id: 'mqtt_connection',
@@ -91,7 +96,8 @@ class MqttConnectionRule {
           level: RiskLevel.medium,
           domain: IssueDomain.architecture,
           priority: Priority.p0,
-          message: '类 "${cls.name.lexeme}" 包含 MQTT subscribe() 调用但缺少 unsubscribe()',
+          message:
+              '类 "${cls.name.lexeme}" 包含 MQTT subscribe() 调用但缺少 unsubscribe()',
           detail: '类: ${cls.name.lexeme}\n'
               'MQTT 订阅应在不需要时取消',
           suggestion: '在类中添加 unsubscribe() 方法并在 dispose 中调用',
@@ -137,4 +143,19 @@ class MqttConnectionRule {
       }
     }
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'mqtt_connection',
+        name: 'MQTT 连接管理异常',
+        domain: 'architecture',
+        riskLevel: 'high',
+        priority: 'p0',
+        purpose:
+            '检测 MQTT connect/disconnect、subscribe/unsubscribe 配对以及硬编码 broker URL',
+        riskReason: '未配对的 MQTT 调用导致连接泄漏；硬编码 URL 导致安全风险和配置问题',
+        badExample:
+            '调用 connect() 后无 disconnect()；URL 直接写 tcp://mqtt.example.com:1883',
+        fixSuggestion: '在 dispose 中添加 disconnect()；将 broker URL 提取到配置文件',
+        cicdSafe: true,
+      );
 }

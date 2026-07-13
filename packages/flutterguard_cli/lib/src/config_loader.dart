@@ -92,9 +92,15 @@ class ScanConfig {
     'module_violation',
   };
 
-  factory ScanConfig.fromFile(String path) {
+  factory ScanConfig.fromFile(
+    String path, {
+    bool requireFile = false,
+  }) {
     final file = File(path);
     if (!file.existsSync()) {
+      if (requireFile) {
+        throw FormatException('Config file "$path" does not exist.');
+      }
       return _defaultConfig();
     }
 
@@ -232,12 +238,8 @@ class ScanConfig {
       missingConstConstructor: (
         enabled: _boolValue(missingConstConstructor, 'enabled', true),
       ),
-      deviceLifecycle: (
-        enabled: _boolValue(deviceLifecycle, 'enabled', true),
-      ),
-      mqttConnection: (
-        enabled: _boolValue(mqttConnection, 'enabled', true),
-      ),
+      deviceLifecycle: (enabled: _boolValue(deviceLifecycle, 'enabled', true),),
+      mqttConnection: (enabled: _boolValue(mqttConnection, 'enabled', true),),
       bleScanning: (
         enabled: _boolValue(bleScanning, 'enabled', true),
         maxScanDurationMs: _intValue(bleScanning, 'maxScanDurationMs', 10000),
@@ -246,9 +248,7 @@ class ScanConfig {
         enabled: _boolValue(iotSecurity, 'enabled', true),
         requireTls: _boolValue(iotSecurity, 'requireTls', true),
       ),
-      pubspecSecurity: (
-        enabled: _boolValue(pubspecSecurity, 'enabled', true),
-      ),
+      pubspecSecurity: (enabled: _boolValue(pubspecSecurity, 'enabled', true),),
     );
   }
 

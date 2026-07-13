@@ -1,13 +1,12 @@
-import 'dart:io';
-
-import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/source/line_info.dart';
 
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
 import '../source_utils.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 const _resourceTypes = <String, String>{
@@ -27,17 +26,19 @@ class LifecycleResourceRule {
 
   const LifecycleResourceRule(this.config);
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    SourceWorkspace? workspace,
+  }) {
     if (!config.enabled) return [];
 
     final issues = <StaticIssue>[];
+    final sources = workspace ?? SourceWorkspace();
 
     for (final file in files) {
-      try {
-        final content = File(file).readAsStringSync();
-        final result = parseString(content: content, path: file);
-        issues.addAll(_checkFile(file, result.unit, result.lineInfo));
-      } catch (_) {}
+      final source = sources.source(file);
+      if (source == null) continue;
+      issues.addAll(_checkFile(file, source.unit, source.lineInfo));
     }
 
     return issues;
@@ -115,4 +116,18 @@ class LifecycleResourceRule {
 
     return issues;
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'lifecycle_resource_not_disposed',
+        name: '资源未释放',
+        domain: 'performance',
+        riskLevel: 'medium',
+        priority: 'p1',
+        purpose:
+            '检测 StreamSubscription/Timer/AnimationController 等资源在 dispose 中未释放',
+        riskReason: '未释放的资源导致内存泄漏和性能下降',
+        badExample: '在 State 中创建 StreamSubscription 但 dispose() 中未调用 cancel()',
+        fixSuggestion: '在 dispose() 中对每个资源调用对应的 cancel()/dispose()/close()',
+        cicdSafe: true,
+      );
 }

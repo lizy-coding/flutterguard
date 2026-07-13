@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 class ProjectResolver {
+  static const defaultConfigPath = 'flutterguard.yaml';
+
   static const _discoveryMarkers = [
-    'flutterguard.yaml',
+    defaultConfigPath,
     'pubspec.yaml',
   ];
 
@@ -18,16 +20,18 @@ class ProjectResolver {
 
   static String resolveConfigPath({
     required String projectPath,
-    required String explicitConfig,
+    required String? explicitConfig,
   }) {
-    if (p.isAbsolute(explicitConfig)) {
-      return explicitConfig;
+    final configPath = explicitConfig ?? defaultConfigPath;
+    final resolvedPath = p.isAbsolute(configPath)
+        ? p.normalize(configPath)
+        : p.normalize(p.join(projectPath, configPath));
+
+    if (explicitConfig != null && !File(resolvedPath).existsSync()) {
+      throw FormatException('Config file "$resolvedPath" does not exist.');
     }
-    final fromCwd = p.normalize(p.absolute(explicitConfig));
-    if (File(fromCwd).existsSync()) return fromCwd;
-    final fromProject = p.join(projectPath, explicitConfig);
-    if (File(fromProject).existsSync()) return fromProject;
-    return fromProject;
+
+    return resolvedPath;
   }
 
   static String? _walkUpFind(String startPath) {

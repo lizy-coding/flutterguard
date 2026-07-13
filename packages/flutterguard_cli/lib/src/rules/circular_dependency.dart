@@ -1,13 +1,10 @@
-import 'dart:io';
-
-import 'package:analyzer/dart/analysis/utilities.dart';
-import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 
 import '../domain.dart';
-import '../import_utils.dart';
-import '../path_utils.dart';
+import '../import_graph.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 enum _Color { white, gray, black }
@@ -18,57 +15,29 @@ class CircularDependencyRule {
 
   const CircularDependencyRule({this.enabled = true, this.projectPath});
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    SourceWorkspace? workspace,
+    ImportGraph? importGraph,
+  }) {
     if (!enabled || files.length < 2) return [];
 
-    final fileSet = {
-      for (final file in files) normalizePath(file),
+    final sources = workspace ?? SourceWorkspace();
+    final imports = importGraph ??
+        ImportGraph.build(
+          files: files,
+          sourceFiles: files,
+          workspace: sources,
+          projectPath: projectPath,
+        );
+    final graph = {
+      for (final file in imports.files) file: imports.dependenciesOf(file),
     };
-    final graph = <String, Set<String>>{};
-
-    for (final file in fileSet) {
-      try {
-        final content = File(file).readAsStringSync();
-        final result = parseString(content: content, path: file);
-        final deps = _extractDeps(file, result.unit, fileSet);
-        graph[file] = deps;
-      } catch (_) {
-        graph[file] = {};
-      }
-    }
-
-    return _findCycles(graph, fileSet);
-  }
-
-  Set<String> _extractDeps(
-    String sourceFile,
-    CompilationUnit unit,
-    Set<String> fileSet,
-  ) {
-    final deps = <String>{};
-    final imports = unit.directives.whereType<ImportDirective>();
-
-    for (final import in imports) {
-      final importStr = import.uri.stringValue;
-      if (importStr == null) continue;
-
-      final resolved = resolveImport(
-        sourceFile,
-        importStr,
-        fileSet,
-        projectPath: projectPath,
-      );
-      if (resolved != null && resolved != sourceFile) {
-        deps.add(resolved);
-      }
-    }
-
-    return deps;
+    return _findCycles(graph);
   }
 
   List<StaticIssue> _findCycles(
     Map<String, Set<String>> graph,
-    Set<String> fileSet,
   ) {
     final issues = <StaticIssue>[];
     final color = <String, _Color>{};
@@ -145,4 +114,17 @@ class CircularDependencyRule {
       },
     );
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'circular_dependency',
+        name: '循环依赖',
+        domain: 'architecture',
+        riskLevel: 'medium',
+        priority: 'p1',
+        purpose: '检测文件级别的循环 import',
+        riskReason: '循环依赖导致编译耦合、无法单独测试和复用',
+        badExample: 'a.dart → b.dart → c.dart → a.dart',
+        fixSuggestion: '将公共依赖提取到 core 层，或使用接口反转打破循环',
+        cicdSafe: false,
+      );
 }

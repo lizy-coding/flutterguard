@@ -1,5 +1,74 @@
 # Changelog
 
+## 0.5.0 (2026-07-12)
+
+### Architecture Refactor
+
+- **cli:** Introduced shared scan analysis infrastructure: `ScanContext`, `SourceWorkspace`, `ImportGraph`, and `DependencyBoundaryEngine`.
+- **cli:** Added `rules/catalog.dart` as the single source of truth for rule metadata and execution, routing all rules through the shared workspace.
+- **cli:** Split command handlers into `lib/src/cli/`, reducing `bin/flutterguard.dart` to routing, help, and exit codes.
+- **ci:** Aligned the release workflow Dart SDK with the workspace `^3.11.5` constraint.
+- **fix:** Reject full scans whose include/exclude policy matches no Dart files instead of returning a successful empty report.
+- **fix:** Resolve relative configs from the target project and reject missing explicitly selected config files.
+- **fix:** Treat clean changed-only scans as successful empty incremental reports and reject invalid Git base refs.
+- **ci:** Validate the current checkout on all supported CI operating systems instead of scanning with a pub.dev installation.
+
+## 0.4.1 (2026-07-09)
+
+### Adoption Hardening
+
+- **cli:** Added `flutterguard doctor install` to diagnose executable version, Dart entrypoint, and PATH conflicts.
+- **cli:** Added `flutterguard issue export` for local, user-reviewed false-positive feedback bundles.
+- **cli:** Added `flutterguard baseline stats`, `flutterguard baseline prune`, and `flutterguard baseline check --no-growth`.
+- **cli:** Added `flutterguard init --profile` starter profiles and positional `init [<path>]` support.
+- **test:** Added coverage for install diagnostics, issue export, baseline management, and config profiles.
+
+## 0.4.0 (2026-07-08)
+
+### CI Adoption
+
+- **cli:** Added `flutterguard baseline create [<path>]` to snapshot existing issues into `.flutterguard/baseline.json`.
+- **cli:** Added `scan --baseline <file>` to hide baseline-matched issues from stdout, JSON, SARIF, scoring, and CI gates.
+- **cli:** Added source suppression comments: `// flutterguard: ignore <rule_id>`, comma-separated IDs, and `ignore all`.
+- **cli:** Added `--format sarif` with SARIF 2.1.0 output at `.flutterguard/report.sarif` for GitHub Code Scanning.
+- **cli:** JSON summary now reports `suppressed` and `suppressedByBaseline` counts.
+- **docs:** Updated README command references, CI onboarding order, suppression examples, baseline usage, and SARIF upload workflow.
+- **release:** Documented source-checkout launcher usage to avoid stale global binaries.
+
+### Tests
+
+- **test:** Added coverage for suppression matching, next-line `ignore all`, baseline filtering, missing baseline errors, JSON counters, and SARIF structure.
+- **test:** CLI test suite now covers 43 tests.
+
+## 0.3.0 (2026-06-28)
+
+### Incremental Scan (--changed-only)
+
+- **cli:** New `--changed-only` flag — only scans `.dart` files changed since `--base` (default: `main`)
+- **cli:** Integrated `git diff --name-only` + `git ls-files --others` for change detection
+- **cli:** Non-git fallback: gracefully degrades to full scan
+- **cli:** `circular_dependency` auto-disabled in changed-only mode
+- **cli:** JSON report now includes `scanMode: full|changed` field
+
+### Rule Introspection (rules / explain)
+
+- **cli:** New `flutterguard rules` subcommand — list all 13 rules with ID, domain, name
+- **cli:** New `flutterguard explain <rule-id>` subcommand — detailed purpose, risk, example, fix, config
+- **cli:** New `RuleMeta` class in `lib/src/rule_meta.dart` — structured rule metadata
+- **cli:** New `RuleRegistry` singleton in `lib/src/rules/registry.dart` — registry with `all()` and `find()`
+- **cli:** Output supports both `table` (default) and `--format json`
+
+### Tests
+
+- **test:** 37 total tests (26 base + 6 new + 5 existing)
+- **test:** 3 `changed-only` tests: git repo filter, non-git fallback, skip cycle
+- **test:** 3 registry tests: all 13 rules, find by ID, unknown returns null
+
+### Infrastructure
+
+- **meta:** Version bumped to 0.3.0
+- **meta:** `AGENTS.md` and `FLUTTERGUARD_SPEC.md` updated for new features
+
 ## 0.1.1 (2026-06-09)
 
 ### pub.dev Publishing

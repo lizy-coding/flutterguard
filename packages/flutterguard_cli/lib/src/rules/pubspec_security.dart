@@ -6,6 +6,8 @@ import 'package:yaml/yaml.dart';
 import '../config_loader.dart';
 import '../domain.dart';
 import '../priority.dart';
+import '../rule_meta.dart';
+import '../source_workspace.dart';
 import '../static_issue.dart';
 
 const _vulnerableDeps = <String, String>{
@@ -22,14 +24,20 @@ class PubspecSecurityRule {
 
   const PubspecSecurityRule(this.config);
 
-  List<StaticIssue> analyze(List<String> files) {
+  List<StaticIssue> analyze(
+    List<String> files, {
+    String? projectPath,
+    SourceWorkspace? workspace,
+  }) {
     if (!config.enabled) return [];
 
     final issues = <StaticIssue>[];
+    final candidateDirectories = projectPath == null
+        ? {for (final file in files) p.dirname(file)}
+        : {projectPath};
 
-    for (final file in files) {
-      final dir = p.dirname(file);
-      final pubspec = p.join(dir, 'pubspec.yaml');
+    for (final directory in candidateDirectories) {
+      final pubspec = p.join(directory, 'pubspec.yaml');
       if (!File(pubspec).existsSync()) continue;
 
       try {
@@ -37,7 +45,14 @@ class PubspecSecurityRule {
         final yaml = loadYaml(content);
         if (yaml is! YamlMap) continue;
         issues.addAll(_checkPubspec(pubspec, yaml));
-      } catch (_) {}
+      } on Object catch (error) {
+        workspace?.addDiagnostic(ScanDiagnostic(
+          stage: 'pubspec_parse',
+          file: pubspec,
+          message: error.toString(),
+          severity: ScanDiagnosticSeverity.error,
+        ));
+      }
     }
 
     return _deduplicate(issues);
@@ -103,7 +118,8 @@ class PubspecSecurityRule {
       if (_vulnerableDeps.containsKey(dep)) {
         final minVersion = _vulnerableDeps[dep]!;
         final currentVersion = _cleanVersion(version);
-        if (currentVersion.isNotEmpty && _compareVersion(currentVersion, minVersion) < 0) {
+        if (currentVersion.isNotEmpty &&
+            _compareVersion(currentVersion, minVersion) < 0) {
           issues.add(StaticIssue(
             id: 'pubspec_security',
             title: '依赖安全 — 过旧版本',
@@ -168,4 +184,17 @@ class PubspecSecurityRule {
       return true;
     }).toList();
   }
+
+  static RuleMeta describe() => const RuleMeta(
+        id: 'pubspec_security',
+        name: '依赖安全风险',
+        domain: 'standards',
+        riskLevel: 'medium',
+        priority: 'p2',
+        purpose: '检测依赖版本无界、已废弃包、过旧版本',
+        riskReason: '无界依赖引入不兼容更新；废弃包存在安全漏洞',
+        badExample: 'mqtt_client: ^9.0.0（低于 10.0.0）；flutter_blue（已废弃）',
+        fixSuggestion: '固定大版本号；将 flutter_blue 迁移至 flutter_blue_plus',
+        cicdSafe: true,
+      );
 }

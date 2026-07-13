@@ -18,7 +18,8 @@ Each file implements one rule family and returns `List<StaticIssue>`.
 
 ## Rule Contract
 - Constructor receives typed config or explicit parameters.
-- Public API is `analyze(List<String> files)`.
+- Public API is `analyze(List<String> files, {SourceWorkspace? workspace})` for source rules; direct calls may omit the workspace.
+- Scanner execution and metadata are explicitly wired in `catalog.dart`.
 - Return no issues when disabled or not configured.
 - Catch per-file parse/read failures so one bad file does not abort the full scan.
 - Use `StaticIssue` with domain, priority, suggestion, and metadata.
@@ -31,5 +32,5 @@ Each file implements one rule family and returns `List<StaticIssue>`.
 3. Implement the rule class here.
 4. Add fixture(s) under `test/fixtures/`.
 5. Add tests in `test/scanner_test.dart`.
-6. Wire the rule in `scanner.dart:_analyze()`.
+6. Wire the rule and metadata in `catalog.dart`.
 7. Export through `lib/flutterguard_cli.dart` if needed.
