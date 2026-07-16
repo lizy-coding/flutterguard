@@ -136,7 +136,10 @@ architecture:
       'performance-only' => _performanceOnlyConfig,
       _ => minimalConfig,
     };
-    return withArchitecture ? '$config$architectureBlock' : config;
+    final withStateManagement = '$config${_stateRulesForProfile(profile)}';
+    return withArchitecture
+        ? '$withStateManagement$architectureBlock'
+        : withStateManagement;
   }
 
   static String writeInitConfig({
@@ -411,6 +414,57 @@ rules:
         'pubspec_security',
         config.rules.pubspecSecurity.enabled,
       ))
+      ..write(_stateRuleYaml(
+        'side_effect_in_build',
+        config.rules.sideEffectInBuild,
+      ))
+      ..write(_stateRuleYaml(
+        'state_manager_created_in_build',
+        config.rules.stateManagerCreatedInBuild,
+      ))
+      ..write(_stateRuleYaml(
+        'mutable_state_exposed',
+        config.rules.mutableStateExposed,
+      ))
+      ..write(_stateRuleYaml(
+        'state_layer_ui_dependency',
+        config.rules.stateLayerUiDependency,
+      ))
+      ..write(_stateRuleYaml(
+        'state_dependency_cycle',
+        config.rules.stateDependencyCycle,
+      ))
+      ..write(_stateRuleYaml(
+        'riverpod_read_used_for_render',
+        config.rules.riverpodReadUsedForRender,
+      ))
+      ..write(_stateRuleYaml(
+        'riverpod_watch_in_callback',
+        config.rules.riverpodWatchInCallback,
+      ))
+      ..write(_stateRuleYaml(
+        'bloc_equatable_props_incomplete',
+        config.rules.blocEquatablePropsIncomplete,
+      ))
+      ..write(_stateRuleYaml(
+        'provider_value_lifecycle_misuse',
+        config.rules.providerValueLifecycleMisuse,
+      ))
+      ..write(_stateRuleYaml(
+        'notify_listeners_in_loop',
+        config.rules.notifyListenersInLoop,
+      ))
+      ..writeln()
+      ..writeln('state_management:')
+      ..writeln('  enabled: ${config.stateManagement.enabled}')
+      ..writeln(
+        '  framework_auto_detect: '
+        '${config.stateManagement.frameworkAutoDetect}',
+      )
+      ..writeln(
+        '  confidence_threshold: '
+        '${config.stateManagement.confidenceThreshold.name}',
+      )
       ..writeln()
       ..writeln('architecture:')
       ..write(_boundaryList('layers', config.architecture.layers))
@@ -535,6 +589,61 @@ rules:
   $name:
     enabled: $enabled
 ''';
+  }
+
+  static String _stateRuleYaml(String name, StateRuleConfig config) {
+    return '''
+  $name:
+    enabled: ${config.enabled}
+    severity: ${config.severity.name}
+    allowlist: [${config.allowlist.join(', ')}]
+    ignore_paths: [${config.ignorePaths.join(', ')}]
+''';
+  }
+
+  static String _stateRulesForProfile(String profile) {
+    final disabled =
+        profile == 'iot-security' || profile == 'architecture-only';
+    final performanceOnly = profile == 'performance-only';
+    bool enabled(String id) {
+      if (disabled) return false;
+      if (!performanceOnly) return true;
+      return const {
+        'side_effect_in_build',
+        'state_manager_created_in_build',
+        'provider_value_lifecycle_misuse',
+        'notify_listeners_in_loop',
+      }.contains(id);
+    }
+
+    const severities = {
+      'side_effect_in_build': 'high',
+      'state_manager_created_in_build': 'high',
+      'mutable_state_exposed': 'medium',
+      'state_layer_ui_dependency': 'high',
+      'state_dependency_cycle': 'high',
+      'riverpod_read_used_for_render': 'medium',
+      'riverpod_watch_in_callback': 'medium',
+      'bloc_equatable_props_incomplete': 'medium',
+      'provider_value_lifecycle_misuse': 'medium',
+      'notify_listeners_in_loop': 'medium',
+    };
+    final buffer = StringBuffer();
+    for (final entry in severities.entries) {
+      buffer
+        ..writeln('  ${entry.key}:')
+        ..writeln('    enabled: ${enabled(entry.key)}')
+        ..writeln('    severity: ${entry.value}')
+        ..writeln('    allowlist: []')
+        ..writeln('    ignore_paths: []');
+    }
+    buffer
+      ..writeln()
+      ..writeln('state_management:')
+      ..writeln('  enabled: true')
+      ..writeln('  framework_auto_detect: true')
+      ..writeln('  confidence_threshold: certain');
+    return buffer.toString();
   }
 
   static String _boundaryList(
