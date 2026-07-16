@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:yaml/yaml.dart';
 
+import 'static_issue.dart';
+
 typedef LayerConfig = ({
   String name,
   String path,
@@ -35,6 +37,16 @@ typedef RulesConfig = ({
   BleScanningRuleConfig bleScanning,
   IotSecurityRuleConfig iotSecurity,
   PubspecSecurityRuleConfig pubspecSecurity,
+  StateRuleConfig sideEffectInBuild,
+  StateRuleConfig stateManagerCreatedInBuild,
+  StateRuleConfig mutableStateExposed,
+  StateRuleConfig stateLayerUiDependency,
+  StateRuleConfig stateDependencyCycle,
+  StateRuleConfig riverpodReadUsedForRender,
+  StateRuleConfig riverpodWatchInCallback,
+  StateRuleConfig blocEquatablePropsIncomplete,
+  StateRuleConfig providerValueLifecycleMisuse,
+  StateRuleConfig notifyListenersInLoop,
 });
 
 typedef LargeFileRuleConfig = ({bool enabled, int maxLines});
@@ -47,18 +59,32 @@ typedef MqttConnectionRuleConfig = ({bool enabled});
 typedef BleScanningRuleConfig = ({bool enabled, int maxScanDurationMs});
 typedef IotSecurityRuleConfig = ({bool enabled, bool requireTls});
 typedef PubspecSecurityRuleConfig = ({bool enabled});
+typedef StateRuleConfig = ({
+  bool enabled,
+  RiskLevel severity,
+  List<String> allowlist,
+  List<String> ignorePaths,
+});
+
+typedef StateManagementConfig = ({
+  bool enabled,
+  bool frameworkAutoDetect,
+  RuleConfidence confidenceThreshold,
+});
 
 class ScanConfig {
   final List<String> include;
   final List<String> exclude;
   final RulesConfig rules;
   final ArchitectureConfig architecture;
+  final StateManagementConfig stateManagement;
 
   const ScanConfig({
     required this.include,
     required this.exclude,
     required this.rules,
     required this.architecture,
+    required this.stateManagement,
   });
 
   static const _knownTopLevelKeys = {
@@ -66,6 +92,7 @@ class ScanConfig {
     'exclude',
     'rules',
     'architecture',
+    'state_management',
   };
   static const _knownRuleKeys = {
     'large_file',
@@ -78,6 +105,27 @@ class ScanConfig {
     'ble_scanning',
     'iot_security',
     'pubspec_security',
+    'side_effect_in_build',
+    'state_manager_created_in_build',
+    'mutable_state_exposed',
+    'state_layer_ui_dependency',
+    'state_dependency_cycle',
+    'riverpod_read_used_for_render',
+    'riverpod_watch_in_callback',
+    'bloc_equatable_props_incomplete',
+    'provider_value_lifecycle_misuse',
+    'notify_listeners_in_loop',
+  };
+  static const _knownStateRuleKeys = {
+    'enabled',
+    'severity',
+    'allowlist',
+    'ignore_paths',
+  };
+  static const _knownStateManagementKeys = {
+    'enabled',
+    'framework_auto_detect',
+    'confidence_threshold',
   };
   static const _knownLayerKeys = {
     'name',
@@ -122,6 +170,20 @@ class ScanConfig {
     final arch = _optionalMap(yaml['architecture'], 'architecture');
     _warnUnknownKeys(arch, _knownArchKeys, 'architecture');
 
+    final stateManagement = _optionalMap(
+      yaml['state_management'],
+      'state_management',
+    );
+    _warnUnknownKeys(
+      stateManagement,
+      _knownStateManagementKeys,
+      'state_management',
+    );
+    for (final ruleId in _stateRuleIds) {
+      final rule = _optionalMap(rules[ruleId], 'rules.$ruleId');
+      _warnUnknownKeys(rule, _knownStateRuleKeys, 'rules.$ruleId');
+    }
+
     if (arch['layers'] is YamlList) {
       for (final layer in arch['layers'] as YamlList) {
         if (layer is! YamlMap) {
@@ -151,10 +213,11 @@ class ScanConfig {
           ],
       rules: _parseRules(rules),
       architecture: _parseArchitecture(arch),
+      stateManagement: _parseStateManagement(stateManagement),
     );
   }
 
-  static ScanConfig _defaultConfig() => const ScanConfig(
+  static ScanConfig _defaultConfig() => ScanConfig(
         include: ['lib/**'],
         exclude: [
           'lib/generated/**',
@@ -173,6 +236,16 @@ class ScanConfig {
           bleScanning: (enabled: true, maxScanDurationMs: 10000),
           iotSecurity: (enabled: true, requireTls: true),
           pubspecSecurity: (enabled: true),
+          sideEffectInBuild: _defaultStateRule(RiskLevel.high),
+          stateManagerCreatedInBuild: _defaultStateRule(RiskLevel.high),
+          mutableStateExposed: _defaultStateRule(RiskLevel.medium),
+          stateLayerUiDependency: _defaultStateRule(RiskLevel.high),
+          stateDependencyCycle: _defaultStateRule(RiskLevel.high),
+          riverpodReadUsedForRender: _defaultStateRule(RiskLevel.medium),
+          riverpodWatchInCallback: _defaultStateRule(RiskLevel.medium),
+          blocEquatablePropsIncomplete: _defaultStateRule(RiskLevel.medium),
+          providerValueLifecycleMisuse: _defaultStateRule(RiskLevel.medium),
+          notifyListenersInLoop: _defaultStateRule(RiskLevel.medium),
         ),
         architecture: (
           layers: [],
@@ -181,6 +254,31 @@ class ScanConfig {
           layerViolationEnabled: true,
           moduleViolationEnabled: true,
         ),
+        stateManagement: (
+          enabled: true,
+          frameworkAutoDetect: true,
+          confidenceThreshold: RuleConfidence.certain,
+        ),
+      );
+
+  static const _stateRuleIds = [
+    'side_effect_in_build',
+    'state_manager_created_in_build',
+    'mutable_state_exposed',
+    'state_layer_ui_dependency',
+    'state_dependency_cycle',
+    'riverpod_read_used_for_render',
+    'riverpod_watch_in_callback',
+    'bloc_equatable_props_incomplete',
+    'provider_value_lifecycle_misuse',
+    'notify_listeners_in_loop',
+  ];
+
+  static StateRuleConfig _defaultStateRule(RiskLevel severity) => (
+        enabled: true,
+        severity: severity,
+        allowlist: const [],
+        ignorePaths: const [],
       );
 
   static RulesConfig _parseRules(YamlMap rules) {
@@ -218,6 +316,8 @@ class ScanConfig {
       rules['pubspec_security'],
       'rules.pubspec_security',
     );
+    StateRuleConfig stateRule(String id, RiskLevel severity) =>
+        _parseStateRule(_optionalMap(rules[id], 'rules.$id'), severity);
 
     return (
       largeFile: (
@@ -249,8 +349,46 @@ class ScanConfig {
         requireTls: _boolValue(iotSecurity, 'requireTls', true),
       ),
       pubspecSecurity: (enabled: _boolValue(pubspecSecurity, 'enabled', true),),
+      sideEffectInBuild: stateRule('side_effect_in_build', RiskLevel.high),
+      stateManagerCreatedInBuild:
+          stateRule('state_manager_created_in_build', RiskLevel.high),
+      mutableStateExposed: stateRule('mutable_state_exposed', RiskLevel.medium),
+      stateLayerUiDependency:
+          stateRule('state_layer_ui_dependency', RiskLevel.high),
+      stateDependencyCycle: stateRule('state_dependency_cycle', RiskLevel.high),
+      riverpodReadUsedForRender:
+          stateRule('riverpod_read_used_for_render', RiskLevel.medium),
+      riverpodWatchInCallback:
+          stateRule('riverpod_watch_in_callback', RiskLevel.medium),
+      blocEquatablePropsIncomplete:
+          stateRule('bloc_equatable_props_incomplete', RiskLevel.medium),
+      providerValueLifecycleMisuse:
+          stateRule('provider_value_lifecycle_misuse', RiskLevel.medium),
+      notifyListenersInLoop:
+          stateRule('notify_listeners_in_loop', RiskLevel.medium),
     );
   }
+
+  static StateRuleConfig _parseStateRule(
+    YamlMap map,
+    RiskLevel defaultSeverity,
+  ) =>
+      (
+        enabled: _boolValue(map, 'enabled', true),
+        severity: _riskLevelValue(map, 'severity', defaultSeverity),
+        allowlist: _parseStringList(map['allowlist']) ?? const [],
+        ignorePaths: _parseStringList(map['ignore_paths']) ?? const [],
+      );
+
+  static StateManagementConfig _parseStateManagement(YamlMap map) => (
+        enabled: _boolValue(map, 'enabled', true),
+        frameworkAutoDetect: _boolValue(map, 'framework_auto_detect', true),
+        confidenceThreshold: _confidenceValue(
+          map,
+          'confidence_threshold',
+          RuleConfidence.certain,
+        ),
+      );
 
   static ArchitectureConfig _parseArchitecture(YamlMap arch) {
     final layers = <LayerConfig>[];
@@ -311,7 +449,10 @@ class ScanConfig {
 
   static List<String>? _parseStringList(dynamic value) {
     if (value is YamlList) {
-      return value.map((e) => e.toString()).toList();
+      if (value.any((element) => element is! String)) {
+        throw const FormatException('Expected a YAML list of strings.');
+      }
+      return value.cast<String>().toList();
     }
     if (value != null) {
       throw const FormatException('Expected a YAML list of strings.');
@@ -337,6 +478,38 @@ class ScanConfig {
     if (value == null) return defaultValue;
     if (value is int) return value;
     throw FormatException('$key must be an integer.');
+  }
+
+  static RiskLevel _riskLevelValue(
+    YamlMap map,
+    String key,
+    RiskLevel defaultValue,
+  ) {
+    final value = map[key];
+    if (value == null) return defaultValue;
+    if (value is String) {
+      for (final level in RiskLevel.values) {
+        if (level.name == value) return level;
+      }
+    }
+    throw FormatException('$key must be one of: high, medium, low.');
+  }
+
+  static RuleConfidence _confidenceValue(
+    YamlMap map,
+    String key,
+    RuleConfidence defaultValue,
+  ) {
+    final value = map[key];
+    if (value == null) return defaultValue;
+    if (value is String) {
+      for (final confidence in RuleConfidence.values) {
+        if (confidence.name == value) return confidence;
+      }
+    }
+    throw FormatException(
+      '$key must be one of: certain, probable, informational.',
+    );
   }
 
   static String _requiredString(YamlMap map, String key, String path) {
