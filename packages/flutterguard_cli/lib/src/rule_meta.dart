@@ -10,6 +10,8 @@ class RuleMeta {
   final String fixSuggestion;
   final List<String> configKeys;
   final bool cicdSafe;
+  final String framework;
+  final String confidence;
 
   const RuleMeta({
     required this.id,
@@ -23,6 +25,8 @@ class RuleMeta {
     required this.fixSuggestion,
     this.configKeys = const [],
     this.cicdSafe = true,
+    this.framework = 'generic',
+    this.confidence = 'certain',
   });
 
   Map<String, dynamic> toJson() => {
@@ -37,5 +41,7 @@ class RuleMeta {
         'fixSuggestion': fixSuggestion,
         'configKeys': configKeys,
         'cicdSafe': cicdSafe,
+        'framework': framework,
+        'confidence': confidence,
       };
 }
