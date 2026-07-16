@@ -6,9 +6,11 @@ import '../rule_meta.dart';
 import '../scan_context.dart';
 import '../static_issue.dart';
 import 'ble_scanning.dart';
+import 'bloc_state_management.dart';
 import 'circular_dependency.dart';
 import 'device_lifecycle.dart';
 import 'iot_security.dart';
+import 'generic_state_management.dart';
 import 'large_units.dart';
 import 'layer_violation.dart';
 import 'lifecycle_resource.dart';
@@ -16,6 +18,9 @@ import 'missing_const_constructor.dart';
 import 'module_violation.dart';
 import 'mqtt_connection.dart';
 import 'pubspec_security.dart';
+import 'provider_state_management.dart';
+import 'riverpod_state_management.dart';
+import 'state_dependency_cycle.dart';
 
 typedef RuleExecutor = List<StaticIssue> Function(
   ScanContext context,
@@ -141,6 +146,91 @@ class RuleCatalog {
           workspace: context.sources,
         );
       },
+    ),
+    RuleRegistration(
+      metadata: [SideEffectInBuildRule.describe()],
+      execute: (context, _) => SideEffectInBuildRule(
+        context.config.rules.sideEffectInBuild,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [StateManagerCreatedInBuildRule.describe()],
+      execute: (context, _) => StateManagerCreatedInBuildRule(
+        context.config.rules.stateManagerCreatedInBuild,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [MutableStateExposedRule.describe()],
+      execute: (context, _) => MutableStateExposedRule(
+        context.config.rules.mutableStateExposed,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [StateLayerUiDependencyRule.describe()],
+      execute: (context, _) => StateLayerUiDependencyRule(
+        context.config.rules.stateLayerUiDependency,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [StateDependencyCycleRule.describe()],
+      execute: (context, _) => StateDependencyCycleRule(
+        context.config.rules.stateDependencyCycle,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(
+        context.allFiles,
+        targetFiles: context.targetFiles,
+        changedOnly: context.isChanged,
+        workspace: context.sources,
+      ),
+    ),
+    RuleRegistration(
+      metadata: [RiverpodReadUsedForRenderRule.describe()],
+      execute: (context, _) => RiverpodReadUsedForRenderRule(
+        context.config.rules.riverpodReadUsedForRender,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [RiverpodWatchInCallbackRule.describe()],
+      execute: (context, _) => RiverpodWatchInCallbackRule(
+        context.config.rules.riverpodWatchInCallback,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [BlocEquatablePropsIncompleteRule.describe()],
+      execute: (context, _) => BlocEquatablePropsIncompleteRule(
+        context.config.rules.blocEquatablePropsIncomplete,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [ProviderValueLifecycleMisuseRule.describe()],
+      execute: (context, _) => ProviderValueLifecycleMisuseRule(
+        context.config.rules.providerValueLifecycleMisuse,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
+    ),
+    RuleRegistration(
+      metadata: [NotifyListenersInLoopRule.describe()],
+      execute: (context, _) => NotifyListenersInLoopRule(
+        context.config.rules.notifyListenersInLoop,
+        context.config.stateManagement,
+        projectPath: context.projectPath,
+      ).analyze(context.targetFiles, workspace: context.sources),
     ),
   ]);
 
