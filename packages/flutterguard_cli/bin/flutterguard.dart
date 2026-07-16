@@ -9,7 +9,7 @@ import 'package:flutterguard_cli/src/cli/config_commands.dart';
 import 'package:flutterguard_cli/src/cli/issue_commands.dart';
 import 'package:flutterguard_cli/src/cli/rule_commands.dart';
 
-const _version = '0.4.1';
+const _version = '0.6.0';
 
 void main(List<String> args) {
   final normalizedArgs = _extractPositionalPath(args);

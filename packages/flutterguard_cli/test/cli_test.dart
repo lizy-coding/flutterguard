@@ -16,6 +16,27 @@ void _runGit(Directory directory, List<String> args) {
 }
 
 void main() {
+  test('CLI version matches package version', () {
+    final pubspec =
+        File(p.join(Directory.current.path, 'pubspec.yaml')).readAsStringSync();
+    final version = RegExp(r'^version:\s*(\S+)', multiLine: true)
+        .firstMatch(pubspec)!
+        .group(1);
+    final entrypoint = p.join(
+      Directory.current.path,
+      'bin',
+      'flutterguard.dart',
+    );
+    final result = Process.runSync(
+      Platform.resolvedExecutable,
+      [entrypoint, '--version'],
+      workingDirectory: Directory.current.path,
+    );
+
+    expect(result.exitCode, 0);
+    expect((result.stdout as String).trim(), 'flutterguard $version');
+  });
+
   test('scan exits with setup error when the project matches no Dart files',
       () {
     final project = Directory.systemTemp.createTempSync(

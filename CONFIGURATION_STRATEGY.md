@@ -79,9 +79,68 @@ rules:
     requireTls: true
   pubspec_security:
     enabled: true
+  side_effect_in_build:
+    enabled: true
+    severity: high
+    allowlist: []
+    ignore_paths: []
+  state_manager_created_in_build:
+    enabled: true
+    severity: high
+    allowlist: []
+    ignore_paths: []
+  mutable_state_exposed:
+    enabled: true
+    severity: medium
+    allowlist: []
+    ignore_paths: []
+  state_layer_ui_dependency:
+    enabled: true
+    severity: high
+    allowlist: []
+    ignore_paths: []
+  state_dependency_cycle:
+    enabled: true
+    severity: high
+    allowlist: []
+    ignore_paths: []
+  riverpod_read_used_for_render:
+    enabled: true
+    severity: medium
+    allowlist: []
+    ignore_paths: []
+  riverpod_watch_in_callback:
+    enabled: true
+    severity: medium
+    allowlist: []
+    ignore_paths: []
+  bloc_equatable_props_incomplete:
+    enabled: true
+    severity: medium
+    allowlist: []
+    ignore_paths: []
+  provider_value_lifecycle_misuse:
+    enabled: true
+    severity: medium
+    allowlist: []
+    ignore_paths: []
+  notify_listeners_in_loop:
+    enabled: true
+    severity: medium
+    allowlist: []
+    ignore_paths: []
+
+state_management:
+  enabled: true
+  framework_auto_detect: true
+  confidence_threshold: certain
 ```
 
 Use this level when teams want stable thresholds or custom excludes.
+
+The top-level state-management switch controls all ten state rules. Per-rule
+`enabled`, `severity`, `allowlist`, and project-relative `ignore_paths` settings
+can then narrow the policy without changing suppression or baseline behavior.
 
 Create it with:
 
