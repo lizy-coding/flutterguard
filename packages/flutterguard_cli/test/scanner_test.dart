@@ -15,14 +15,19 @@ import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
 import 'package:flutterguard_cli/src/rules/large_units.dart';
 import 'package:flutterguard_cli/src/rules/layer_violation.dart';
 import 'package:flutterguard_cli/src/rules/ble_scanning.dart';
+import 'package:flutterguard_cli/src/rules/bloc_state_management.dart';
 import 'package:flutterguard_cli/src/rules/device_lifecycle.dart';
+import 'package:flutterguard_cli/src/rules/generic_state_management.dart';
 import 'package:flutterguard_cli/src/rules/iot_security.dart';
 import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
 import 'package:flutterguard_cli/src/rules/missing_const_constructor.dart';
 import 'package:flutterguard_cli/src/rules/module_violation.dart';
 import 'package:flutterguard_cli/src/rules/mqtt_connection.dart';
 import 'package:flutterguard_cli/src/rules/pubspec_security.dart';
+import 'package:flutterguard_cli/src/rules/provider_state_management.dart';
 import 'package:flutterguard_cli/src/rules/registry.dart';
+import 'package:flutterguard_cli/src/rules/riverpod_state_management.dart';
+import 'package:flutterguard_cli/src/rules/state_dependency_cycle.dart';
 import 'package:flutterguard_cli/src/sarif_report.dart';
 import 'package:flutterguard_cli/src/scanner.dart';
 import 'package:flutterguard_cli/src/source_workspace.dart';
@@ -31,6 +36,19 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 String get fixturesPath => p.join(Directory.current.path, 'test', 'fixtures');
+
+const _stateRuleIds = {
+  'side_effect_in_build',
+  'state_manager_created_in_build',
+  'mutable_state_exposed',
+  'state_layer_ui_dependency',
+  'state_dependency_cycle',
+  'riverpod_read_used_for_render',
+  'riverpod_watch_in_callback',
+  'bloc_equatable_props_incomplete',
+  'provider_value_lifecycle_misuse',
+  'notify_listeners_in_loop',
+};
 
 void _runGit(Directory dir, List<String> args) {
   final result = Process.runSync('git', args, workingDirectory: dir.path);
@@ -54,6 +72,29 @@ class StatelessWidget {}
 class $className extends StatelessWidget {}
 ''');
 }
+
+StateManagementConfig _stateManagement({
+  bool enabled = true,
+  bool frameworkAutoDetect = true,
+}) =>
+    (
+      enabled: enabled,
+      frameworkAutoDetect: frameworkAutoDetect,
+      confidenceThreshold: RuleConfidence.certain,
+    );
+
+StateRuleConfig _stateRule(
+  RiskLevel severity, {
+  bool enabled = true,
+  List<String> allowlist = const [],
+  List<String> ignorePaths = const [],
+}) =>
+    (
+      enabled: enabled,
+      severity: severity,
+      allowlist: allowlist,
+      ignorePaths: ignorePaths,
+    );
 
 void main() {
   group('Static Rules', () {
@@ -379,6 +420,13 @@ dependencies:
       expect(json, contains('"issues"'));
       expect(json, contains('"byDomain"'));
       expect(json, contains('test_issue'));
+      final decoded = jsonDecode(json) as Map<String, Object?>;
+      final issue = (decoded['issues'] as List).single as Map;
+      expect(issue['ruleId'], 'test_issue');
+      expect(issue['severity'], 'medium');
+      expect(issue['framework'], 'generic');
+      expect(issue['confidence'], 'certain');
+      expect(issue['evidence'], isEmpty);
     });
 
     test('stdout report uses scanned file count when provided', () {
@@ -725,6 +773,10 @@ class IgnoredWidget extends StatelessWidget {}
         'note',
       ]);
       final second = results[1] as Map<String, Object?>;
+      final properties = second['properties'] as Map;
+      expect(properties['framework'], 'generic');
+      expect(properties['confidence'], 'certain');
+      expect(properties['evidence'], isEmpty);
       final locations = second['locations'] as List<Object?>;
       final physical = (locations.single as Map)['physicalLocation'] as Map;
       final region = physical['region'] as Map;
@@ -1005,9 +1057,556 @@ dependencies:
     });
   });
 
+  group('State Management Rules', () {
+    final genericFile = p.join(fixturesPath, 'generic_state.dart');
+    final riverpodFile = p.join(fixturesPath, 'riverpod_state.dart');
+    final blocFile = p.join(fixturesPath, 'bloc_state.dart');
+    final providerFile = p.join(fixturesPath, 'provider_state.dart');
+
+    test('detects build side effects and excludes callback/local collection',
+        () {
+      final issues = SideEffectInBuildRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+
+      expect(issues, hasLength(2));
+      expect(issues.every((issue) => issue.evidence.isNotEmpty), isTrue);
+      expect(
+        issues.expand((issue) => issue.evidence),
+        isNot(contains(contains('values.add'))),
+      );
+    });
+
+    test('detects state manager creation in build and excludes callbacks', () {
+      final issues = StateManagerCreatedInBuildRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+
+      expect(issues, hasLength(2));
+      expect(
+        issues.map((issue) => issue.metadata['type']),
+        containsAll(['DeviceController', 'DeviceBloc']),
+      );
+    });
+
+    test('detects exposed mutable state and excludes Flutter State/safe data',
+        () {
+      final issues = MutableStateExposedRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+
+      expect(issues.length, greaterThanOrEqualTo(4));
+      expect(
+        issues.any((issue) => issue.metadata['className'] == 'PageState'),
+        isFalse,
+      );
+      expect(
+        issues.any((issue) => issue.metadata['className'] == 'SafeState'),
+        isFalse,
+      );
+    });
+
+    test('detects state-layer UI dependencies once per owner', () {
+      final issues = StateLayerUiDependencyRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+
+      expect(
+        issues.map((issue) => issue.metadata['className']),
+        containsAll(['NavigationController', 'ThemeController']),
+      );
+      expect(
+        issues.where(
+          (issue) => issue.metadata['className'] == 'NavigationController',
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('detects deterministic state dependency cycle and edge allowlist', () {
+      final issues = StateDependencyCycleRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+
+      expect(issues, hasLength(1));
+      expect(issues.single.message, contains('CycleController'));
+      expect(issues.single.message, contains('CycleService'));
+
+      final allowed = StateDependencyCycleRule(
+        _stateRule(
+          RiskLevel.high,
+          allowlist: ['CycleService->CycleController'],
+        ),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+      expect(allowed, isEmpty);
+    });
+
+    test(
+        'detects Riverpod read render flow and excludes command/callback reads',
+        () {
+      final issues = RiverpodReadUsedForRenderRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(frameworkAutoDetect: false),
+        projectPath: Directory.current.path,
+      ).analyze([riverpodFile]);
+
+      expect(issues, hasLength(2));
+      expect(
+        issues.every(
+          (issue) => issue.framework == StateManagementFramework.riverpod,
+        ),
+        isTrue,
+      );
+    });
+
+    test('detects Riverpod watch in event callbacks only', () {
+      final issues = RiverpodWatchInCallbackRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(frameworkAutoDetect: false),
+        projectPath: Directory.current.path,
+      ).analyze([riverpodFile]);
+
+      expect(issues, hasLength(2));
+    });
+
+    test('merges missing Equatable props per class', () {
+      final issues = BlocEquatablePropsIncompleteRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(frameworkAutoDetect: false),
+        projectPath: Directory.current.path,
+      ).analyze([blocFile]);
+
+      expect(issues, hasLength(2));
+      expect(
+        issues.map((issue) => issue.metadata['className']),
+        containsAll(['DeviceState', 'ReadingState']),
+      );
+    });
+
+    test('detects Provider value/create ownership inversions', () {
+      final issues = ProviderValueLifecycleMisuseRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(frameworkAutoDetect: false),
+        projectPath: Directory.current.path,
+      ).analyze([providerFile]);
+
+      expect(issues, hasLength(2));
+      expect(
+        issues.map((issue) => issue.metadata['ownershipError']),
+        containsAll(['value_creates', 'create_reuses']),
+      );
+    });
+
+    test(
+        'detects notifyListeners in repeated loops and skips literal singleton',
+        () {
+      final issues = NotifyListenersInLoopRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(frameworkAutoDetect: false),
+        projectPath: Directory.current.path,
+      ).analyze([providerFile]);
+
+      expect(issues, hasLength(2));
+    });
+
+    test('global and per-rule switches disable state rules', () {
+      final globalOff = SideEffectInBuildRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(enabled: false),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+      final ruleOff = SideEffectInBuildRule(
+        _stateRule(RiskLevel.high, enabled: false),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]);
+
+      expect(globalOff, isEmpty);
+      expect(ruleOff, isEmpty);
+    });
+
+    test('framework auto-detection can be disabled without weakening AST shape',
+        () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_framework_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File(p.join(dir.path, 'view.dart'))..writeAsStringSync('''
+class View {
+  Object build(Object context, dynamic ref) {
+    return Text(ref.read(deviceProvider));
+  }
+}
+''');
+      final imported = File(p.join(dir.path, 'imported_view.dart'))
+        ..writeAsStringSync('''
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+class ImportedView {
+  Object build(Object context, dynamic ref) {
+    return Text(ref.read(deviceProvider));
+  }
+}
+''');
+
+      final detected = RiverpodReadUsedForRenderRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(),
+        projectPath: dir.path,
+      ).analyze([file.path]);
+      final forced = RiverpodReadUsedForRenderRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(frameworkAutoDetect: false),
+        projectPath: dir.path,
+      ).analyze([file.path]);
+      final autoDetected = RiverpodReadUsedForRenderRule(
+        _stateRule(RiskLevel.medium),
+        _stateManagement(),
+        projectPath: dir.path,
+      ).analyze([imported.path]);
+
+      expect(detected, isEmpty);
+      expect(forced, hasLength(1));
+      expect(autoDetected, hasLength(1));
+    });
+
+    test('severity override updates priority and JSON compatibility aliases',
+        () {
+      final issue = SideEffectInBuildRule(
+        _stateRule(RiskLevel.low),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze([genericFile]).first;
+      final json = issue.toJson();
+
+      expect(issue.level, RiskLevel.low);
+      expect(issue.priority, Priority.p2);
+      expect(json['ruleId'], issue.id);
+      expect(json['severity'], 'low');
+      expect(json['framework'], 'generic');
+      expect(json['confidence'], 'certain');
+    });
+
+    test('config validates new enums/types and prints complete defaults', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_state_cfg_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final valid = File(p.join(dir.path, 'valid.yaml'))..writeAsStringSync('''
+state_management:
+  enabled: true
+  framework_auto_detect: false
+  confidence_threshold: probable
+rules:
+  side_effect_in_build:
+    severity: low
+    allowlist: [refresh]
+    ignore_paths: [lib/generated/**]
+''');
+      final config = ScanConfig.fromFile(valid.path);
+      expect(config.stateManagement.frameworkAutoDetect, isFalse);
+      expect(
+          config.stateManagement.confidenceThreshold, RuleConfidence.probable);
+      expect(config.rules.sideEffectInBuild.severity, RiskLevel.low);
+      expect(ConfigTools.effectiveYaml(config), contains('state_management:'));
+
+      for (final invalidBody in const [
+        'state_management:\n  confidence_threshold: maybe\n',
+        'rules:\n  side_effect_in_build:\n    severity: critical\n',
+        'rules:\n  side_effect_in_build:\n    allowlist: value\n',
+      ]) {
+        final invalid = File(p.join(dir.path, 'invalid.yaml'))
+          ..writeAsStringSync(invalidBody);
+        expect(() => ScanConfig.fromFile(invalid.path), throwsFormatException);
+      }
+    });
+
+    test('state findings reuse line suppression and keep raw issues', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_state_suppress_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync();
+      File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('name: app\n');
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include: [lib/**]
+state_management:
+  framework_auto_detect: false
+''');
+      File(p.join(dir.path, 'lib', 'view.dart')).writeAsStringSync('''
+class View {
+  // flutterguard: ignore side_effect_in_build
+  Object build(Object context) {
+    notifyListeners();
+    return Object();
+  }
+}
+''');
+
+      final result = FlutterGuardScanner.scan(projectPath: dir.path);
+      expect(
+        result.rawIssues.where((issue) => issue.id == 'side_effect_in_build'),
+        hasLength(1),
+      );
+      expect(
+        result.issues.where((issue) => issue.id == 'side_effect_in_build'),
+        isEmpty,
+      );
+      expect(result.suppressedCount, greaterThanOrEqualTo(1));
+    });
+
+    test('changed mode builds the full state graph and anchors to target file',
+        () {
+      final target = p.join(fixturesPath, 'generic_state.dart');
+      final issues = StateDependencyCycleRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: Directory.current.path,
+      ).analyze(
+        [target],
+        targetFiles: [target],
+        changedOnly: true,
+      );
+
+      expect(issues, hasLength(1));
+      expect(issues.single.file, target);
+    });
+
+    test('every state rule honors its independent enabled switch', () {
+      final highOff = _stateRule(RiskLevel.high, enabled: false);
+      final mediumOff = _stateRule(RiskLevel.medium, enabled: false);
+      final analyzers = <String, List<StaticIssue> Function()>{
+        'side_effect_in_build': () => SideEffectInBuildRule(
+              highOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([genericFile]),
+        'state_manager_created_in_build': () => StateManagerCreatedInBuildRule(
+              highOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([genericFile]),
+        'mutable_state_exposed': () => MutableStateExposedRule(
+              mediumOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([genericFile]),
+        'state_layer_ui_dependency': () => StateLayerUiDependencyRule(
+              highOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([genericFile]),
+        'state_dependency_cycle': () => StateDependencyCycleRule(
+              highOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([genericFile]),
+        'riverpod_read_used_for_render': () => RiverpodReadUsedForRenderRule(
+              mediumOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([riverpodFile]),
+        'riverpod_watch_in_callback': () => RiverpodWatchInCallbackRule(
+              mediumOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([riverpodFile]),
+        'bloc_equatable_props_incomplete': () =>
+            BlocEquatablePropsIncompleteRule(
+              mediumOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([blocFile]),
+        'provider_value_lifecycle_misuse': () =>
+            ProviderValueLifecycleMisuseRule(
+              mediumOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([providerFile]),
+        'notify_listeners_in_loop': () => NotifyListenersInLoopRule(
+              mediumOff,
+              _stateManagement(),
+              projectPath: Directory.current.path,
+            ).analyze([providerFile]),
+      };
+
+      expect(analyzers.keys.toSet(), _stateRuleIds);
+      for (final entry in analyzers.entries) {
+        expect(entry.value(), isEmpty, reason: entry.key);
+      }
+    });
+
+    test('all state rules reuse suppression and baseline pipelines', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_state_all_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync();
+      File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync('name: app\n');
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include: [lib/**]
+state_management:
+  framework_auto_detect: false
+''');
+      File(p.join(dir.path, 'lib', 'state_suppression.dart')).writeAsStringSync(
+        File(p.join(fixturesPath, 'state_suppression.dart')).readAsStringSync(),
+      );
+
+      final suppressed = FlutterGuardScanner.scan(projectPath: dir.path);
+      final rawStateIds = suppressed.rawIssues
+          .where((issue) => _stateRuleIds.contains(issue.id))
+          .map((issue) => issue.id)
+          .toSet();
+      final visibleStateIds = suppressed.issues
+          .where((issue) => _stateRuleIds.contains(issue.id))
+          .map((issue) => issue.id)
+          .toSet();
+      expect(rawStateIds, _stateRuleIds);
+      expect(visibleStateIds, isEmpty);
+
+      final unsuppressed = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        applySuppression: false,
+      );
+      final baselinePath = p.join(dir.path, 'baseline.json');
+      File(baselinePath).writeAsStringSync(Baseline.encode(
+        projectPath: unsuppressed.projectPath,
+        issues: unsuppressed.rawIssues,
+      ));
+      final baselined = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        applySuppression: false,
+        baselinePath: baselinePath,
+      );
+      expect(
+        baselined.issues.where((issue) => _stateRuleIds.contains(issue.id)),
+        isEmpty,
+      );
+      expect(
+        baselined.suppressedByBaselineCount,
+        unsuppressed.rawIssues.length,
+      );
+    });
+
+    test('duplicate type names do not create a false state cycle', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_names_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final a = Directory(p.join(dir.path, 'a'))..createSync();
+      final b = Directory(p.join(dir.path, 'b'))..createSync();
+      final controller = File(p.join(a.path, 'controller.dart'))
+        ..writeAsStringSync('''
+import 'service.dart';
+class DeviceController { final DuplicateService service; }
+''');
+      final serviceA = File(p.join(a.path, 'service.dart'))
+        ..writeAsStringSync('class DuplicateService {}\n');
+      final serviceB = File(p.join(b.path, 'service.dart'))
+        ..writeAsStringSync('''
+import '../a/controller.dart';
+class DuplicateService { final DeviceController controller; }
+''');
+
+      final issues = StateDependencyCycleRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: dir.path,
+      ).analyze([controller.path, serviceA.path, serviceB.path]);
+
+      expect(issues, isEmpty);
+    });
+
+    test('real cycles disambiguate duplicate type names in evidence', () {
+      final dir = Directory.systemTemp.createTempSync('flutterguard_names_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final a = Directory(p.join(dir.path, 'a'))..createSync();
+      final b = Directory(p.join(dir.path, 'b'))..createSync();
+      final controller = File(p.join(a.path, 'controller.dart'))
+        ..writeAsStringSync('''
+import 'service.dart';
+class DeviceController { final DuplicateService service; }
+''');
+      final serviceA = File(p.join(a.path, 'service.dart'))
+        ..writeAsStringSync('''
+import 'controller.dart';
+class DuplicateService { final DeviceController controller; }
+''');
+      final serviceB = File(p.join(b.path, 'service.dart'))
+        ..writeAsStringSync('class DuplicateService {}\n');
+
+      final issues = StateDependencyCycleRule(
+        _stateRule(RiskLevel.high),
+        _stateManagement(),
+        projectPath: dir.path,
+      ).analyze([controller.path, serviceA.path, serviceB.path]);
+
+      expect(issues, hasLength(1));
+      expect(
+          issues.single.message, contains('a/service.dart::DuplicateService'));
+    });
+
+    test('scanner changed-only uses unchanged files in the state graph', () {
+      final dir =
+          Directory.systemTemp.createTempSync('flutterguard_changed_state_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      Directory(p.join(dir.path, 'lib')).createSync();
+      File(p.join(dir.path, 'flutterguard.yaml')).writeAsStringSync('''
+include: [lib/**]
+''');
+      File(p.join(dir.path, 'lib', 'controller.dart')).writeAsStringSync('''
+import 'service.dart';
+class DeviceController { final DeviceService service; }
+''');
+      final service = File(p.join(dir.path, 'lib', 'service.dart'))
+        ..writeAsStringSync('''
+import 'controller.dart';
+class DeviceService { final DeviceController controller; }
+''');
+      _runGit(dir, ['init', '-b', 'main']);
+      _runGit(dir, ['config', 'user.email', 'test@example.com']);
+      _runGit(dir, ['config', 'user.name', 'FlutterGuard Test']);
+      _runGit(dir, ['add', '.']);
+      _runGit(dir, ['commit', '-m', 'initial']);
+      service.writeAsStringSync('${service.readAsStringSync()}\n// changed\n');
+
+      final result = FlutterGuardScanner.scan(
+        projectPath: dir.path,
+        changedOnly: true,
+        base: 'HEAD',
+      );
+      final cycles = result.issues
+          .where((issue) => issue.id == 'state_dependency_cycle')
+          .toList();
+
+      expect(result.files, [service.path]);
+      expect(cycles, hasLength(1));
+      expect(cycles.single.file, service.path);
+    });
+  });
+
   group('Rules Registry', () {
-    test('registry_contains_all_13_rules', () {
-      expect(RuleRegistry.all(), hasLength(13));
+    test('registry_contains_all_23_rules', () {
+      expect(RuleRegistry.all(), hasLength(23));
+      for (final id in const [
+        'side_effect_in_build',
+        'state_manager_created_in_build',
+        'mutable_state_exposed',
+        'state_layer_ui_dependency',
+        'state_dependency_cycle',
+        'riverpod_read_used_for_render',
+        'riverpod_watch_in_callback',
+        'bloc_equatable_props_incomplete',
+        'provider_value_lifecycle_misuse',
+        'notify_listeners_in_loop',
+      ]) {
+        expect(RuleRegistry.find(id), isNotNull, reason: id);
+      }
     });
 
     test('registry_find_returns_correct_meta', () {
@@ -1056,6 +1655,27 @@ dependencies:
         ),
         throwsA(isA<FormatException>()),
       );
+
+      final dir = Directory.systemTemp.createTempSync('flutterguard_profiles_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      for (final profile in ConfigTools.profiles) {
+        final file = File(p.join(dir.path, '$profile.yaml'))
+          ..writeAsStringSync(ConfigTools.initTemplate(
+            withArchitecture: false,
+            profile: profile,
+          ));
+        final parsed = ScanConfig.fromFile(file.path);
+        expect(parsed.rules.sideEffectInBuild.severity, RiskLevel.high);
+      }
+      final performance = ScanConfig.fromFile(
+        p.join(dir.path, 'performance-only.yaml'),
+      );
+      expect(performance.rules.sideEffectInBuild.enabled, isTrue);
+      expect(performance.rules.mutableStateExposed.enabled, isFalse);
+      final architecture = ScanConfig.fromFile(
+        p.join(dir.path, 'architecture-only.yaml'),
+      );
+      expect(architecture.rules.sideEffectInBuild.enabled, isFalse);
     });
 
     test('effective config print includes merged defaults', () {
