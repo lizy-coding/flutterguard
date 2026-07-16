@@ -20,7 +20,9 @@ class RuleCommands {
     stdout.writeln();
     for (final rule in all) {
       stdout.writeln(
-        '  ${rule.id.padRight(32)} ${rule.domain.padRight(14)} ${rule.name}',
+        '  ${rule.id.padRight(36)} ${rule.domain.padRight(14)} '
+        '${rule.framework.padRight(10)} ${rule.confidence.padRight(14)} '
+        '${rule.name}',
       );
     }
     stdout.writeln();
@@ -49,6 +51,8 @@ class RuleCommands {
     stdout.writeln('领域: ${meta.domain}');
     stdout.writeln('风险: ${meta.riskLevel}');
     stdout.writeln('优先级: ${meta.priority}');
+    stdout.writeln('框架: ${meta.framework}');
+    stdout.writeln('置信度: ${meta.confidence}');
     stdout.writeln('CI 阻断: ${meta.cicdSafe ? "是" : "否"}');
     stdout.writeln();
     stdout.writeln('检测目的:');

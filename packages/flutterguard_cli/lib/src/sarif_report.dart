@@ -32,6 +32,10 @@ class SarifReport {
                     'defaultConfiguration': {
                       'level': _levelFromRule(rule.riskLevel),
                     },
+                    'properties': {
+                      'framework': rule.framework,
+                      'confidence': rule.confidence,
+                    },
                   }
               ],
             },
@@ -42,6 +46,11 @@ class SarifReport {
                 'ruleId': issue.id,
                 'level': _level(issue.level),
                 'message': {'text': issue.message},
+                'properties': {
+                  'framework': issue.framework.name,
+                  'confidence': issue.confidence.name,
+                  'evidence': issue.evidence.take(5).toList(),
+                },
                 'locations': [
                   {
                     'physicalLocation': {

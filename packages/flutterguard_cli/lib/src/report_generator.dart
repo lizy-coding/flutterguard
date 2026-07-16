@@ -225,7 +225,10 @@ class ReportGenerator {
       final displayPath = _displayPath(issue.file, projectPath);
       final lineInfo = issue.line != null ? ':${issue.line}' : '';
 
-      buf.writeln('  $lvlAnsi$lvlLabel$reset $priAnsi$priLabel$reset');
+      buf.writeln(
+        '  $lvlAnsi$lvlLabel$reset $priAnsi$priLabel$reset  '
+        '${issue.framework.name}/${issue.confidence.name}',
+      );
       buf.writeln('       $bold${issue.title}$reset');
       buf.writeln('       $gray$displayPath$lineInfo$reset');
       buf.writeln('       ${issue.message}');
@@ -234,6 +237,11 @@ class ReportGenerator {
         buf.writeln();
         for (final line in issue.detail.split('\n')) {
           buf.writeln('       $dim$line$reset');
+        }
+      }
+      if (verbose && issue.evidence.isNotEmpty) {
+        for (final evidence in issue.evidence.take(5)) {
+          buf.writeln('       $dim证据: $evidence$reset');
         }
       }
       buf.writeln('       修复: $green${issue.suggestion}$reset');
