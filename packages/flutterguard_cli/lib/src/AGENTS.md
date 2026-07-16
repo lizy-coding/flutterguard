@@ -10,7 +10,7 @@ This directory contains reusable implementation for the CLI.
 - `import_graph.dart`: resolved import graph shared by architecture rules.
 - `boundary_engine.dart`: common layer/module dependency enforcement.
 - `rules/catalog.dart`: explicit rule metadata and execution wiring.
-- `config_loader.dart`: YAML parsing into typed record configs (11 rule configs + architecture).
+- `config_loader.dart`: YAML parsing into typed record configs (20 rule configs + state management + architecture).
 - `file_collector.dart`: include/exclude glob file discovery.
 - `project_resolver.dart`: project auto-discovery (walk-up flutterguard.yaml / pubspec.yaml / lib/).
 - `report_generator.dart`: table and JSON output with optional `--no-color` support.
@@ -18,7 +18,7 @@ This directory contains reusable implementation for the CLI.
 - `path_utils.dart`: cross-platform path/glob helpers.
 - `import_utils.dart`: Dart import resolution against collected files.
 - `source_utils.dart`: analyzer source location helpers.
-- `rules/`: rule implementations only (11 rule classes, 13 rule IDs).
+- `rules/`: rule implementations only (21 rule classes, 23 rule IDs).
 
 ## Design Rules
 - Keep `bin/` thin; reusable logic belongs here.

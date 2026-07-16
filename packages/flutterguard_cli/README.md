@@ -63,6 +63,16 @@ run the current files instead of an older global executable:
 | `iot_security` | HIGH | Hardcoded secrets, cleartext MQTT/HTTP, insecure BLE patterns |
 | `ble_scanning` | MEDIUM | BLE scan/stop and timeout checks |
 | `pubspec_security` | MEDIUM | Unbounded, deprecated, or outdated dependency checks |
+| `side_effect_in_build` | HIGH | Side effects during Widget/Consumer build |
+| `state_manager_created_in_build` | HIGH | State managers/controllers created during build |
+| `mutable_state_exposed` | MEDIUM | Public mutable state and in-place state mutation |
+| `state_layer_ui_dependency` | HIGH | State owners coupled to Flutter UI APIs |
+| `state_dependency_cycle` | HIGH | Provider/state/service dependency cycles |
+| `riverpod_read_used_for_render` | MEDIUM | Riverpod `ref.read` used for rendering |
+| `riverpod_watch_in_callback` | MEDIUM | Riverpod `ref.watch` in callbacks |
+| `bloc_equatable_props_incomplete` | MEDIUM | Equatable fields missing from `props` |
+| `provider_value_lifecycle_misuse` | MEDIUM | Provider `.value`/`create` ownership misuse |
+| `notify_listeners_in_loop` | MEDIUM | Repeated `notifyListeners()` in loops |
 
 ## Configuration
 
@@ -80,6 +90,16 @@ rules:
     maxLines: 500
   lifecycle_resource:
     enabled: true
+  side_effect_in_build:
+    enabled: true
+    severity: high
+    allowlist: []
+    ignore_paths: []
+
+state_management:
+  enabled: true
+  framework_auto_detect: true
+  confidence_threshold: certain
 
 architecture:
   layers:
@@ -155,7 +175,7 @@ flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-
 # GitHub Actions
 - uses: dart-lang/setup-dart@v1
   with:
-    sdk: 3.3.0
+    sdk: 3.11.5
 - run: dart pub global activate flutterguard_cli
 - run: flutterguard scan . --format json --baseline .flutterguard/baseline.json --fail-on high --min-score 80
 ```
@@ -179,7 +199,7 @@ Known false positives can be suppressed on the same line or the next line:
 
 ## Requirements
 
-- Dart SDK >=3.3.0
+- Dart SDK >=3.11.5
 - Supported OS: macOS, Windows, Linux
 
 ## Further Reading

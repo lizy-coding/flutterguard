@@ -27,7 +27,7 @@ FlutterGuard scans Flutter/Dart source code and reports architecture boundary br
 
 ## Requirements
 
-- Dart SDK 3.3.0 or newer
+- Dart SDK 3.11.5 or newer
 - `melos` for workspace bootstrap when running from source
 - Supported OS: macOS, Windows, Linux
 
@@ -288,7 +288,24 @@ rules:
     requireTls: true
   pubspec_security:
     enabled: true
+  side_effect_in_build:
+    enabled: true
+    severity: high
+    allowlist: []
+    ignore_paths: []
+  riverpod_read_used_for_render:
+    enabled: true
+    severity: medium
+
+state_management:
+  enabled: true
+  framework_auto_detect: true
+  confidence_threshold: certain
 ```
+
+All ten state-management rules accept `enabled`, `severity`, `allowlist`, and
+project-relative POSIX `ignore_paths`. The abbreviated example above shows the
+shared shape; `flutterguard config print` prints every rule and effective value.
 
 ### Full config (with architecture enforcement)
 
@@ -348,8 +365,18 @@ architecture:
 | `iot_security` | HIGH | architecture | P0 | Hardcoded credentials, cleartext MQTT/HTTP, insecure BLE | `rules.iot_security.requireTls` |
 | `ble_scanning` | MEDIUM | architecture | P1 | BLE startScan/stopScan pairing, scan timeout | `rules.ble_scanning.maxScanDurationMs` |
 | `pubspec_security` | MEDIUM | standards | P2 | Unbounded deps, deprecated packages, outdated IoT dependencies | — |
+| `side_effect_in_build` | HIGH | performance | P0 | State/resource side effects during build | — |
+| `state_manager_created_in_build` | HIGH | performance | P0 | Controllers/Blocs/Notifiers created during build | — |
+| `mutable_state_exposed` | MEDIUM | architecture | P1 | Public mutable state and in-place state collection mutation | — |
+| `state_layer_ui_dependency` | HIGH | architecture | P0 | State owners depending on BuildContext, Widget, navigation or theme APIs | — |
+| `state_dependency_cycle` | HIGH | architecture | P0 | Cycles among providers, state owners and reachable services | — |
+| `riverpod_read_used_for_render` | MEDIUM | performance | P1 | `ref.read` values flowing into render output | Riverpod import * |
+| `riverpod_watch_in_callback` | MEDIUM | performance | P1 | `ref.watch` inside event/async callbacks | Riverpod import * |
+| `bloc_equatable_props_incomplete` | MEDIUM | standards | P1 | Equatable final fields missing from `props` | Bloc + Equatable imports * |
+| `provider_value_lifecycle_misuse` | MEDIUM | performance | P1 | Reversed Provider `.value`/`create` ownership | Provider/Bloc import * |
+| `notify_listeners_in_loop` | MEDIUM | performance | P1 | `notifyListeners()` inside repeated loops | Provider/Bloc import * |
 
-<sub>* Requires explicit YAML configuration to activate.</sub>
+<sub>* Architecture entries require explicit YAML. Framework imports are auto-detected by default; set `state_management.framework_auto_detect: false` to use AST-only matching.</sub>
 
 ---
 
@@ -444,7 +471,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: 3.3.0
+          sdk: 3.11.5
       - name: Install FlutterGuard
         run: dart pub global activate flutterguard_cli
       - name: Scan
@@ -468,7 +495,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: 3.3.0
+          sdk: 3.11.5
       - run: dart pub global activate flutterguard_cli
       - run: flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
       - uses: github/codeql-action/upload-sarif@v3
@@ -480,7 +507,7 @@ jobs:
 
 ```yaml
 flutterguard:
-  image: dart:3.3.0
+  image: dart:3.11.5
   script:
     - dart pub global activate flutterguard_cli
     - flutterguard scan . --format json --fail-on high --min-score 80

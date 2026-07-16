@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2026-07-16)
 
+- **cli:** Added 10 AST-first state-management maintainability rules for generic Flutter, Riverpod, Bloc, and Provider projects (23 total rule IDs).
+- **cli:** Added state-rule severity/allowlist/ignore-path controls, framework auto-detection, confidence/evidence output, and changed-only state-cycle analysis.
+- **reporting:** JSON and SARIF now include framework, confidence, and evidence while preserving existing fields and baseline fingerprints.
+- **fix:** Qualified state dependency graph nodes by file and resolved duplicate names through project imports.
+- **compatibility:** Aligned the published package SDK constraint and install examples with the Dart 3.11.5 release workflow.
+- **test:** Expanded the CLI suite to 83 tests with generic/Riverpod/Bloc/Provider fixtures, version synchronization, and release-hardening coverage.
 - **fix:** Prevent successful no-op full scans and preserve setup-error exit codes in local CI scripts.
 - **fix:** Anchor configuration policy to the target project and require explicitly selected config files.
 - **ci:** Run analyze, tests, and the demo scan against the current checkout on the OS matrix.

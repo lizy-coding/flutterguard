@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 (2026-07-16)
+
+- Added 10 AST-first state-management maintainability rules, bringing the registry to 23 rule IDs.
+- Added shared state configuration, severity/priority overrides, framework auto-detection, allowlists, ignore paths, confidence, and evidence.
+- Extended table, JSON, rules/explain, and SARIF output without changing baseline fingerprints or existing report fields.
+- State dependency cycles now use file-qualified nodes and import-aware resolution, preventing false cycles when projects contain duplicate type names.
+- Aligned the published package SDK constraint and install examples with the Dart 3.11.5 release workflow.
+- Added generic, Riverpod, Bloc, and Provider fixtures; the CLI suite now contains 83 tests, including version synchronization, per-rule enablement, suppression, baseline, duplicate-name, and changed-only graph coverage.
+
 ## 0.5.0 (2026-07-12)
 
 ### Architecture Refactor

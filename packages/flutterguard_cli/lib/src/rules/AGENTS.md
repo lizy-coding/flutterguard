@@ -15,6 +15,12 @@ Each file implements one rule family and returns `List<StaticIssue>`.
 - `ble_scanning.dart`: BLE startScan/stopScan pairing, connect/disconnect, scan timeout configuration
 - `iot_security.dart`: hardcoded credentials, cleartext MQTT (port 1883), cleartext HTTP, insecure BLE
 - `pubspec_security.dart`: unbounded deps, deprecated packages (flutter_blue→flutter_blue_plus), outdated IoT dependencies
+- `generic_state_management.dart`: build side effects/creation, mutable state, and state-to-UI dependencies
+- `state_dependency_cycle.dart`: project-wide provider/state/service SCC detection
+- `riverpod_state_management.dart`: render-time read and callback watch checks
+- `bloc_state_management.dart`: Equatable props completeness
+- `provider_state_management.dart`: Provider ownership and loop notification checks
+- `state_management_utils.dart`: shared AST/import/owner/build/callback helpers
 
 ## Rule Contract
 - Constructor receives typed config or explicit parameters.

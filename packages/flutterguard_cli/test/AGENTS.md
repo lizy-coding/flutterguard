@@ -4,8 +4,8 @@
 Tests verify rule behavior, scanner orchestration, report generation, and cross-platform path handling.
 
 ## Test Files
-- `scanner_test.dart`: reusable scanner/rule integration suite (57 tests, 7 groups).
-- `cli_test.dart`: process-level CLI exit and report behavior (4 tests).
+- `scanner_test.dart`: reusable scanner/rule integration suite (78 tests, 8 groups).
+- `cli_test.dart`: process-level CLI exit and report behavior (5 tests).
 
 ## Test Groups
 | Group | Tests | Coverage |

@@ -20,7 +20,7 @@ Primary CLI tool for IoT Flutter static architecture scanning and CI gating.
 | `src/source_workspace.dart` | Shared source/AST cache and diagnostics |
 | `src/import_graph.dart` | Shared import graph for architecture rules |
 | `src/rules/catalog.dart` | Explicit metadata and execution wiring |
-| `src/config_loader.dart` | YAML → ScanConfig typedef parsing (11 rule configs + architecture) |
+| `src/config_loader.dart` | YAML → ScanConfig typed parsing (20 rule configs + state management + architecture) |
 | `src/file_collector.dart` | Glob-based .dart file discovery |
 | `src/project_resolver.dart` | Project auto-discovery (walk-up flutterguard.yaml / pubspec.yaml / lib/) |
 | `src/import_utils.dart` | Shared import resolution utility |
@@ -40,16 +40,17 @@ Primary CLI tool for IoT Flutter static architecture scanning and CI gating.
 | `src/rules/ble_scanning.dart` | BLE startScan/stopScan, connect/disconnect, scan timeout |
 | `src/rules/pubspec_security.dart` | Unbounded deps, deprecated packages, outdated IoT dependencies |
 
-## Wired Rules (11 rule classes, 13 rule IDs)
+## Wired Rules (21 rule classes, 23 rule IDs)
 Standards: LargeUnitsRule (3 IDs), MissingConstConstructorRule, PubspecSecurityRule
 Performance: LifecycleResourceRule
 Architecture: LayerViolationRule, ModuleViolationRule, CircularDependencyRule
 IoT: DeviceLifecycleRule, MqttConnectionRule, BleScanningRule, IotSecurityRule
+State management: 5 generic, 2 Riverpod, 1 Bloc, and 2 Provider rules
 
 ## Test
 - command: `melos run test:cli`
-- test files: `test/scanner_test.dart` (57 tests) and `test/cli_test.dart` (4 process-level tests)
-- fixtures: `test/fixtures/` (16 functional fixture files)
+- test files: `test/scanner_test.dart` (78 tests) and `test/cli_test.dart` (5 process-level tests)
+- fixtures: `test/fixtures/` (21 functional fixture files)
 - every new rule needs: spec entry → config typedef → class → fixture → test → wire in rules/catalog.dart
 
 ## Current Toolchain Flow

@@ -19,7 +19,7 @@ IoT/smart home Flutter project static analysis CLI plugin. NOT an observability 
 |---------|---------|
 | `dart run melos bootstrap` | Install workspace dependencies |
 | `dart run melos run analyze` | dart analyze on all packages |
-| `dart run melos run test:cli` | CLI tests only (61 tests) |
+| `dart run melos run test:cli` | CLI tests only (83 tests) |
 | `flutterguard scan [<path>]` | Run scan on a project (path defaults to current dir) |
 | `flutterguard scan <path> --format json --fail-on high` | JSON output with CI gate |
 | `flutterguard scan --changed-only` | Incremental scan of git-changed files |
@@ -36,16 +36,17 @@ IoT/smart home Flutter project static analysis CLI plugin. NOT an observability 
 
 Supports positional path: `flutterguard scan ./my_project` (no `-p` required). Project auto-discovery walks up from CWD to find `flutterguard.yaml`, `pubspec.yaml`, or `lib/`. Supports --changed-only incremental scan and rule introspection (rules/explain).
 
-Wired rules (11 rule classes, 13 rule IDs):
+Wired rules (21 rule classes, 23 rule IDs):
 - Standards: LargeUnitsRule (3 IDs), MissingConstConstructorRule, PubspecSecurityRule
 - Performance: LifecycleResourceRule
 - Architecture: LayerViolationRule, ModuleViolationRule, CircularDependencyRule
 - IoT: DeviceLifecycleRule, MqttConnectionRule, BleScanningRule, IotSecurityRule
+- State management: 5 generic, 2 Riverpod, 1 Bloc, and 2 Provider rules
 
 ## Source Layout
 ```
 packages/flutterguard_cli/lib/src/
-  config_loader.dart         # YAML → ScanConfig typedefs (11 rule configs + architecture)
+  config_loader.dart         # YAML → typed config (20 rule configs + state management + architecture)
   scan_context.dart          # Project/all/target files and scan mode
   source_workspace.dart      # Shared source/AST cache + scan diagnostics
   import_graph.dart          # Shared resolved Dart import graph
@@ -62,7 +63,13 @@ packages/flutterguard_cli/lib/src/
   rule_meta.dart             # Rule metadata for rules/explain
   rules/
     catalog.dart                  # Rule metadata + execution source of truth
-    registry.dart                 # RuleRegistry for all 13 rule IDs
+    registry.dart                 # RuleRegistry for all 23 rule IDs
+    state_management_utils.dart   # Shared AST/import/owner/build/callback helpers
+    generic_state_management.dart # Generic build/mutability/UI rules
+    state_dependency_cycle.dart   # Project-wide state dependency SCC rule
+    riverpod_state_management.dart # Riverpod read/watch rules
+    bloc_state_management.dart    # Equatable props rule
+    provider_state_management.dart # Provider ownership/notify rules
     large_units.dart              # large_file, large_class, large_build_method
     lifecycle_resource.dart       # lifecycle_resource_not_disposed
     layer_violation.dart          # layer_violation (architecture layer breaches)
