@@ -1,10 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 $rootDir = Split-Path -Parent $PSScriptRoot
-$pubspec = Join-Path $rootDir "packages\flutterguard_cli\pubspec.yaml"
+$pubspec = Join-Path $rootDir "pubspec.yaml"
 $versionLine = Select-String -Path $pubspec -Pattern "^version:" | Select-Object -First 1
 $version = ($versionLine.Line -split "\s+")[1]
-$src = Join-Path $rootDir "packages\flutterguard_cli\bin\flutterguard.dart"
+$src = Join-Path $rootDir "bin\flutterguard.dart"
 $dist = Join-Path $rootDir "dist"
 $name = "flutterguard-$version-windows-x64"
 $outDir = Join-Path $dist $name

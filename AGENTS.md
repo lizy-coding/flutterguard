@@ -1,96 +1,84 @@
-# flutterguard — IoT Flutter Static Analysis CLI
+# flutterguard — Agent Guide
 
 ## Identity
-IoT/smart home Flutter project static analysis CLI plugin. NOT an observability SDK or APM tool.
 
-## Architecture
-- **Monorepo**: melos, 1 package + 1 example
-- **Path A (ACTIVE)**: `flutterguard_cli` — all new features
-- **Path B (ARCHIVED)**: `flutterguard_core`, `flutterguard_dio`, `flutterguard_flutter` — in `archive/` for future reference
+FlutterGuard is an executable-only static analysis CLI for IoT/smart-home
+Flutter projects. It is not an observability SDK, APM product, hosted service,
+or general-purpose style linter.
 
-## Package Hierarchy
-| Package | Status | Depends On | Depended By |
-|---------|--------|------------|-------------|
-| flutterguard_cli | ACTIVE | args, analyzer, glob, path, yaml | — |
-| scan_demo | — | (none, scan target) | — |
+## Repository
 
-## Key Commands
-| Command | Purpose |
-|---------|---------|
-| `dart run melos bootstrap` | Install workspace dependencies |
-| `dart run melos run analyze` | dart analyze on all packages |
-| `dart run melos run test:cli` | CLI tests only (83 tests) |
-| `flutterguard scan [<path>]` | Run scan on a project (path defaults to current dir) |
-| `flutterguard scan <path> --format json --fail-on high` | JSON output with CI gate |
-| `flutterguard scan --changed-only` | Incremental scan of git-changed files |
-| `flutterguard rules` / `flutterguard explain <id>` | List/describe rules |
-| `dart compile exe ... -o flutterguard` | Compile native binary |
+This is one Dart package rooted at the repository root.
 
-## CI & Automation
-- `.github/workflows/flutterguard.yml` — CI with ubuntu/macos/windows matrix
-- `scripts/compile.sh` / `scripts/compile.ps1` — cross-platform native binary compilation
-- `scripts/scan_ci.sh` / `scripts/scan_ci.ps1` — local CI gate scripts
-
-## CLI Entry Point
-`packages/flutterguard_cli/bin/flutterguard.dart`
-
-Supports positional path: `flutterguard scan ./my_project` (no `-p` required). Project auto-discovery walks up from CWD to find `flutterguard.yaml`, `pubspec.yaml`, or `lib/`. Supports --changed-only incremental scan and rule introspection (rules/explain).
-
-Wired rules (21 rule classes, 23 rule IDs):
-- Standards: LargeUnitsRule (3 IDs), MissingConstConstructorRule, PubspecSecurityRule
-- Performance: LifecycleResourceRule
-- Architecture: LayerViolationRule, ModuleViolationRule, CircularDependencyRule
-- IoT: DeviceLifecycleRule, MqttConnectionRule, BleScanningRule, IotSecurityRule
-- State management: 5 generic, 2 Riverpod, 1 Bloc, and 2 Provider rules
-
-## Source Layout
-```
-packages/flutterguard_cli/lib/src/
-  config_loader.dart         # YAML → typed config (20 rule configs + state management + architecture)
-  scan_context.dart          # Project/all/target files and scan mode
-  source_workspace.dart      # Shared source/AST cache + scan diagnostics
-  import_graph.dart          # Shared resolved Dart import graph
-  boundary_engine.dart       # Shared layer/module boundary analysis
-  file_collector.dart        # Glob file discovery
-  project_resolver.dart      # Project auto-discovery (walk-up flutterguard.yaml / pubspec.yaml / lib/)
-  static_issue.dart          # StaticIssue + RiskLevel + IssueDomain + Priority
-  report_generator.dart      # Table + JSON output + score, --no-color support
-  domain.dart                # IssueDomain enum (architecture/performance/standards)
-  priority.dart              # Priority enum (p0/p1/p2)
-  path_utils.dart            # Cross-platform path/glob helpers (p.Context abstraction)
-  import_utils.dart          # Dart import resolution against collected files
-  source_utils.dart          # Analyzer offset → line number conversion
-  rule_meta.dart             # Rule metadata for rules/explain
-  rules/
-    catalog.dart                  # Rule metadata + execution source of truth
-    registry.dart                 # RuleRegistry for all 23 rule IDs
-    state_management_utils.dart   # Shared AST/import/owner/build/callback helpers
-    generic_state_management.dart # Generic build/mutability/UI rules
-    state_dependency_cycle.dart   # Project-wide state dependency SCC rule
-    riverpod_state_management.dart # Riverpod read/watch rules
-    bloc_state_management.dart    # Equatable props rule
-    provider_state_management.dart # Provider ownership/notify rules
-    large_units.dart              # large_file, large_class, large_build_method
-    lifecycle_resource.dart       # lifecycle_resource_not_disposed
-    layer_violation.dart          # layer_violation (architecture layer breaches)
-    module_violation.dart         # module_violation (cross-module breaches)
-    circular_dependency.dart      # circular_dependency (file-level cycles)
-    missing_const_constructor.dart # missing_const_constructor
-    iot_security.dart             # iot_security (hardcoded secrets, cleartext MQTT/HTTP, insecure BLE)
-    device_lifecycle.dart         # device_lifecycle (init/teardown pair checks)
-    mqtt_connection.dart          # mqtt_connection (MQTT connect/disconnect, broker URLs)
-    ble_scanning.dart             # ble_scanning (BLE startScan/stopScan, timeout)
-    pubspec_security.dart         # pubspec_security (unbounded deps, deprecated packages)
+```text
+bin/       executable entry point
+lib/src/   scan, config, report, and rule implementation
+test/      contract and detector tests
+example/   CI scan target
+doc/       architecture and external contract
+scripts/   native release packaging
 ```
 
-## Spec
-Single source of truth: `docs/FLUTTERGUARD_SPEC.md` — read before implementing any feature.
+Do not reintroduce Melos, `packages/`, archived runtime packages, a plugin
+system, or a public scanner library API.
 
-## Maintenance Rules
-1. New rule: spec entry → config typedef → rule class → fixture → test → wire into rules/catalog.dart
-2. Always run `melos run analyze` + `melos run test:cli` before committing
-3. Do NOT modify archived packages (core/dio/flutter) — they are frozen references
-4. Do NOT add Flutter widgets, web/cloud infra, or SaaS SDKs
-5. Output format defaults to `table`. JSON available via `--format=json`
-6. Architecture rules require explicit `architecture.layers` / `architecture.modules` in flutterguard.yaml
-7. CLI supports positional path (`flutterguard scan ./project`) and `--no-color` flag
+## Commands
+
+```bash
+dart pub get
+dart format bin lib test
+dart analyze
+dart test
+dart run bin/flutterguard.dart scan example --format json --no-color
+dart compile exe bin/flutterguard.dart -o flutterguard
+dart pub publish --dry-run
+```
+
+## Architecture invariants
+
+- `ScanContext` carries project/all/target files, scan mode, config, and the
+  shared `SourceWorkspace`.
+- `SourceWorkspace` owns source reads, AST parsing, line info, and diagnostics.
+- Architecture rules share one `ImportGraph`.
+- Layer and module enforcement share `BoundaryRule` and
+  `DependencyBoundaryEngine`.
+- `RuleRegistry.registrations` is the only metadata/default/execution registry.
+- Rules receive effective generic `RuleConfig`; rule-specific defaults live in
+  `RuleDefinition.defaultOptions`.
+- CLI and JSON/SARIF are the supported integration boundary. `lib/src` is
+  private implementation.
+
+## Product surface
+
+Supported command families are `scan`, `baseline create`, `config init|check`,
+and `rules [rule-id]`.
+
+The canonical finding taxonomy is `ruleId + severity + domain`. Do not add
+priority, score, confidence, or compatibility aliases. Framework is descriptive
+metadata, not a global configuration switch.
+
+Keep changed-only scanning, inline suppression, baseline filtering, JSON, and
+SARIF behavior covered by tests.
+
+## Adding or changing a rule
+
+1. Implement or extend a detector under `lib/src/rules/`.
+2. Add exactly one registration and definition in `rules/registry.dart`.
+3. Add positive, negative, disabled, and output-contract coverage as needed.
+4. Update `doc/FLUTTERGUARD_SPEC.md` only for external contract changes.
+5. Run the full verification commands above.
+
+Do not add generic size, formatting, or missing-const checks; those belong to
+Dart lints or dedicated complexity tooling.
+
+## Documentation hierarchy
+
+- `EVOLUTION_PLAN.md` is the local checkpoint and next-step execution order.
+- This file defines repository-wide constraints.
+- Nested `AGENTS.md` files contain only directory-specific responsibilities.
+- `doc/ARCHITECTURE.md` defines internal boundaries.
+- `doc/FLUTTERGUARD_SPEC.md` defines external behavior.
+- `README.md` is the user onboarding document.
+
+When behavior changes, update the narrowest authoritative document rather than
+copying the same contract across every level.

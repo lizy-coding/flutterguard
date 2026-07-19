@@ -17,11 +17,9 @@ jobs:
         with:
           sdk: "3.11.5"
       - run: dart pub get
-      - run: dart run melos bootstrap
-      - run: dart run melos run analyze
-      - run: dart run melos run test:cli
+      - run: dart analyze
+      - run: dart test
       - run: dart pub publish --server https://pub.dev --dry-run
-        working-directory: packages/flutterguard_cli
 
   build:
     needs: validate

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="$(grep '^version:' "$ROOT_DIR/packages/flutterguard_cli/pubspec.yaml" | awk '{print $2}')"
-SRC="$ROOT_DIR/packages/flutterguard_cli/bin/flutterguard.dart"
+VERSION="$(grep '^version:' "$ROOT_DIR/pubspec.yaml" | awk '{print $2}')"
+SRC="$ROOT_DIR/bin/flutterguard.dart"
 DIST="$ROOT_DIR/dist"
 
 case "$(uname -s)" in

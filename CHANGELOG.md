@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.7.0 (2026-07-17)
+
+### Breaking simplification
+
+- Flattened the repository and publishable package into one Dart package root;
+  removed Melos, archived runtime packages, duplicate package metadata, IDE
+  project files, development wrappers, and historical planning documents.
+- Reduced the CLI to `scan`, `baseline create`, `config init|check`, and
+  `rules [rule-id]`.
+- Replaced typed per-rule config records and profile YAML copies with generic
+  registry-driven `RuleConfig` settings.
+- Merged rule metadata, defaults, and execution into one `RuleRegistry` and
+  merged layer/module implementations into `BoundaryRule`.
+- Removed generic size rules, `missing_const_constructor`, and the overlapping
+  `device_lifecycle` rule.
+- Assigned resource cleanup to the lifecycle rule and scan timeout checks to
+  `ble_scanning`; removed overlapping MQTT configuration and dependency-version
+  rules in favor of application configuration and ecosystem tooling.
+- Removed score, priority, confidence, framework switches, JSON compatibility
+  aliases, install diagnostics, issue export, config profiles/print, and
+  baseline stats/prune/check.
+- JSON reports now use schema `2.0.0` with canonical `ruleId`, `severity`, and
+  `domain` fields.
+- Reorganized the test suite by CLI, config, rules, and scanner contracts and
+  updated every hierarchical `AGENTS.md` description.
+
 ## 0.6.0 (2026-07-16)
 
 - **cli:** Added 10 AST-first state-management maintainability rules for generic Flutter, Riverpod, Bloc, and Provider projects (23 total rule IDs).

@@ -1,0 +1,15 @@
+.github/
+.idea/
+.dart_tool/
+.flutterguard/
+**/AGENTS.md
+scripts/
+test/
+/flutterguard.yaml
+analysis_options.yaml
+pubspec.lock
+dist/
+/flutterguard
+/flutterguard.exe
+*.iml
+CONTEXT.md
