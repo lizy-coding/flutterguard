@@ -1,0 +1,24 @@
+include:
+  - "**/*.dart"
+exclude: []
+rules:
+  layer_violation:
+    enabled: false
+  module_violation:
+    enabled: false
+architecture:
+  layers:
+    - name: ui
+      path: "**/boundary_issue.dart"
+      allowed_deps: []
+    - name: model
+      path: "**/forbidden_file.dart"
+      allowed_deps: []
+  modules:
+    - name: feature_a
+      path: "**/boundary_issue.dart"
+      allowed_deps: []
+    - name: feature_b
+      path: "**/forbidden_file.dart"
+      allowed_deps: []
+  detect_cycles: false

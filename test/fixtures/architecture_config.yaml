@@ -1,0 +1,29 @@
+include:
+  - "**/*.dart"
+exclude: []
+rules:
+  lifecycle_resource_not_disposed:
+    enabled: true
+    severity: medium
+  layer_violation:
+    enabled: true
+    severity: high
+  module_violation:
+    enabled: true
+    severity: high
+architecture:
+  layers:
+    - name: ui
+      path: "**/boundary_issue.dart"
+      allowed_deps: []
+    - name: model
+      path: "**/forbidden_file.dart"
+      allowed_deps: []
+  modules:
+    - name: feature_a
+      path: "**/boundary_issue.dart"
+      allowed_deps: []
+    - name: feature_b
+      path: "**/forbidden_file.dart"
+      allowed_deps: []
+  detect_cycles: false

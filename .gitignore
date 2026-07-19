@@ -11,17 +11,11 @@ build/
 # CLI
 .flutterguard/
 flutterguard
+flutterguard.exe
+dist/
 
 # IDE
-.idea/*/
-.idea/*.xml
-.idea/*.iml
-!.idea/modules.xml
-!.idea/misc.xml
-!.idea/vcs.xml
-!.idea/runConfigurations/
-!.idea/runConfigurations/**
-!.idea/.name
+.idea/
 .vscode/
 *.iml
 
