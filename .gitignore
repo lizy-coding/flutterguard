@@ -31,6 +31,4 @@ doc/api/
 # Coverage
 .coverage
 
-# Project evolution spec
-# Keep docs tracked: README and the published package link to these files.
-CONTEXT.md
+
