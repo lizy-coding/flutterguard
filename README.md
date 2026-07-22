@@ -158,6 +158,20 @@ dart run bin/flutterguard.dart scan example --format json --no-color
 dart pub publish --dry-run
 ```
 
+### Release preflight
+
+Before creating a release tag, run the compact preflight command:
+
+```bash
+bash scripts/release_preflight.sh
+```
+
+It resolves dependencies, checks formatting, analysis, tests, and the CLI
+example, then runs `dart pub publish --dry-run` without uploading anything.
+It finishes by printing the required human checks for package contents, legal
+redistribution, version/tag, and publisher access. A nonzero exit means at
+least one automated release gate failed.
+
 See [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) for internal boundaries and
 [doc/FLUTTERGUARD_SPEC.md](doc/FLUTTERGUARD_SPEC.md) for the external
 contract.

@@ -16,10 +16,7 @@ jobs:
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: "3.11.5"
-      - run: dart pub get
-      - run: dart analyze
-      - run: dart test
-      - run: dart pub publish --server https://pub.dev --dry-run
+      - run: bash scripts/release_preflight.sh
 
   build:
     needs: validate

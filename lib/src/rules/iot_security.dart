@@ -1,15 +1,21 @@
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/source/line_info.dart';
+
 import '../config_loader.dart';
 import 'rule.dart';
 import '../source_workspace.dart';
 import '../static_issue.dart';
 
-final _secretPattern = RegExp(
-  r"""(password|token|secret|api[_]?key)\s*[:=]\s*["']""",
+final _secretNamePattern = RegExp(
+  r'^(password|token|secret|api[_]?key)$',
   caseSensitive: false,
 );
-const _cleartextMqttPatterns = ['tcp://', 'port: 1883', 'port:1883'];
-const _insecureBleKeywords = ['withoutBonding', 'withoutPairing'];
-final _httpUrlPattern = RegExp(r"""['"]http://[^'"]+['"]""");
+final _cleartextMqttPattern = RegExp(
+  r'tcp://|port:\s*1883',
+  caseSensitive: false,
+);
+const _insecureBleValues = {'withoutBonding', 'withoutPairing'};
 
 class IotSecurityRule {
   final RuleConfig config;
@@ -25,148 +31,16 @@ class IotSecurityRule {
     for (final file in files) {
       final source = sources.source(file);
       if (source == null) continue;
-      issues.addAll(_checkFile(file, source.content));
+      final visitor = _IotSecurityVisitor(
+        config,
+        file,
+        source.lineInfo,
+        issues,
+      );
+      source.unit.accept(visitor);
     }
 
     return issues;
-  }
-
-  List<StaticIssue> _checkFile(String file, String content) {
-    final issues = <StaticIssue>[];
-    final lines = content.split('\n');
-
-    _checkHardcodedSecrets(file, lines, issues);
-
-    if (config.boolOption('requireTls')) {
-      _checkCleartextMqtt(file, lines, issues);
-      _checkCleartextHttp(file, lines, issues);
-    }
-
-    _checkInsecureBle(file, lines, issues);
-
-    return issues;
-  }
-
-  void _checkHardcodedSecrets(
-    String file,
-    List<String> lines,
-    List<StaticIssue> issues,
-  ) {
-    for (var i = 0; i < lines.length; i++) {
-      if (_secretPattern.hasMatch(lines[i])) {
-        issues.add(
-          StaticIssue(
-            id: 'iot_security',
-            title: 'IoT 安全 — 硬编码凭证',
-            file: file,
-            line: i + 1,
-            level: config.severity,
-            domain: IssueDomain.architecture,
-            message: '检测到可疑的硬编码凭证',
-            detail:
-                '行 ${i + 1}: ${lines[i].trim()}\n'
-                '硬编码凭证可能导致安全泄露，应使用环境变量或安全存储',
-            suggestion: '使用环境变量或安全存储方案替代硬编码凭证',
-            metadata: {'securityCheck': 'hardcoded_secret', 'line': i + 1},
-          ),
-        );
-      }
-    }
-  }
-
-  void _checkCleartextMqtt(
-    String file,
-    List<String> lines,
-    List<StaticIssue> issues,
-  ) {
-    for (var i = 0; i < lines.length; i++) {
-      final lower = lines[i].toLowerCase();
-      for (final pattern in _cleartextMqttPatterns) {
-        if (lower.contains(pattern)) {
-          issues.add(
-            StaticIssue(
-              id: 'iot_security',
-              title: 'IoT 安全 — 明文 MQTT 连接',
-              file: file,
-              line: i + 1,
-              level: config.severity,
-              domain: IssueDomain.architecture,
-              message: '检测到明文 MQTT 连接配置: "$pattern"',
-              detail:
-                  '行 ${i + 1}: ${lines[i].trim()}\n'
-                  '明文 MQTT 连接不安全，应使用 mqtts:// (TLS) 或端口 8883',
-              suggestion: '将 MQTT 连接升级为 mqtts:// 并使用端口 8883',
-              metadata: {
-                'securityCheck': 'cleartext_mqtt',
-                'pattern': pattern,
-                'line': i + 1,
-              },
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void _checkCleartextHttp(
-    String file,
-    List<String> lines,
-    List<StaticIssue> issues,
-  ) {
-    for (var i = 0; i < lines.length; i++) {
-      for (final match in _httpUrlPattern.allMatches(lines[i])) {
-        final url = match.group(0) ?? '';
-        if (url.contains('localhost') || url.contains('127.0.0.1')) continue;
-
-        issues.add(
-          StaticIssue(
-            id: 'iot_security',
-            title: 'IoT 安全 — 明文 HTTP 连接',
-            file: file,
-            line: i + 1,
-            level: config.severity,
-            domain: IssueDomain.architecture,
-            message: '检测到明文 HTTP URL: $url',
-            detail: '行 ${i + 1}: ${lines[i].trim()}\n明文 HTTP 不安全，应使用 HTTPS',
-            suggestion: '将 HTTP 连接升级为 HTTPS',
-            metadata: {'securityCheck': 'cleartext_http', 'url': url},
-          ),
-        );
-      }
-    }
-  }
-
-  void _checkInsecureBle(
-    String file,
-    List<String> lines,
-    List<StaticIssue> issues,
-  ) {
-    for (var i = 0; i < lines.length; i++) {
-      for (final keyword in _insecureBleKeywords) {
-        if (lines[i].contains(keyword)) {
-          issues.add(
-            StaticIssue(
-              id: 'iot_security',
-              title: 'IoT 安全 — 不安全 BLE 配置',
-              file: file,
-              line: i + 1,
-              level: config.severity,
-              domain: IssueDomain.architecture,
-              message: '检测到不安全的 BLE 连接配置: "$keyword"',
-              detail:
-                  '行 ${i + 1}: ${lines[i].trim()}\n'
-                  'BLE 连接应启用配对和加密 (bond / pair)',
-              suggestion: '启用 BLE 配对和加密配置',
-              metadata: {
-                'securityCheck': 'insecure_ble',
-                'keyword': keyword,
-                'line': i + 1,
-              },
-            ),
-          );
-        }
-      }
-    }
   }
 
   static RuleDefinition describe() => const RuleDefinition(
@@ -180,4 +54,216 @@ class IotSecurityRule {
     fixSuggestion: '使用环境变量或安全存储管理凭据；使用 TLS 加密通信',
     defaultOptions: {'requireTls': true},
   );
+}
+
+class _IotSecurityVisitor extends RecursiveAstVisitor<void> {
+  final RuleConfig config;
+  final String file;
+  final LineInfo lineInfo;
+  final List<StaticIssue> issues;
+
+  _IotSecurityVisitor(this.config, this.file, this.lineInfo, this.issues);
+
+  @override
+  void visitVariableDeclaration(VariableDeclaration node) {
+    _checkSecret(node);
+    _checkCleartextMqtt(node);
+    _checkCleartextHttp(node);
+    _checkInsecureBle(node);
+    super.visitVariableDeclaration(node);
+  }
+
+  @override
+  void visitNamedExpression(NamedExpression node) {
+    _checkSecretArg(node);
+    _checkCleartextMqttArg(node);
+    _checkInsecureBleArg(node);
+    super.visitNamedExpression(node);
+  }
+
+  void _checkSecret(VariableDeclaration node) {
+    final name = node.name.lexeme;
+    if (!_secretNamePattern.hasMatch(name)) return;
+    final value = node.initializer;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    final stringValue = value.stringValue!;
+    if (stringValue.isEmpty) return;
+
+    final line = lineNumberForOffset(lineInfo, node.name.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 硬编码凭证',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到可疑的硬编码凭证',
+        detail:
+            '行 $line: $name = "***"\n'
+            '硬编码凭证可能导致安全泄露，应使用环境变量或安全存储',
+        suggestion: '使用环境变量或安全存储方案替代硬编码凭证',
+        metadata: {'securityCheck': 'hardcoded_secret', 'line': line},
+      ),
+    );
+  }
+
+  void _checkSecretArg(NamedExpression node) {
+    final label = node.name.label.name;
+    if (!_secretNamePattern.hasMatch(label)) return;
+    final value = node.expression;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    if (value.stringValue!.isEmpty) return;
+
+    final line = lineNumberForOffset(lineInfo, node.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 硬编码凭证',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到可疑的硬编码凭证',
+        detail:
+            '行 $line: $label = "***"\n'
+            '硬编码凭证可能导致安全泄露，应使用环境变量或安全存储',
+        suggestion: '使用环境变量或安全存储方案替代硬编码凭证',
+        metadata: {'securityCheck': 'hardcoded_secret', 'line': line},
+      ),
+    );
+  }
+
+  void _checkCleartextMqtt(VariableDeclaration node) {
+    if (!config.boolOption('requireTls')) return;
+    final value = node.initializer;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    if (!_cleartextMqttPattern.hasMatch(value.stringValue!)) return;
+
+    final line = lineNumberForOffset(lineInfo, node.name.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 明文 MQTT 连接',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到明文 MQTT 连接配置',
+        detail:
+            '行 $line: ${value.toSource()}\n'
+            '明文 MQTT 连接不安全，应使用 mqtts:// (TLS) 或端口 8883',
+        suggestion: '将 MQTT 连接升级为 mqtts:// 并使用端口 8883',
+        metadata: {'securityCheck': 'cleartext_mqtt', 'line': line},
+      ),
+    );
+  }
+
+  void _checkCleartextMqttArg(NamedExpression node) {
+    if (!config.boolOption('requireTls')) return;
+    final value = node.expression;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    if (!_cleartextMqttPattern.hasMatch(value.stringValue!)) return;
+
+    final line = lineNumberForOffset(lineInfo, node.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 明文 MQTT 连接',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到明文 MQTT 连接配置',
+        detail:
+            '行 $line: ${value.toSource()}\n'
+            '明文 MQTT 连接不安全，应使用 mqtts:// (TLS) 或端口 8883',
+        suggestion: '将 MQTT 连接升级为 mqtts:// 并使用端口 8883',
+        metadata: {'securityCheck': 'cleartext_mqtt', 'line': line},
+      ),
+    );
+  }
+
+  void _checkCleartextHttp(VariableDeclaration node) {
+    if (!config.boolOption('requireTls')) return;
+    final value = node.initializer;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    final url = value.stringValue!;
+    if (!url.startsWith('http://')) return;
+    if (url.contains('localhost') || url.contains('127.0.0.1')) return;
+
+    final line = lineNumberForOffset(lineInfo, node.name.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 明文 HTTP 连接',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到明文 HTTP URL: $url',
+        detail: '行 $line: ${value.toSource()}\n明文 HTTP 不安全，应使用 HTTPS',
+        suggestion: '将 HTTP 连接升级为 HTTPS',
+        metadata: {'securityCheck': 'cleartext_http', 'url': url},
+      ),
+    );
+  }
+
+  void _checkInsecureBle(VariableDeclaration node) {
+    final value = node.initializer;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    final literalValue = value.stringValue!;
+    if (!_insecureBleValues.contains(literalValue)) return;
+
+    final line = lineNumberForOffset(lineInfo, node.name.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 不安全 BLE 配置',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到不安全的 BLE 连接配置: "$literalValue"',
+        detail:
+            '行 $line: ${value.toSource()}\n'
+            'BLE 连接应启用配对和加密 (bond / pair)',
+        suggestion: '启用 BLE 配对和加密配置',
+        metadata: {
+          'securityCheck': 'insecure_ble',
+          'keyword': literalValue,
+          'line': line,
+        },
+      ),
+    );
+  }
+
+  void _checkInsecureBleArg(NamedExpression node) {
+    final value = node.expression;
+    if (value is! SimpleStringLiteral || value.stringValue == null) return;
+    final literalValue = value.stringValue!;
+    if (!_insecureBleValues.contains(literalValue)) return;
+
+    final line = lineNumberForOffset(lineInfo, node.offset);
+    issues.add(
+      StaticIssue(
+        id: 'iot_security',
+        title: 'IoT 安全 — 不安全 BLE 配置',
+        file: file,
+        line: line,
+        level: config.severity,
+        domain: IssueDomain.architecture,
+        message: '检测到不安全的 BLE 连接配置: "$literalValue"',
+        detail:
+            '行 $line: ${value.toSource()}\n'
+            'BLE 连接应启用配对和加密 (bond / pair)',
+        suggestion: '启用 BLE 配对和加密配置',
+        metadata: {
+          'securityCheck': 'insecure_ble',
+          'keyword': literalValue,
+          'line': line,
+        },
+      ),
+    );
+  }
 }

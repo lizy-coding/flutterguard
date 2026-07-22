@@ -31,4 +31,10 @@ doc/api/
 # Coverage
 .coverage
 
+# Session artifacts
+/flutterguardb.md
+/session-ses_*.md
+
+# Duplicate local maintenance transcript; keep flutterguardb.md as canonical.
+/session-ses_07b1.md
 

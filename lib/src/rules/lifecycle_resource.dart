@@ -16,6 +16,7 @@ const _resourceTypes = <String, String>{
   'MqttClient': 'disconnect',
   'BluetoothDevice': 'disconnect',
   'StreamController': 'close',
+  'OverlayEntry': 'remove',
 };
 
 class LifecycleResourceRule {
@@ -120,7 +121,7 @@ class LifecycleResourceRule {
     domain: IssueDomain.performance,
     defaultSeverity: RiskLevel.medium,
     purpose:
-        '检测 StreamSubscription/Timer/AnimationController 等资源在 dispose 中未释放',
+        '检测 StreamSubscription/Timer/AnimationController/OverlayEntry 等资源在 dispose 中未释放',
     riskReason: '未释放的资源导致内存泄漏和性能下降',
     badExample: '在 State 中创建 StreamSubscription 但 dispose() 中未调用 cancel()',
     fixSuggestion: '在 dispose() 中对每个资源调用对应的 cancel()/dispose()/close()',

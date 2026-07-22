@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.1 (2026-07-22)
+
+- **rule:** Added OverlayEntry to lifecycle resource detection.
+- **rule:** Upgraded `iot_security` from line-based regex to AST visitor
+  traversal (`VariableDeclaration`, `NamedExpression`, `StringLiteral` nodes).
+- **rule:** Upgraded `ble_scanning` timeout detection from string matching to
+  parameter inspection and `NamedExpression` AST traversal.
+- **test:** Added negative, disabled, suppression, and report-contract coverage
+  for `iot_security`, `ble_scanning`, and `lifecycle_resource` rules (34 tests).
+- **ci:** Added `scripts/release_preflight.sh` for compact release validation
+  and wired it into the release workflow.
+
 ## 0.7.0 (2026-07-17)
 
 ### Breaking simplification
