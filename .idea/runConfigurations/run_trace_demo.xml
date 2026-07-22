@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run trace_demo" type="DartCommandLineRunConfigurationType" factoryName="Dart Command Line Application" singleton="false">
-    <option name="filePath" value="$PROJECT_DIR$/examples/usage_demo/bin/trace_demo.dart" />
-    <option name="workingDirectory" value="$PROJECT_DIR$/examples/usage_demo" />
-    <method v="2" />
-  </configuration>
-</component>

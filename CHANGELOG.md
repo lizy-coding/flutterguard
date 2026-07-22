@@ -1,7 +1,51 @@
 # Changelog
 
-## Unreleased
+## 0.7.1 (2026-07-22)
 
+- **rule:** Added OverlayEntry to lifecycle resource detection.
+- **rule:** Upgraded `iot_security` from line-based regex to AST visitor
+  traversal (`VariableDeclaration`, `NamedExpression`, `StringLiteral` nodes).
+- **rule:** Upgraded `ble_scanning` timeout detection from string matching to
+  parameter inspection and `NamedExpression` AST traversal.
+- **test:** Added negative, disabled, suppression, and report-contract coverage
+  for `iot_security`, `ble_scanning`, and `lifecycle_resource` rules (34 tests).
+- **ci:** Added `scripts/release_preflight.sh` for compact release validation
+  and wired it into the release workflow.
+
+## 0.7.0 (2026-07-17)
+
+### Breaking simplification
+
+- Flattened the repository and publishable package into one Dart package root;
+  removed Melos, archived runtime packages, duplicate package metadata, IDE
+  project files, development wrappers, and historical planning documents.
+- Reduced the CLI to `scan`, `baseline create`, `config init|check`, and
+  `rules [rule-id]`.
+- Replaced typed per-rule config records and profile YAML copies with generic
+  registry-driven `RuleConfig` settings.
+- Merged rule metadata, defaults, and execution into one `RuleRegistry` and
+  merged layer/module implementations into `BoundaryRule`.
+- Removed generic size rules, `missing_const_constructor`, and the overlapping
+  `device_lifecycle` rule.
+- Assigned resource cleanup to the lifecycle rule and scan timeout checks to
+  `ble_scanning`; removed overlapping MQTT configuration and dependency-version
+  rules in favor of application configuration and ecosystem tooling.
+- Removed score, priority, confidence, framework switches, JSON compatibility
+  aliases, install diagnostics, issue export, config profiles/print, and
+  baseline stats/prune/check.
+- JSON reports now use schema `2.0.0` with canonical `ruleId`, `severity`, and
+  `domain` fields.
+- Reorganized the test suite by CLI, config, rules, and scanner contracts and
+  updated every hierarchical `AGENTS.md` description.
+
+## 0.6.0 (2026-07-16)
+
+- **cli:** Added 10 AST-first state-management maintainability rules for generic Flutter, Riverpod, Bloc, and Provider projects (23 total rule IDs).
+- **cli:** Added state-rule severity/allowlist/ignore-path controls, framework auto-detection, confidence/evidence output, and changed-only state-cycle analysis.
+- **reporting:** JSON and SARIF now include framework, confidence, and evidence while preserving existing fields and baseline fingerprints.
+- **fix:** Qualified state dependency graph nodes by file and resolved duplicate names through project imports.
+- **compatibility:** Aligned the published package SDK constraint and install examples with the Dart 3.11.5 release workflow.
+- **test:** Expanded the CLI suite to 83 tests with generic/Riverpod/Bloc/Provider fixtures, version synchronization, and release-hardening coverage.
 - **fix:** Prevent successful no-op full scans and preserve setup-error exit codes in local CI scripts.
 - **fix:** Anchor configuration policy to the target project and require explicitly selected config files.
 - **ci:** Run analyze, tests, and the demo scan against the current checkout on the OS matrix.

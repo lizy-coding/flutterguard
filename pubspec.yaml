@@ -1,12 +1,28 @@
-name: flutterguard
-publish_to: none
+name: flutterguard_cli
+description: IoT Flutter static analysis CLI for architecture, lifecycle, state, security, and CI enforcement.
+version: 0.7.1
+repository: https://github.com/lizy-coding/flutterguard
+issue_tracker: https://github.com/lizy-coding/flutterguard/issues
+topics:
+  - static-analysis
+  - flutter
+  - iot
+  - architecture
+  - cli
 
 environment:
   sdk: ^3.11.5
 
 dependencies:
-  flutterguard_cli:
-    path: packages/flutterguard_cli
+  analyzer: ^7.3.0
+  args: ^2.5.0
+  glob: ^2.1.2
+  path: ^1.9.0
+  yaml: ^3.1.2
+
+executables:
+  flutterguard: flutterguard
 
 dev_dependencies:
-  melos: ^6.3.2
+  lints: ^3.0.0
+  test: ^1.25.8

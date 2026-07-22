@@ -19,27 +19,24 @@ jobs:
 
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: stable
+          sdk: "3.11.5"
 
-      - name: Install workspace dependencies
+      - name: Install dependencies
         run: dart pub get
 
-      - name: Bootstrap workspace
-        run: dart run melos bootstrap
+      - name: Analyze
+        run: dart analyze
 
-      - name: Analyze workspace
-        run: dart run melos run analyze
-
-      - name: Test CLI
-        run: dart run melos run test:cli
+      - name: Test
+        run: dart test
 
       - name: Scan demo with current checkout
-        run: dart run flutterguard_cli:flutterguard scan examples/scan_demo --format json --output .flutterguard/ci --fail-on high --min-score 80 --no-color
+        run: dart run bin/flutterguard.dart scan example --format json --output .flutterguard/ci --fail-on high --no-color
 
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutterguard-report-${{ matrix.os }}
-          path: examples/scan_demo/.flutterguard/ci/report.json
+          path: example/.flutterguard/ci/report.json
           if-no-files-found: error
