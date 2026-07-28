@@ -1,20 +1,29 @@
 # Rule layer
 
-Every detector returns `List<StaticIssue>`. Scanner execution is explicit in
-`RuleRegistry.registrations`; metadata and defaults live in the adjacent
-`RuleDefinition`.
+## Ownership
 
-Ownership:
+| detector file | finding IDs owned |
+|---|---|
+| `boundary_rule.dart` | `layer_violation`, `module_violation` |
+| `circular_dependency.dart` | `circular_dependency` |
+| `lifecycle_resource.dart` | `lifecycle_resource_not_disposed` |
+| `ble_scanning.dart` | `ble_scanning` |
+| `iot_security.dart` | `iot_security` |
+| `generic_state_management.dart` | `side_effect_in_build`, `state_manager_created_in_build`, `mutable_state_exposed`, `state_layer_ui_dependency` |
+| `provider_state_management.dart` | `provider_value_lifecycle_misuse`, `notify_listeners_in_loop` |
+| `riverpod_state_management.dart` | `riverpod_read_used_for_render`, `riverpod_watch_in_callback` |
+| `bloc_state_management.dart` | `bloc_equatable_props_incomplete` |
+| `state_dependency_cycle.dart` | `state_dependency_cycle` |
+| `state_management_utils.dart` | shared utilities (no findings) |
+| `rule.dart` | `RuleDefinition`, `RuleRegistration` types |
+| `registry.dart` | sole `RuleRegistry.registrations` source |
 
-- `boundary_rule.dart`: both layer and module dependency enforcement.
-- `lifecycle_resource.dart`: resource cancel/close/dispose/disconnect checks.
-- `ble_scanning.dart`: BLE scan timeout only.
-- `iot_security.dart`: credentials and insecure transport.
-- state files: generic, Riverpod, Bloc, Provider, and dependency-cycle checks.
+## Contract
 
-Use the supplied `SourceWorkspace`; do not read or parse files again. Respect
-`RuleConfig.enabled` and emit `config.severity`. Add special scalar defaults to
-`RuleDefinition.defaultOptions`.
+- Detectors receive `ScanContext` + effective `RuleConfig` + optional
+  `ImportGraph`.
+- Use `SourceWorkspace` from context; never re-read/re-parse files.
+- Respect `RuleConfig.enabled`; emit `config.severity`.
+- Scalar defaults in `RuleDefinition.defaultOptions`.
 
-Do not add `describe` metadata to another catalog, restore direct public rule
-exports, or let two rule families own the same finding.
+See root AGENTS.md §Per-layer constraints for MUST NOT list.

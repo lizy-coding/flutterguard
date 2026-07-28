@@ -8,19 +8,21 @@ or general-purpose style linter.
 
 ## Repository
 
-This is one Dart package rooted at the repository root.
+Single Dart package at root. No Melos, no `packages/`, no plugin system, no
+public scanner library API.
 
 ```text
-bin/       executable entry point
-lib/src/   scan, config, report, and rule implementation
-test/      contract and detector tests
-example/   CI scan target
-doc/       architecture and external contract
-scripts/   native release packaging
+bin/             entry → route only, no business logic
+lib/             barrel → no public API exports
+lib/src/         kernel → scan, config, report, rules
+lib/src/cli/     command parsers and I/O only
+lib/src/rules/   detectors, registry, definitions
+test/            contract and detector tests
+test/fixtures/   small parser inputs, one behavior per file
+example/         CI scan target, read-only
+doc/             architecture, spec, roadmap
+scripts/         native release packaging (bash + powershell)
 ```
-
-Do not reintroduce Melos, `packages/`, archived runtime packages, a plugin
-system, or a public scanner library API.
 
 ## Commands
 
@@ -36,17 +38,31 @@ dart pub publish --dry-run
 
 ## Architecture invariants
 
-- `ScanContext` carries project/all/target files, scan mode, config, and the
-  shared `SourceWorkspace`.
+- `ScanContext` carries project/all/target files, scan mode, config,
+  `SourceWorkspace`.
 - `SourceWorkspace` owns source reads, AST parsing, line info, and diagnostics.
 - Architecture rules share one `ImportGraph`.
-- Layer and module enforcement share `BoundaryRule` and
+- Layer/module enforcement share `BoundaryRule` +
   `DependencyBoundaryEngine`.
 - `RuleRegistry.registrations` is the only metadata/default/execution registry.
-- Rules receive effective generic `RuleConfig`; rule-specific defaults live in
+- Rules receive generic `RuleConfig`; rule-specific defaults in
   `RuleDefinition.defaultOptions`.
-- CLI and JSON/SARIF are the supported integration boundary. `lib/src` is
-  private implementation.
+- CLI + JSON/SARIF is the integration boundary. `lib/src` is private
+  implementation.
+
+## Per-layer constraints (authoritative; subdirectory AGENTS.md files are additive only)
+
+| layer | MUST NOT |
+|---|---|
+| `bin/` | business logic, rule wiring, config defaults, report construction, second API |
+| `lib/` | public API exports from barrel file |
+| `lib/src/` | bypass `ScanContext`, parse files independently, duplicate config defaults, second registry, non-cross-platform paths |
+| `lib/src/cli/` | scan orchestration, rule execution, config loading |
+| `lib/src/rules/` | read/parse files independently (use `SourceWorkspace`), ignore `RuleConfig.enabled`, emit wrong severity, duplicate finding ownership, add metadata catalog |
+| `test/` | monolithic suite, preserve deleted-feature tests for historical count |
+| `test/fixtures/` | generated outputs, full sample apps, multiple behaviors per file (where practical) |
+| `example/` | modify without updating expected scan reports |
+| `scripts/` | introduce Dart deps, assume OS other than target, skip `dart compile exe` precheck |
 
 ## Product surface
 

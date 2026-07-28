@@ -1,7 +1,6 @@
 # Library boundary
 
-`flutterguard_cli.dart` intentionally exports no scanner API. FlutterGuard is
-an executable package; integrations use the CLI plus JSON or SARIF.
+flutterguard_cli.dart exports nothing. Integration is CLI + JSON/SARIF.
+All implementation under src/.
 
-All implementation belongs under `src/`. Do not export internal rule,
-configuration, AST, or report types from the package barrel.
+See root AGENTS.md §Per-layer constraints for MUST NOT list.

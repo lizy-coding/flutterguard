@@ -1,13 +1,20 @@
 # Rule fixtures
 
-Fixtures are intentionally small parser inputs and may reference Flutter or
-third-party types that are not dependencies of this Dart CLI package.
+Small parser inputs — may reference Flutter/third-party types not in deps.
 
-- architecture and cycle files exercise import graphs and boundaries;
-- lifecycle/BLE/security files exercise IoT ownership;
-- generic/Riverpod/Bloc/Provider files exercise state rules;
-- `state_suppression.dart` exercises inline suppression.
+| category | files |
+|---|---|
+| architecture + cycles | `cycle_*.dart`, `boundary_issue.dart`, `forbidden_file.dart` |
+| lifecycle | `lifecycle_issue.dart`, `lifecycle_negative.dart` |
+| BLE | `ble_scanning_issue.dart`, `ble_scanning_negative.dart`, `ble_scanning_suppression.dart` |
+| IoT security | `iot_security_issue.dart`, `iot_security_negative.dart`, `iot_security_suppression.dart` |
+| generic state | `generic_state.dart` |
+| provider state | `provider_state.dart` |
+| bloc state | `bloc_state.dart` |
+| riverpod state | `riverpod_state.dart` |
+| suppression | `state_suppression.dart` |
 
-Keep one behavior per fixture where practical. Add imports when framework
-auto-detection depends on them. Do not add generated outputs or full sample
-applications here.
+One behavior per file where practical. Add imports only for framework
+auto-detection. No generated outputs or full sample apps.
+
+See root AGENTS.md §Per-layer constraints for MUST NOT list.

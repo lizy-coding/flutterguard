@@ -1,18 +1,19 @@
 # Scan kernel
 
-This directory owns reusable implementation behind the executable.
+## File map
 
-- `scanner.dart`: orchestration, suppression, baseline, report writes.
-- `scan_context.dart`: immutable scan scope.
-- `source_workspace.dart`: one-read/one-parse cache and diagnostics.
-- `import_graph.dart`: resolved project import graph.
-- `boundary_engine.dart`: boundary evaluation shared by layer/module rules.
-- `config_loader.dart`: compact YAML parser and generic `RuleConfig`.
-- `config_tools.dart`: generated starter config and config validation.
-- `report_generator.dart` / `sarif_report.dart`: output adapters.
-- `cli/`: argument parser and command I/O only.
-- `rules/`: definitions, registry, and detectors.
+| file | role |
+|---|---|
+| `scanner.dart` | orchestration, suppression, baseline, report writes |
+| `scan_context.dart` | immutable scan scope |
+| `source_workspace.dart` | one-read/one-parse cache + diagnostics |
+| `import_graph.dart` | resolved project import graph |
+| `boundary_engine.dart` | shared boundary evaluator |
+| `config_loader.dart` | YAML → generic `RuleConfig` |
+| `config_tools.dart` | starter config + config validation |
+| `report_generator.dart` | table + JSON output |
+| `sarif_report.dart` | SARIF 2.1.0 output |
+| `cli/` | argument parser + command I/O only |
+| `rules/` | definitions, registry, detectors |
 
-Do not bypass `ScanContext`, parse files independently inside scanner wiring,
-duplicate config defaults, or create another registry. File/path behavior must
-remain cross-platform and changed-only imports must resolve against all files.
+See root AGENTS.md §Per-layer constraints for MUST NOT list.
