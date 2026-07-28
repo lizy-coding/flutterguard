@@ -1,0 +1,142 @@
+{
+  "task": "flutterguard-ide-readiness",
+  "branch": "feature/ide-stdout-single-file",
+  "description": "Close 4 CLI gaps blocking IntelliJ IDEA plugin integration: stdout output, single-file scan, relative paths, severity mapping.",
+  "prerequisite": "dart pub get && dart analyze && dart test",
+  "validation_gate": [
+    "dart analyze --no-error",
+    "dart test --no-failure (pre-existing version test exempt)",
+    "confirm A2: dart run bin/flutterguard.dart scan example --format json --stdout --no-color 2>/dev/null | python3 -c 'import sys,json; json.load(sys.stdin); print(\"VALID_JSON\")'",
+    "confirm A1: dart run bin/flutterguard.dart scan example/lib/main.dart --format json --stdout --no-color 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); assert d[\"scanMode\"]==\"full\"; print(\"SINGLE_FILE_OK\")'",
+    "confirm A3: dart run bin/flutterguard.dart scan example --format json --stdout --no-color 2>/dev/null | python3 -c \"import sys,json; d=json.load(sys.stdin); assert all('fileRelative' in i for i in d.get('issues',[])); print('RELATIVE_OK')\""
+  ],
+  "steps": [
+    {
+      "id": "A2-stdout",
+      "label": "Add --stdout flag: JSON/SARIF to stdout, suppress table summary",
+      "files": {
+        "lib/src/cli/cli_parsers.dart": {
+          "action": "add_flag",
+          "target": "ArgParser.addFlag('stdout', ...) inside scan parser builder",
+          "spec": "abbr:null, help:'Print structured output to stdout instead of writing report files', defaultsTo:false, negatable:false"
+        },
+        "lib/src/cli/scan_command.dart": {
+          "action": "pass_flag",
+          "target": "extract --stdout from args, pass as writeStdout param to FlutterGuardScanner.scan()",
+          "spec": "final writeStdout = args['stdout'] as bool;"
+        },
+        "lib/src/scanner.dart": {
+          "action": "modify_scan_signature_and_body",
+          "target": "FlutterGuardScanner.scan() method",
+          "old_signature_hint": "Future<ScanResult> scan({..., required bool writeJson, required bool writeSarif, ...})",
+          "new_params": "required bool writeStdout",
+          "logic": [
+            "IF writeStdout AND format=='table' → print error to stderr + exit 2 ('--stdout requires --format json or --format sarif')",
+            "IF writeStdout AND writeJson → print json string to stdout; SKIP File(...).writeAsStringSync()",
+            "IF writeStdout AND writeSarif → print sarif string to stdout; SKIP File(...).writeAsStringSync()",
+            "IF NOT writeStdout → existing behavior (write to reportDir/report.json or report.sarif)",
+            "NEVER print table summary to stdout when writeStdout is true"
+          ]
+        }
+      },
+      "verify": "dart run bin/flutterguard.dart scan example --format json --stdout --no-color 2>/dev/null | python3 -c 'import sys,json; json.load(sys.stdin); print(\"PASS\")' → PASS"
+    },
+    {
+      "id": "A1-single-file",
+      "label": "Support single .dart file path as scan target",
+      "files": {
+        "lib/src/project_resolver.dart": {
+          "action": "add_method_or_logic",
+          "target": "ProjectResolver or a new static helper",
+          "spec": [
+            "IF scanPath ends with '.dart' AND File(scanPath).existsSync():",
+            "  projectRoot = walk_up_from(scanPath.parent) until pubspec.yaml found",
+            "  IF no pubspec.yaml found → error('No pubspec.yaml found above file')",
+            "  return (projectRoot: projectRoot, singleFile: scanPath)",
+            "ELSE: existing project resolution behavior"
+          ]
+        },
+        "lib/src/scanner.dart": {
+          "action": "add_single_file_mode",
+          "target": "inside scan() after project resolution, before FileCollector",
+          "spec": [
+            "IF resolvedProjectPath.singleFile is not null:",
+            "  includeFiles = [singleFile.relativeTo(projectRoot)]",
+            "  skip FileCollector; use filtered includeFiles directly",
+            "  still read allFiles for import graph resolution (unchanged)"
+          ]
+        }
+      },
+      "verify": "dart run bin/flutterguard.dart scan example/lib/main.dart --format json --stdout --no-color → valid JSON, scanMode unchanged"
+    },
+    {
+      "id": "A3-fileRelative",
+      "label": "Add fileRelative field to JSON issue output",
+      "files": {
+        "lib/src/report_generator.dart": {
+          "action": "add_field_in_json_serialization",
+          "target": "ReportGenerator.generateJson() or the issue serialization helper",
+          "spec": [
+            "import 'package:path/path.dart' as p;",
+            "for each issue in issues:",
+            "  issueJson['fileRelative'] = p.relative(issue.file, from: projectPath);"
+          ]
+        },
+        "lib/src/static_issue.dart": {
+          "action": "no_change_or_add_field",
+          "target": "StaticIssue class",
+          "spec": "OPTIONAL: add fileRelative getter computed from file + projectPath. OR compute inline in report generator (preferred — keeps StaticIssue unchanged)."
+        }
+      },
+      "verify": "dart run bin/flutterguard.dart scan example --format json --stdout --no-color 2>/dev/null | python3 -c \"import sys,json; d=json.load(sys.stdin); assert all('fileRelative' in i for i in d.get('issues',[]))\""
+    },
+    {
+      "id": "A4-severity-map",
+      "label": "Document IDE severity mapping; optional ideSeverity in rules JSON",
+      "files": {
+        "README.md": {
+          "action": "append_section",
+          "target": "after the scan options table",
+          "content_lines": [
+            "## IDE integration",
+            "",
+            "| FlutterGuard severity | IDE inspection level | SARIF level |",
+            "|---|---|---|",
+            "| `high` | ERROR | error |",
+            "| `medium` | WARNING | warning |",
+            "| `low` | WEAK WARNING | note |"
+          ]
+        },
+        "doc/FLUTTERGUARD_SPEC.md": {
+          "action": "append_section",
+          "target": "after the JSON report section",
+          "content_lines": [
+            "## IDE severity mapping",
+            "",
+            "| FlutterGuard | IDE | SARIF |",
+            "|---|---|---|",
+            "| high | ERROR | error |",
+            "| medium | WARNING | warning |",
+            "| low | WEAK WARNING | note |"
+          ]
+        }
+      },
+      "verify": "grep -q 'IDE severity mapping' README.md && grep -q 'IDE severity mapping' doc/FLUTTERGUARD_SPEC.md"
+    }
+  ],
+  "test_coverage": {
+    "add": [
+      "test/cli_test.dart: '--stdout with --format table exits with error' → exit 2, stderr contains 'requires'",
+      "test/cli_test.dart: '--stdout with --format json writes valid JSON to stdout' → parse stdout as JSON, check schemaVersion",
+      "test/cli_test.dart: 'single .dart file path scans only that file' → issues only reference that file",
+      "test/cli_test.dart: 'single .dart file without parent pubspec exits with error' → exit 2",
+      "test/cli_test.dart: 'JSON issue includes fileRelative field' → assert fileRelative exists and starts with 'lib/'"
+    ]
+  },
+  "estimated_changes": {
+    "files_touched": 7,
+    "lines_added": "~100",
+    "lines_modified": "~20",
+    "test_lines_added": "~60"
+  }
+}

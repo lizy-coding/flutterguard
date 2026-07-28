@@ -69,6 +69,169 @@ void main() {
     },
   );
 
+  test('--stdout with --format table exits with error', () {
+    final entrypoint = p.join(
+      Directory.current.path,
+      'bin',
+      'flutterguard.dart',
+    );
+    final result = Process.runSync(Platform.resolvedExecutable, [
+      entrypoint,
+      'scan',
+      'example',
+      '--stdout',
+      '--no-color',
+    ], workingDirectory: Directory.current.path);
+
+    expect(result.exitCode, 2);
+    expect(result.stdout, isEmpty);
+    expect(result.stderr, contains('--stdout requires'));
+  });
+
+  test('--stdout with --format json writes valid JSON to stdout', () {
+    final output = Directory.systemTemp.createTempSync(
+      'flutterguard_cli_stdout_output_',
+    );
+    addTearDown(() => output.deleteSync(recursive: true));
+    final entrypoint = p.join(
+      Directory.current.path,
+      'bin',
+      'flutterguard.dart',
+    );
+    final result = Process.runSync(Platform.resolvedExecutable, [
+      entrypoint,
+      'scan',
+      'example',
+      '--format',
+      'json',
+      '--stdout',
+      '--output',
+      output.path,
+      '--no-color',
+    ], workingDirectory: Directory.current.path);
+
+    expect(result.exitCode, 0);
+    final payload = jsonDecode(result.stdout as String);
+    expect(payload, isA<Map<String, Object?>>());
+    expect((payload as Map<String, Object?>)['schemaVersion'], '2.0.0');
+    expect(File(p.join(output.path, 'report.json')).existsSync(), isFalse);
+  });
+
+  test('single .dart file path scans only that file', () {
+    final project = Directory.systemTemp.createTempSync(
+      'flutterguard_cli_single_file_',
+    );
+    addTearDown(() => project.deleteSync(recursive: true));
+    Directory(p.join(project.path, 'lib')).createSync();
+    File(p.join(project.path, 'pubspec.yaml')).writeAsStringSync('''
+name: single_file_fixture
+environment:
+  sdk: ^3.11.0
+''');
+    final selectedFile = File(p.join(project.path, 'lib', 'selected.dart'))
+      ..writeAsStringSync('''
+void connect() {
+  final password = 'admin123';
+}
+''');
+    File(p.join(project.path, 'lib', 'other.dart')).writeAsStringSync('''
+void connect() {
+  final password = 'other-secret';
+}
+''');
+
+    final entrypoint = p.join(
+      Directory.current.path,
+      'bin',
+      'flutterguard.dart',
+    );
+    final result = Process.runSync(Platform.resolvedExecutable, [
+      entrypoint,
+      'scan',
+      selectedFile.path,
+      '--format',
+      'json',
+      '--stdout',
+      '--no-color',
+    ], workingDirectory: Directory.current.path);
+
+    expect(result.exitCode, 0, reason: result.stderr as String);
+    final payload = jsonDecode(result.stdout as String) as Map<String, Object?>;
+    expect(payload['scanMode'], 'full');
+    final issues = payload['issues'] as List<Object?>;
+    expect(issues, isNotEmpty);
+    expect(
+      issues.cast<Map<String, Object?>>(),
+      everyElement(containsPair('file', selectedFile.path)),
+    );
+  });
+
+  test('single .dart file without parent pubspec exits with error', () {
+    final directory = Directory.systemTemp.createTempSync(
+      'flutterguard_cli_orphan_file_',
+    );
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final file = File(p.join(directory.path, 'orphan.dart'))
+      ..writeAsStringSync('void main() {}\n');
+    final entrypoint = p.join(
+      Directory.current.path,
+      'bin',
+      'flutterguard.dart',
+    );
+    final result = Process.runSync(Platform.resolvedExecutable, [
+      entrypoint,
+      'scan',
+      file.path,
+      '--format',
+      'json',
+      '--stdout',
+      '--no-color',
+    ], workingDirectory: Directory.current.path);
+
+    expect(result.exitCode, 2);
+    expect(result.stdout, isEmpty);
+    expect(result.stderr, contains('No pubspec.yaml found above file'));
+  });
+
+  test('JSON issue includes fileRelative field', () {
+    final project = Directory.systemTemp.createTempSync(
+      'flutterguard_cli_relative_file_',
+    );
+    addTearDown(() => project.deleteSync(recursive: true));
+    Directory(p.join(project.path, 'lib')).createSync();
+    File(p.join(project.path, 'pubspec.yaml')).writeAsStringSync('''
+name: relative_file_fixture
+environment:
+  sdk: ^3.11.0
+''');
+    File(p.join(project.path, 'lib', 'device.dart')).writeAsStringSync('''
+void connect() {
+  final password = 'admin123';
+}
+''');
+
+    final entrypoint = p.join(
+      Directory.current.path,
+      'bin',
+      'flutterguard.dart',
+    );
+    final result = Process.runSync(Platform.resolvedExecutable, [
+      entrypoint,
+      'scan',
+      project.path,
+      '--format',
+      'json',
+      '--stdout',
+      '--no-color',
+    ], workingDirectory: Directory.current.path);
+
+    expect(result.exitCode, 0, reason: result.stderr as String);
+    final payload = jsonDecode(result.stdout as String) as Map<String, Object?>;
+    final issue =
+        (payload['issues'] as List<Object?>).first as Map<String, Object?>;
+    expect(issue['fileRelative'], startsWith('lib/'));
+  });
+
   test('changed-only clean scan succeeds and writes an empty JSON report', () {
     final project = Directory.systemTemp.createTempSync(
       'flutterguard_cli_clean_project_',

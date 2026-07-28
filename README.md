@@ -34,6 +34,7 @@ The core scan options are:
 - `--config`, `-c`: explicit configuration file.
 - `--format`, `-f`: `table`, `json`, or `sarif`.
 - `--output`, `-o`: report directory; default `.flutterguard`.
+- `--stdout`: print JSON/SARIF to stdout instead of writing report files.
 - `--fail-on`: `none`, `high`, `medium`, or `low`.
 - `--changed-only --base <ref>`: scan Git-changed Dart files.
 - `--baseline <file>`: hide findings already recorded in a baseline.
@@ -43,6 +44,14 @@ The core scan options are:
 Exit code `0` means the scan completed and the gate passed. Exit code `1` means
 the severity gate failed. Exit code `2` means the command or scan setup was
 invalid.
+
+## IDE integration
+
+| FlutterGuard severity | IDE inspection level | SARIF level |
+|---|---|---|
+| `high` | ERROR | error |
+| `medium` | WARNING | warning |
+| `low` | WEAK WARNING | note |
 
 ## Configuration
 

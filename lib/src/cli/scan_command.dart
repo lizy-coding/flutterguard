@@ -11,6 +11,7 @@ class ScanCommand {
     final verbose = args['verbose'] as bool;
     final noColor = args['no-color'] as bool;
     final failOn = args['fail-on'] as String;
+    final writeStdout = args['stdout'] as bool;
     final projectPath = args.rest.isNotEmpty ? args.rest.first : '.';
 
     late final ScanResult result;
@@ -21,6 +22,7 @@ class ScanCommand {
         outputDir: args['output'] as String,
         writeJson: format == 'json',
         writeSarif: format == 'sarif',
+        writeStdout: writeStdout,
         changedOnly: args['changed-only'] as bool,
         base: args['base'] as String,
         baselinePath: args['baseline'] as String?,
@@ -42,6 +44,18 @@ class ScanCommand {
           '${diagnostic.message}',
         );
       }
+    }
+
+    if (writeStdout) {
+      stdout.writeln(result.structuredOutput);
+      if (failOn != 'none' &&
+          ReportGenerator.shouldFail(result.issues, failOn)) {
+        stderr.writeln(
+          'CI gate failed: Issues found at or above "$failOn" level.',
+        );
+        exit(1);
+      }
+      return;
     }
 
     if (result.files.isEmpty && result.issues.isEmpty) {

@@ -135,6 +135,7 @@ The internal finding model exposes one canonical JSON representation:
   "ruleId": "iot_security",
   "title": "IoT 安全风险",
   "file": "/project/lib/device.dart",
+  "fileRelative": "lib/device.dart",
   "line": 10,
   "severity": "high",
   "domain": "architecture",
@@ -176,6 +177,14 @@ JSON reports use schema version `2.0.0`:
 
 SARIF reports conform to SARIF 2.1.0 and include registry definitions and
 finding locations.
+
+## IDE severity mapping
+
+| FlutterGuard | IDE | SARIF |
+|---|---|---|
+| high | ERROR | error |
+| medium | WARNING | warning |
+| low | WEAK WARNING | note |
 
 ## Suppression and baseline
 

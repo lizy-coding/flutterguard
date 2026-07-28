@@ -14,6 +14,7 @@ class BaselineCommands {
       final result = FlutterGuardScanner.scan(
         projectPath: projectPath,
         configPath: configPath,
+        writeStdout: false,
         applySuppression: false,
       );
       final outputPath = p.isAbsolute(output)

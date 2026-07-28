@@ -32,7 +32,10 @@ void main() {
   test('scanner uses built-in defaults and sorts findings', () {
     final project = _project();
     addTearDown(() => project.deleteSync(recursive: true));
-    final result = FlutterGuardScanner.scan(projectPath: project.path);
+    final result = FlutterGuardScanner.scan(
+      projectPath: project.path,
+      writeStdout: false,
+    );
     expect(result.files, hasLength(1));
     expect(result.issues, isNotEmpty);
     expect(result.issues.first.level, RiskLevel.high);
@@ -44,6 +47,7 @@ void main() {
     final result = FlutterGuardScanner.scan(
       projectPath: project.path,
       writeJson: true,
+      writeStdout: false,
     );
     final report = File(p.join(result.reportDir, 'report.json'));
     final json = jsonDecode(report.readAsStringSync()) as Map<String, Object?>;
@@ -51,6 +55,7 @@ void main() {
     final issue = (json['issues'] as List).first as Map<String, Object?>;
     expect(issue, contains('ruleId'));
     expect(issue, contains('severity'));
+    expect(issue['fileRelative'], 'lib/device.dart');
     expect(issue, isNot(contains('id')));
     expect(issue, isNot(contains('priority')));
     expect(issue, isNot(contains('confidence')));

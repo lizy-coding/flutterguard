@@ -52,7 +52,16 @@ class ReportGenerator {
         'diagnostics': diagnostics.length,
         'byDomain': _summaryByDomain(issues),
       },
-      'issues': issues.map((issue) => issue.toJson()).toList(),
+      'issues': issues
+          .map(
+            (issue) => {
+              ...issue.toJson(),
+              'fileRelative': p
+                  .relative(issue.file, from: projectPath)
+                  .replaceAll('\\', '/'),
+            },
+          )
+          .toList(),
       'diagnostics': diagnostics.map((item) => item.toJson()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);

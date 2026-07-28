@@ -33,6 +33,7 @@ class ScanResult {
   final int suppressedCount;
   final int suppressedByBaselineCount;
   final String scanMode;
+  final String? structuredOutput;
   final List<ScanDiagnostic> diagnostics;
   final SourceWorkspace sources;
 
@@ -46,6 +47,7 @@ class ScanResult {
     required this.suppressedByBaselineCount,
     required this.scanMode,
     required this.sources,
+    this.structuredOutput,
     this.diagnostics = const [],
   });
 }
@@ -57,12 +59,20 @@ class FlutterGuardScanner {
     String outputDir = '.flutterguard',
     bool writeJson = false,
     bool writeSarif = false,
+    required bool writeStdout,
     bool changedOnly = false,
     String base = 'main',
     String? baselinePath,
     bool applySuppression = true,
   }) {
-    final resolvedProjectPath = ProjectResolver.resolveProjectPath(projectPath);
+    if (writeStdout && !writeJson && !writeSarif) {
+      throw const ScanException(
+        '--stdout requires --format json or --format sarif',
+      );
+    }
+
+    final scanTarget = ProjectResolver.resolveScanTarget(projectPath);
+    final resolvedProjectPath = scanTarget.projectPath;
     if (!Directory(resolvedProjectPath).existsSync()) {
       throw ScanException(
         'Project path "$resolvedProjectPath" does not exist.',
@@ -78,13 +88,21 @@ class FlutterGuardScanner {
       requireFile: configPath != null,
     );
     final files = FileCollector.collect(resolvedProjectPath, config);
+    if (scanTarget.singleFile != null &&
+        !files.contains(scanTarget.singleFile)) {
+      files
+        ..add(scanTarget.singleFile!)
+        ..sort();
+    }
     if (files.isEmpty) {
       throw const ScanException(
         'No Dart files matched the configured include/exclude patterns.',
       );
     }
     var scanMode = ScanMode.full;
-    var filesToScan = files;
+    var filesToScan = scanTarget.singleFile == null
+        ? files
+        : <String>[scanTarget.singleFile!];
     var changedFiles = <String>{};
 
     if (changedOnly) {
@@ -98,7 +116,9 @@ class FlutterGuardScanner {
           final changedDart = changedFiles
               .where((f) => f.endsWith('.dart'))
               .toSet();
-          filesToScan = files.where((f) => changedDart.contains(f)).toList();
+          filesToScan = filesToScan
+              .where((f) => changedDart.contains(f))
+              .toList();
           scanMode = ScanMode.changed;
         }
       } on ChangedFilesException catch (e) {
@@ -154,9 +174,10 @@ class FlutterGuardScanner {
       issues = visible;
     }
 
-    if (writeJson || writeSarif) {
+    if (!writeStdout && (writeJson || writeSarif)) {
       Directory(reportDir).createSync(recursive: true);
     }
+    String? structuredOutput;
     if (writeJson) {
       final json = ReportGenerator.generateJson(
         projectPath: resolvedProjectPath,
@@ -166,14 +187,22 @@ class FlutterGuardScanner {
         suppressedByBaselineCount: suppressedByBaselineCount,
         diagnostics: sources.diagnostics,
       );
-      File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
+      if (writeStdout) {
+        structuredOutput = json;
+      } else {
+        File(p.join(reportDir, 'report.json')).writeAsStringSync(json);
+      }
     }
     if (writeSarif) {
       final sarif = SarifReport.generate(
         projectPath: resolvedProjectPath,
         issues: issues,
       );
-      File(p.join(reportDir, 'report.sarif')).writeAsStringSync(sarif);
+      if (writeStdout) {
+        structuredOutput = sarif;
+      } else {
+        File(p.join(reportDir, 'report.sarif')).writeAsStringSync(sarif);
+      }
     }
 
     return ScanResult(
@@ -185,6 +214,7 @@ class FlutterGuardScanner {
       suppressedCount: suppressedCount,
       suppressedByBaselineCount: suppressedByBaselineCount,
       scanMode: scanMode.name,
+      structuredOutput: structuredOutput,
       sources: sources,
       diagnostics: sources.diagnostics,
     );

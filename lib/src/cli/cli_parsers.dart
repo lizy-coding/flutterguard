@@ -20,6 +20,13 @@ class CliParsers {
         allowed: ['table', 'json', 'sarif'],
       )
       ..addOption('output', abbr: 'o', defaultsTo: '.flutterguard')
+      ..addFlag(
+        'stdout',
+        help:
+            'Print structured output to stdout instead of writing report files',
+        defaultsTo: false,
+        negatable: false,
+      )
       ..addFlag('verbose', abbr: 'v', negatable: false)
       ..addFlag('no-color', negatable: false)
       ..addFlag('changed-only', negatable: false)
