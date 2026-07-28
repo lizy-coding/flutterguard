@@ -7,7 +7,7 @@ import 'package:flutterguard_cli/src/cli/config_commands.dart';
 import 'package:flutterguard_cli/src/cli/rule_commands.dart';
 import 'package:flutterguard_cli/src/cli/scan_command.dart';
 
-const _version = '0.7.0';
+const _version = '0.7.1';
 
 void main(List<String> args) {
   final parsers = CliParsers();

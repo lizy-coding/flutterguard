@@ -1,0 +1,63 @@
+{
+  "task": "flutterguard-idea-publish-readiness",
+  "description": "Verify IDEA plugin build health, sync current-platform native binary, run gradle gates, report cross-platform gaps blocking JetBrains Marketplace publish.",
+  "working_dir": "idea-plugin/",
+  "steps": [
+    {
+      "id": "verify-dart",
+      "label": "Dart analyze + test",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard && dart analyze && dart test",
+      "expect": "exit 0, all tests pass"
+    },
+    {
+      "id": "build-native-current",
+      "label": "Build native binary for current platform into dist/",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard && mkdir -p dist && V=$(grep '^version:' pubspec.yaml | awk '{print $2}') && OS=$(uname -s | tr '[:upper:]' '[:lower:]') && case \"$OS\" in darwin) OS='macos';; linux) OS='linux';; *) echo 'UNSUPPORTED'; exit 1;; esac && ARCH=$(uname -m) && case \"$ARCH\" in arm64|aarch64) ARCH='arm64';; x86_64|amd64) ARCH='x64';; *) echo 'UNSUPPORTED'; exit 1;; esac && DIR=\"dist/flutterguard-${V}-${OS}-${ARCH}\" && rm -rf \"$DIR\" && mkdir -p \"$DIR\" && dart compile exe bin/flutterguard.dart -o \"$DIR/flutterguard\" && chmod +x \"$DIR/flutterguard\" && \"$DIR/flutterguard\" --version && echo \"BUILT: $DIR/flutterguard\"",
+      "expect": "exit 0, prints version"
+    },
+    {
+      "id": "sync-binary-to-plugin",
+      "label": "Copy current-platform binary into idea-plugin/src/main/resources/bin/",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard && V=$(grep '^version:' pubspec.yaml | awk '{print $2}') && OS=$(uname -s | tr '[:upper:]' '[:lower:]') && case \"$OS\" in darwin) OS_PART='darwin';; linux) OS_PART='linux';; *) echo 'UNSUPPORTED'; exit 1;; esac && ARCH=$(uname -m) && case \"$ARCH\" in arm64|aarch64) ARCH_PART='arm64';; x86_64|amd64) ARCH_PART='x64';; *) echo 'UNSUPPORTED'; exit 1;; esac && SRC=\"dist/flutterguard-${V}-macos-${ARCH_PART}/flutterguard\" && DST=\"idea-plugin/src/main/resources/bin/flutterguard-${OS_PART}-${ARCH_PART}\" && mkdir -p idea-plugin/src/main/resources/bin && cp \"$SRC\" \"$DST\" && chmod +x \"$DST\" && file \"$DST\" && echo \"SYNCED: $DST\"",
+      "expect": "exit 0, file reports Mach-O or ELF"
+    },
+    {
+      "id": "gradle-check",
+      "label": "Gradle compile + test",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard/idea-plugin && ./gradlew check",
+      "expect": "BUILD SUCCESSFUL"
+    },
+    {
+      "id": "gradle-verify",
+      "label": "Plugin Verifier against IntelliJ 2024.3",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard/idea-plugin && ./gradlew verifyPlugin",
+      "expect": "Compatible"
+    },
+    {
+      "id": "gradle-build",
+      "label": "Build plugin zip",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard/idea-plugin && ./gradlew buildPlugin && ls -lh build/distributions/*.zip && shasum -a 256 build/distributions/*.zip",
+      "expect": "zip file produced with SHA-256"
+    },
+    {
+      "id": "report-cross-platform-gaps",
+      "label": "Report missing platform binaries blocking publish",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard && V=$(grep '^version:' pubspec.yaml | awk '{print $2}') && echo '=== CROSS-PLATFORM BINARY CHECKLIST ===' && echo \"Version: $V\" && echo '' && for target in \"dist/flutterguard-${V}-macos-arm64/flutterguard\" \"dist/flutterguard-${V}-macos-x64/flutterguard\" \"dist/flutterguard-${V}-linux-x64/flutterguard\" \"dist/flutterguard-${V}-windows-x64/flutterguard.exe\"; do if [[ -f \"$target\" ]]; then echo \"  [x] $target\"; else echo \"  [ ] $target — NEEDS BUILD\"; fi; done && echo '' && echo 'Build commands per platform:' && echo '  macOS arm64:  bash scripts/package_release.sh' && echo '  macOS x64:    bash scripts/package_release.sh' && echo '  Linux x64:    bash scripts/package_release.sh' && echo '  Windows x64:  powershell scripts/package_release.ps1' && echo '' && echo 'After all binaries collected under dist/:' && echo '  bash scripts/idea_plugin_preflight.sh' && echo '  bash scripts/idea_plugin_publish.sh'",
+      "expect": "prints checklist"
+    }
+  ],
+  "post_execution_summary": "After all 4 platform binaries are in dist/, run: bash scripts/idea_plugin_preflight.sh && bash scripts/idea_plugin_publish.sh. First-time publish also requires manual plugin listing creation at https://plugins.jetbrains.com/.",
+  "estimated_effort": {
+    "dart_gates": "~30s",
+    "native_build": "~30s",
+    "gradle_gates": "~2min",
+    "total": "~3min on current platform"
+  }
+}

@@ -1,0 +1,4 @@
+.gradle/
+.intellijPlatform/
+build/
+src/main/resources/bin/flutterguard-*

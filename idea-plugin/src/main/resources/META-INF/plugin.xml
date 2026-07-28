@@ -1,0 +1,23 @@
+<idea-plugin>
+  <id>com.flutterguard</id>
+  <name>FlutterGuard</name>
+  <vendor url="https://github.com/lizy-coding/flutterguard">FlutterGuard</vendor>
+
+  <description><![CDATA[
+Static analysis for IoT/smart-home Flutter projects.
+Detects architecture boundary violations, lifecycle risks,
+IoT security issues, and state management problems.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <externalAnnotator
+      language="Dart"
+      implementationClass="com.flutterguard.FlutterGuardExternalAnnotator"/>
+    <projectService
+      serviceImplementation="com.flutterguard.FlutterGuardSettings"/>
+    <postStartupActivity
+      implementation="com.flutterguard.FlutterGuardStartupActivity"/>
+  </extensions>
+</idea-plugin>

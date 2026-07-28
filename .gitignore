@@ -10,8 +10,8 @@ build/
 
 # CLI
 .flutterguard/
-flutterguard
-flutterguard.exe
+/flutterguard
+/flutterguard.exe
 dist/
 
 # IDE
@@ -37,4 +37,3 @@ doc/api/
 
 # Duplicate local maintenance transcript; keep flutterguardb.md as canonical.
 /session-ses_07b1.md
-
