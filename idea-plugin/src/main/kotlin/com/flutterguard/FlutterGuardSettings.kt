@@ -11,9 +11,6 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 @Service(Service.Level.PROJECT)
 class FlutterGuardSettings : PersistentStateComponent<FlutterGuardSettings> {
     var enabled: Boolean = true
-    var scanOnSave: Boolean = true
-    var failOnSeverity: String = "low"
-    var customArgs: String = ""
 
     override fun getState(): FlutterGuardSettings = this
 

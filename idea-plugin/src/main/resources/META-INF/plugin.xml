@@ -4,9 +4,9 @@
   <vendor url="https://github.com/lizy-coding/flutterguard">FlutterGuard</vendor>
 
   <description><![CDATA[
-Static analysis for IoT/smart-home Flutter projects.
-Detects architecture boundary violations, lifecycle risks,
-IoT security issues, and state management problems.
+Independent static analysis for Dart/Flutter projects.
+Displays findings from the FlutterGuard CLI using the project's configuration.
+Business contracts and CI gates remain owned by the consumer project.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>

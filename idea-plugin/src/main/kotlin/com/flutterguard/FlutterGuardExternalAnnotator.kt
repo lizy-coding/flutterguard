@@ -56,7 +56,7 @@ class FlutterGuardExternalAnnotator :
                 "--stdout",
                 "--no-color",
                 "--fail-on",
-                settings.failOnSeverity,
+                "none",
             ).directory(File(basePath)).start()
 
             if (!process.waitFor(30, TimeUnit.SECONDS)) {
