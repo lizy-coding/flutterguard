@@ -81,7 +81,10 @@ rule families.
 
 ## External boundaries
 
-The supported integration boundary is the CLI plus JSON/SARIF. Code under
+The supported integration boundary is the CLI plus JSON/SARIF. Consumer
+repositories own their generators, business contracts, test gates, and platform
+evidence. Neither the scanner nor the IDE imports consumer-specific metadata or
+assumes a consumer's directory taxonomy. External hosts are optional callers. Code under
 `lib/src` is package-private and may change without a Dart API migration.
 
 Stable capabilities are:

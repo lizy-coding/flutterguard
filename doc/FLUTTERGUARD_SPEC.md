@@ -7,10 +7,16 @@ layout are documented in `ARCHITECTURE.md` and are not compatibility contracts.
 
 ## Identity and scope
 
-FlutterGuard is a local static analysis CLI for IoT and smart-home Flutter
-projects. It detects architecture boundary violations, lifecycle/resource
-risks, IoT transport/security problems, and state-management maintainability
-problems.
+FlutterGuard is an independently maintained local static analysis CLI and IDE
+integration for Dart/Flutter projects. Its current detectors cover configured
+architecture boundaries, lifecycle/resource risks, IoT transport/security, and
+state-management patterns. Detector availability is not a guarantee of business
+correctness or platform acceptance.
+
+Consumer projects provide explicit scan targets and configuration. The scanner
+does not consume their generated Agent contracts, module admission registries,
+platform matrices, or host orchestration. Consumer CI and toolsets decide when
+to invoke the CLI and whether findings block a change.
 
 It is not a runtime SDK, observability agent, crash reporter, hosted service,
 network proxy, widget library, or general formatting/style linter.

@@ -1,9 +1,14 @@
 # FlutterGuard
 
-FlutterGuard is an executable-only static analysis CLI for IoT and smart-home
-Flutter projects. It checks architecture boundaries, lifecycle/resource safety,
-IoT transport security, and state-management maintainability. It does not add a
-runtime SDK to the scanned application.
+FlutterGuard is an independently maintained static analysis tool for
+Dart/Flutter projects, with a CLI and an IntelliJ adapter. Applications consume
+JSON or SARIF reports; they do not depend on a runtime SDK or private scanner API.
+
+Consumer projects own their business contracts, module admission, platform
+acceptance, and CI policy. FlutterGuard does not read a project's generated
+Agent contracts or require a particular repository layout, generator, or host.
+Use Dart/Flutter format, analysis, and tests for their existing responsibilities;
+use FlutterGuard only where an explicit detector adds useful evidence.
 
 ## Install
 
@@ -44,6 +49,20 @@ The core scan options are:
 Exit code `0` means the scan completed and the gate passed. Exit code `1` means
 the severity gate failed. Exit code `2` means the command or scan setup was
 invalid.
+
+## Optional tool integration
+
+Install the CLI independently of the application package. An agent or toolset
+can invoke it with an explicit package/file target and configuration:
+
+```bash
+flutterguard config check /path/to/app
+flutterguard scan /path/to/app/lib/example.dart --config /path/to/app/flutterguard.yaml --format json --stdout --no-color --fail-on none
+```
+
+Exit 1 still carries a usable structured report; exit 2 is a failed invocation.
+The consumer decides whether findings block a change. Inspect diagnostics as well
+as findings; an empty finding list alone is not proof of complete verification.
 
 ## IDE integration
 
@@ -102,7 +121,10 @@ listed by `flutterguard rules <rule-id>`.
 
 ## Rules
 
-The registry currently contains 16 rule IDs:
+The registry currently contains 16 rule IDs. This is an implementation inventory,
+not a claim that every detector is suitable for a blocking gate. Architecture
+checks require explicit boundaries; lifecycle, transport, and state heuristics
+need consumer-specific positive and negative validation before enforcement:
 
 - Architecture: `layer_violation`, `module_violation`,
   `circular_dependency`, `state_layer_ui_dependency`,

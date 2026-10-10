@@ -12,6 +12,10 @@ checkpoint_state: convergence_committed_quality_phase2_implemented
 
 # FlutterGuard 演进路线与续跑检查点
 
+> 2026-10-10：以下内容为 v0.7 收敛的历史检查点，旧提交拆分与工作区数字不代表
+> 当前待办。当前公共维护入口为 `doc/EVOLUTION_ROADMAP.md`；先核对当前 Git
+> 状态，禁止按本历史快照恢复已删除路径或重复执行迁移。
+
 ## 用途
 
 本文件是当前重构的续跑入口。后续执行者应先读取根目录及目标目录的
