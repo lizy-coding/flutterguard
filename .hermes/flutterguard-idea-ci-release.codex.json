@@ -1,0 +1,44 @@
+{
+  "task": "flutterguard-idea-ci-release",
+  "description": "Extend .github/workflows/release.yml to build all 4 platform native binaries + IDEA plugin zip on v* tags. Collects missing macos-13 Intel binary, adds Gradle plugin assembly job.",
+  "branch": "feature/idea-plugin-ci",
+  "steps": [
+    {
+      "id": "add-macos-x64-to-build-matrix",
+      "label": "Add macos-13 to release build matrix for Intel macOS binary",
+      "action": "patch",
+      "path": ".github/workflows/release.yml",
+      "old_string": "          - os: macos-14\n            artifact_glob: \"dist/*.tar.gz\"\n            script: \"bash scripts/package_release.sh\"\n          - os: windows-latest",
+      "new_string": "          - os: macos-14\n            artifact_glob: \"dist/*.tar.gz\"\n            script: \"bash scripts/package_release.sh\"\n          - os: macos-13\n            artifact_glob: \"dist/*.tar.gz\"\n            script: \"bash scripts/package_release.sh\"\n          - os: windows-latest"
+    },
+    {
+      "id": "add-idea-plugin-job",
+      "label": "Add IDEA plugin build job that collects all 4 platform binaries and runs gradle buildPlugin",
+      "action": "patch",
+      "path": ".github/workflows/release.yml",
+      "old_string": "  publish-github-release:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/download-artifact@v4\n        with:\n          path: release-artifacts\n          merge-multiple: true\n      - uses: softprops/action-gh-release@v2\n        with:\n          files: release-artifacts/*\n          generate_release_notes: true",
+      "new_string": "  build-idea-plugin:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Download all platform binaries\n        uses: actions/download-artifact@v4\n        with:\n          path: dist\n          merge-multiple: true\n\n      - name: Extract binaries from tar archives\n        run: |\n          for tgz in dist/*.tar.gz; do\n            tar -xzf \"$tgz\" -C dist/\n          done\n          find dist/ -name flutterguard -o -name 'flutterguard.exe' | sort\n\n      - name: Sync binaries into plugin resources\n        run: |\n          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')\n          mkdir -p idea-plugin/src/main/resources/bin\n          for src in \\\n            \"dist/flutterguard-${VERSION}-macos-arm64/flutterguard:idea-plugin/src/main/resources/bin/flutterguard-darwin-arm64\" \\\n            \"dist/flutterguard-${VERSION}-macos-x64/flutterguard:idea-plugin/src/main/resources/bin/flutterguard-darwin-x64\" \\\n            \"dist/flutterguard-${VERSION}-linux-x64/flutterguard:idea-plugin/src/main/resources/bin/flutterguard-linux-x64\"; do\n            IFS=':' read -r s d <<< \"$src\"\n            if [[ -f \"$s\" ]]; then cp \"$s\" \"$d\" && chmod +x \"$d\" && echo \"OK: $d\"; else echo \"WARN: missing $s\"; fi\n          done\n          # Windows binary has .exe extension\n          WIN_SRC=\"dist/flutterguard-${VERSION}-windows-x64/flutterguard.exe\"\n          if [[ -f \"$WIN_SRC\" ]]; then cp \"$WIN_SRC\" idea-plugin/src/main/resources/bin/flutterguard-windows-x64.exe && echo \"OK: flutterguard-windows-x64.exe\"; fi\n\n      - uses: actions/setup-java@v4\n        with:\n          java-version: '21'\n          distribution: 'temurin'\n\n      - uses: gradle/actions/setup-gradle@v4\n\n      - name: Build IDEA plugin\n        env:\n          PLUGIN_VERSION: ${{ github.ref_name }}\n        run: |\n          cd idea-plugin\n          ./gradlew buildPlugin\n\n      - name: Upload plugin artifact\n        uses: actions/upload-artifact@v4\n        with:\n          name: flutterguard-idea-plugin\n          path: idea-plugin/build/distributions/*.zip\n\n  publish-github-release:\n    needs: [build, build-idea-plugin]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/download-artifact@v4\n        with:\n          path: release-artifacts\n          merge-multiple: true\n      - uses: softprops/action-gh-release@v2\n        with:\n          files: |\n            release-artifacts/*.tar.gz\n            release-artifacts/*.zip\n          generate_release_notes: true"
+    },
+    {
+      "id": "verify-workflow-syntax",
+      "label": "Check YAML syntax of updated workflow",
+      "action": "terminal",
+      "command": "python3 -c \"import yaml; yaml.safe_load(open('/Users/forest/code/flutterguard/.github/workflows/release.yml')); print('YAML_VALID')\" 2>&1 || echo 'YAML_INVALID'"
+    },
+    {
+      "id": "verify-ci-logic",
+      "label": "Verify CI workflow structure: 4 platforms in build matrix, plugin job, release job",
+      "action": "terminal",
+      "command": "cd /Users/forest/code/flutterguard && python3 -c \"\nimport yaml\nwith open('.github/workflows/release.yml') as f:\n    d = yaml.safe_load(f)\njobs = d['jobs']\n# 1. build matrix has 4 entries\nmatrix = jobs['build']['strategy']['matrix']['include']\noses = [m['os'] for m in matrix]\nassert 'macos-13' in oses, f'macos-13 missing: {oses}'\nassert 'macos-14' in oses\nassert 'ubuntu-latest' in oses\nassert 'windows-latest' in oses\nprint(f'build matrix: {len(matrix)} platforms OK — {oses}')\n# 2. build-idea-plugin job exists\nassert 'build-idea-plugin' in jobs\nprint('build-idea-plugin job: present')\n# 3. publish-github-release depends on both build + build-idea-plugin\npub_needs = jobs['publish-github-release']['needs']\nassert 'build' in pub_needs and 'build-idea-plugin' in pub_needs\nprint(f'publish-github-release needs: {pub_needs}')\nprint('ALL CI CHECKS PASSED')\n\""
+    }
+  ],
+  "post_execution": {
+    "trigger": "Push a v* tag (e.g. v0.7.1) to trigger the release workflow.",
+    "manual_publish": "After release, download the flutterguard-idea-plugin artifact and upload to JetBrains Marketplace (or add publishPlugin step with token secret).",
+    "jetbrains_first_time": "Plugin listing must be created manually at https://plugins.jetbrains.com/ before CI can auto-publish."
+  },
+  "what_changes": {
+    "release.yml": "adds macos-13 to build matrix + adds build-idea-plugin job (extract binaries, Gradle buildPlugin, upload artifact)",
+    "existing_workflow_behavior": "validate → build (now 4 platforms) → build-idea-plugin → publish-github-release"
+  }
+}
