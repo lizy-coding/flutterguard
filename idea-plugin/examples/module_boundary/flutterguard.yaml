@@ -1,0 +1,11 @@
+include: [lib/**]
+architecture:
+  modules:
+    - name: checkout
+      path: lib/checkout/**
+      allowed_deps: [payment]
+      entry_points: [lib/checkout/good.dart]
+    - name: payment
+      path: lib/payment/**
+      allowed_deps: []
+      entry_points: [lib/payment/payment.dart]

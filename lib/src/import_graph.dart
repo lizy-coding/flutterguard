@@ -9,12 +9,14 @@ class ImportEdge {
   final String target;
   final String uri;
   final int line;
+  final String kind;
 
   const ImportEdge({
     required this.source,
     required this.target,
     required this.uri,
     required this.line,
+    this.kind = 'import',
   });
 }
 
@@ -42,24 +44,54 @@ class ImportGraph {
 
       final edges = <ImportEdge>[];
       for (final directive
-          in source.unit.directives.whereType<ImportDirective>()) {
-        final uri = directive.uri.stringValue;
-        if (uri == null) continue;
-        final target = resolveImport(
-          sourcePath,
-          uri,
-          fileSet,
-          projectPath: projectPath,
-        );
-        if (target == null || target == sourcePath) continue;
-        edges.add(
-          ImportEdge(
-            source: sourcePath,
-            target: target,
-            uri: uri,
-            line: lineNumberForOffset(source.lineInfo, directive.uri.offset),
-          ),
-        );
+          in source.unit.directives.whereType<NamespaceDirective>()) {
+        final literals = [
+          directive.uri,
+          ...directive.configurations.map((c) => c.uri),
+        ];
+        for (final literal in literals) {
+          final uri = literal.stringValue;
+          if (uri == null) continue;
+          final parsed = Uri.tryParse(uri);
+          if (parsed?.scheme == 'dart') continue;
+          final packageName = projectPath == null
+              ? null
+              : workspace.packageName(projectPath);
+          if (parsed?.scheme == 'package' &&
+              packageName != null &&
+              parsed!.pathSegments.isNotEmpty &&
+              parsed.pathSegments.first != packageName) {
+            continue;
+          }
+          final target = resolveImport(
+            sourcePath,
+            uri,
+            fileSet,
+            projectPath: projectPath,
+            packageName: packageName,
+          );
+          if (target == null) {
+            workspace.addDiagnostic(
+              ScanDiagnostic(
+                stage: 'reference_resolution',
+                file: sourcePath,
+                message:
+                    'Reference "$uri" is unresolved or outside the selected source context.',
+              ),
+            );
+            continue;
+          }
+          if (target == sourcePath) continue;
+          edges.add(
+            ImportEdge(
+              source: sourcePath,
+              target: target,
+              uri: uri,
+              kind: directive is ExportDirective ? 'export' : 'import',
+              line: lineNumberForOffset(source.lineInfo, literal.offset),
+            ),
+          );
+        }
       }
       outgoing[sourcePath] = edges;
     }

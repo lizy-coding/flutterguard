@@ -4,11 +4,49 @@ FlutterGuard is an independently maintained static analysis tool for
 Dart/Flutter projects, with a CLI and an IntelliJ adapter. Applications consume
 JSON or SARIF reports; they do not depend on a runtime SDK or private scanner API.
 
+The next-stage workflow protects project-declared module public entry points.
+See the [four-file runnable example](idea-plugin/examples/module_boundary/README.md).
+Only architecture checks are enabled by default; lifecycle, IoT/security and
+state-framework checks remain available with explicit `enabled: true`.
+Missing module configuration is reported as `not_configured`, not a project pass.
+
+```yaml
+architecture:
+  modules:
+    - name: checkout
+      path: lib/checkout/**
+      allowed_deps: [payment]
+      entry_points: [lib/checkout/api.dart]
+    - name: payment
+      path: lib/payment/**
+      allowed_deps: []
+      entry_points: [lib/payment/api.dart]
+```
+
+Adjust paths to existing files. Cross-module references must use the target's
+declared entry, while its own facade may export internal files. Omitting
+entry_points preserves dependency-only checks and reports partial protection.
+
 Consumer projects own their business contracts, module admission, platform
 acceptance, and CI policy. FlutterGuard does not read a project's generated
 Agent contracts or require a particular repository layout, generator, or host.
 Use Dart/Flutter format, analysis, and tests for their existing responsibilities;
 use FlutterGuard only where an explicit detector adds useful evidence.
+
+## IntelliJ IDEA plugin
+
+This repository is the source and release-maintenance home for the FlutterGuard
+IDEA plugin: [lizy-coding/flutterguard](https://github.com/lizy-coding/flutterguard).
+The plugin delegates detection to the bundled CLI maintained in this same repository.
+
+- [Installation, examples and screenshots](idea-plugin/README.md)
+- [Plugin release maintenance](idea-plugin/RELEASING.md)
+- [Version history](idea-plugin/docs/changelog.html)
+- [User license](idea-plugin/docs/eula.md) and [privacy statement](idea-plugin/docs/privacy.md)
+- [Marketplace submission preparation](idea-plugin/release-review/marketplace-submission.md)
+
+Local preparation does not publish these materials or the plugin. Marketplace
+availability and approval must be recorded after an actual submission.
 
 ## Install
 

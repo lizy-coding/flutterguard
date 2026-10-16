@@ -1,23 +1,92 @@
 <idea-plugin>
   <id>com.flutterguard</id>
   <name>FlutterGuard</name>
-  <vendor url="https://github.com/lizy-coding/flutterguard">FlutterGuard</vendor>
+  <vendor email="zhenyu_li1998@163.com" url="https://github.com/lizy-coding/flutterguard">forest.li</vendor>
 
   <description><![CDATA[
-Independent static analysis for Dart/Flutter projects.
-Displays findings from the FlutterGuard CLI using the project's configuration.
-Business contracts and CI gates remain owned by the consumer project.
+<p><b>Module public-entry protection for Dart/Flutter projects.</b></p>
+<p>Declare module paths, public entry_points and allowed dependencies in flutterguard.yaml. Detect external imports of private implementation files. File checks do not certify the whole project.</p>
+<h3>Features</h3>
+<ul><li>Protect configured module public entry points and allowed dependencies, with source locations and remediation guidance.</li>
+<li>Legacy non-architecture detectors require explicit project opt-in; historical screenshots illustrate feedback only.</li>
+<li>Enforce dependency boundaries explicitly configured by your project.</li>
+<li>Scan saved local Dart files; discard stale results and display setup errors or diagnostics.</li>
+<li>View bundled screenshots, usage examples, and version history offline in Settings → Tools → FlutterGuard.</li></ul>
+<h3>Getting started</h3>
+<ol><li>Enable the Dart plugin and configure the project's Dart SDK.</li>
+<li>Enable FlutterGuard under Settings → Tools → FlutterGuard.</li>
+<li>Save a Dart file and invoke Tools → FlutterGuard: Scan Current Saved File.</li></ol>
+<p>Use Tools → FlutterGuard: Usage Guide &amp; Changelog for screenshots and troubleshooting.
+The plugin processes files locally and does not implement source upload or telemetry.
+Paths and diagnostic messages may appear in local IDE logs; see the bundled privacy statement.</p>
+<p>Findings are static evidence, not a proof of ownership, control flow, application correctness, or device acceptance.
+This local package is validated on IDEA 2026.1.5 / macOS arm64; other release targets require separate verification.</p>
+<p>Source and issues: <a href="https://github.com/lizy-coding/flutterguard">GitHub</a>.
+License: MIT. The versioned changes are available in What's New.</p>
+<h3>中文说明</h3>
+
+<p>FlutterGuard 在源码波浪线与 Problems 列表中展示规则、位置和修复建议，
+并用手动扫描通知区分“没有 findings”和“检查失败”。</p>
+<h3>关键功能</h3>
+<ul>
+<li>模块公开入口保护：项目声明路径、entry_points 与允许依赖；区分内部入口和依赖关系违规。</li>
+<li>项目报告：当前 Dart 文件所属最近 pubspec 包的磁盘扫描结果，可复制完整位置、诊断和覆盖状态。</li>
+<li>历史辅助规则（如 Timer、StreamSubscription、凭据）需项目显式 enabled: true；不再默认运行。</li>
+<li>依赖边界：按 flutterguard.yaml 明确配置 layer/module 的允许依赖。</li>
+<li>保存文件后检查；只显示当前文件的有效位置，丢弃过期结果。</li>
+<li>配置失败、超时与诊断可见；IDE 不接管项目 CI 的阻断策略。</li>
+</ul>
+<h3>开始使用</h3>
+<ol>
+<li>启用 JetBrains Dart 插件，并为项目配置 Dart SDK。</li>
+<li>Settings → Tools → FlutterGuard：启用检查。</li>
+<li>打开并保存 .dart 文件；执行 Tools → FlutterGuard: Scan Current Saved File。</li>
+</ol>
+<h3>实拍截图与完整示例</h3>
+<p><b>Tools → FlutterGuard: Usage Guide &amp; Changelog</b>，
+或 Settings → Tools → FlutterGuard → <b>场景截图与使用说明</b>。
+五张截图已随安装包内置，可离线查看，无需查找 README：</p>
+<ul>
+<li>Timer 未释放：黄色 medium，字段第 6 行。</li>
+<li>正确释放：Problems 无问题，通知显示 0 findings。</li>
+<li>演示凭据：红色 high，iot_security 规则。</li>
+<li>配置失败：exit 2 与具体错误。</li>
+<li>非法依赖：import 行红色 high，layer_violation 规则。</li>
+</ul>
+<h3>更新记录</h3>
+<p>本页 <b>What's New</b> 提供按版本分组的新增、修复和调整摘要；
+完整记录也内置于 Settings → Tools → FlutterGuard → <b>更新记录</b>。</p>
+<h3>适用边界</h3>
+<p>init/initState 本身不要求 dispose。生命周期检查不证明资源所有权或完整控制流，
+也不覆盖类型推断、别名、继承和跨对象清理。演示字符串可能触发凭据启发式规则，请复核用途。</p>
+<p>本地包已验证 IDEA 2026.1.5 / macOS arm64。其他宿主、旧版 IDEA 和 Marketplace 发布独立验收。
+公共集成边界为 CLI JSON/SARIF，业务契约继续由消费项目维护。</p>
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
+  <depends optional="true" config-file="flutterguard-dart.xml">Dart</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <externalAnnotator
-      language="Dart"
-      implementationClass="com.flutterguard.FlutterGuardExternalAnnotator"/>
+    <notificationGroup id="FlutterGuard" displayType="BALLOON"/>
     <projectService
       serviceImplementation="com.flutterguard.FlutterGuardSettings"/>
-    <postStartupActivity
-      implementation="com.flutterguard.FlutterGuardStartupActivity"/>
+    <projectConfigurable id="com.flutterguard.settings" displayName="FlutterGuard"
+      parentId="tools" instance="com.flutterguard.FlutterGuardConfigurable"/>
   </extensions>
+  <actions>
+    <action id="FlutterGuard.UsageGuide" class="com.flutterguard.FlutterGuardGuideAction"
+      text="FlutterGuard: Usage Guide &amp; Changelog" description="View bundled screenshots, examples, and version history offline">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+    <action id="FlutterGuard.ScanPackage" class="com.flutterguard.FlutterGuardScanPackageAction"
+      text="FlutterGuard: Scan Current Dart Package" description="Scan the nearest pubspec package of the selected Dart file; open a copyable report with coverage">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    </action>
+    <action id="FlutterGuard.ScanCurrentFile" class="com.flutterguard.FlutterGuardScanAction"
+      text="FlutterGuard: Scan Current Saved File" description="Scan the saved Dart file and show the scan outcome">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    </action>
+  </actions>
 </idea-plugin>

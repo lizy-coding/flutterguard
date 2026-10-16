@@ -128,6 +128,9 @@ name: single_file_fixture
 environment:
   sdk: ^3.11.0
 ''');
+    File(
+      p.join(project.path, 'flutterguard.yaml'),
+    ).writeAsStringSync('rules:\n  iot_security:\n    enabled: true\n');
     final selectedFile = File(p.join(project.path, 'lib', 'selected.dart'))
       ..writeAsStringSync('''
 void connect() {
@@ -204,6 +207,9 @@ name: relative_file_fixture
 environment:
   sdk: ^3.11.0
 ''');
+    File(
+      p.join(project.path, 'flutterguard.yaml'),
+    ).writeAsStringSync('rules:\n  iot_security:\n    enabled: true\n');
     File(p.join(project.path, 'lib', 'device.dart')).writeAsStringSync('''
 void connect() {
   final password = 'admin123';

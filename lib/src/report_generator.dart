@@ -35,11 +35,13 @@ class ReportGenerator {
     int suppressedCount = 0,
     int suppressedByBaselineCount = 0,
     List<ScanDiagnostic> diagnostics = const [],
+    Map<String, Object?> coverage = const {},
   }) {
     final payload = <String, Object?>{
       'schemaVersion': '2.0.0',
       'projectPath': projectPath,
       'scanMode': scanMode,
+      'coverage': coverage,
       'summary': {
         'total': issues.length,
         'high': issues.where((issue) => issue.level == RiskLevel.high).length,

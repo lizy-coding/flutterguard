@@ -13,6 +13,11 @@ architecture boundaries, lifecycle/resource risks, IoT transport/security, and
 state-management patterns. Detector availability is not a guarantee of business
 correctness or platform acceptance.
 
+The primary workflow is project-declared module boundaries and public entry
+protection. Only layer/module boundaries and circular import detection are
+enabled by default (cycles additionally require detect_cycles). Other registered
+rules are retained as opt-in checks; enable them explicitly with enabled: true.
+
 Consumer projects provide explicit scan targets and configuration. The scanner
 does not consume their generated Agent contracts, module admission registries,
 platform matrices, or host orchestration. Consumer CI and toolsets decide when
@@ -91,7 +96,7 @@ architecture:
 ```
 
 Rule severity is `low`, `medium`, or `high`. Unknown rule IDs and unknown
-rule-specific options are errors in `config check`. Run `config init` to
+rule-specific options are errors in both `config check` and `scan`. Run `config init` to
 generate current definitions and defaults.
 
 A boundary entry is:
@@ -105,6 +110,25 @@ A boundary entry is:
 Layer and module enforcement is inactive when its boundary list is empty.
 Circular import detection requires `architecture.detect_cycles: true` and is
 skipped in changed-only mode.
+
+Modules may additionally declare `entry_points`, a list of project-relative
+file paths or globs. A cross-module import or export must satisfy both the
+source's allowed_deps and the target's entry_points. Internal same-module
+references and a public entry exporting its own implementation remain legal.
+An empty list makes all files internal. Omitting the key preserves legacy
+dependency-only behavior and reports incomplete entry protection.
+
+Duplicate names, unknown allowed_deps, overlapping ownership, invalid globs,
+and entry patterns matching no selected files or files outside their module
+are setup errors (exit 2). These checks also run for single-file scans against
+their complete configured file context. Unowned references and unresolved local
+references produce diagnostics, not invented violations.
+
+Import and export conditional alternatives are all checked conservatively,
+without selecting a runtime platform. Only the root package's package: URIs
+resolve into this project; other package identities are excluded from this
+module check. Missing extensions are not guessed. This is file-level boundary
+enforcement, not symbol-level API leakage or business correctness analysis.
 
 ## Rule inventory
 
@@ -131,6 +155,21 @@ state_manager_created_in_build
 
 `rules [rule-id]` is the authoritative description of purpose, default
 severity, framework, options, example, and remediation.
+Its JSON metadata also exposes defaultEnabled from the same rule definition.
+
+## Lifecycle detection boundary
+
+`lifecycle_resource_not_disposed` checks explicitly typed instance resource
+fields, including nullable and generic types and every variable in a declaration.
+It recognizes AST release calls in `dispose()` and directly invoked same-class
+helpers, including null-aware, `this`, and cascade receivers. Merely storing a
+cleanup closure or mentioning a call in a string does not count as releasing it.
+
+This is a syntax check, not a proof of resource ownership or control flow.
+Inferred fields, aliases, inherited cleanup, and cross-object cleanup remain
+outside this rule's supported boundary. Resource containers are not treated as
+individual resource fields. `initState()` alone does not require `dispose()`;
+one-shot `addPostFrameCallback` registration has no unregister pair.
 
 ## Findings
 
@@ -183,6 +222,22 @@ JSON reports use schema version `2.0.0`:
 
 SARIF reports conform to SARIF 2.1.0 and include registry definitions and
 finding locations.
+
+JSON 2.0 additionally includes coverage.moduleBoundary with status
+not_configured, disabled, complete or partial; scope project, file or changed;
+checkedFiles (owned selected source files), totalFiles (configured context),
+and reasons. complete means the declared check could evaluate that scope,
+not that there are no findings or that other scopes passed. Omitting
+entry_points, unmatched modules or scan diagnostics makes coverage partial.
+File/changed scans do not certify unselected callers after configuration or
+entry changes: run a full package scan for that assessment.
+
+SARIF runs carry the same coverage and diagnostics in properties. CLI coverage
+summaries go to stderr, preserving pure JSON/SARIF on --stdout. Exit codes and
+severity gates remain unchanged; incomplete coverage is not a new finding
+severity and does not by itself trigger the finding gate.
+module_violation metadata.reason is dependency or private_entry; referenceKind
+identifies import/export and entryPoints records the target's declaration.
 
 ## IDE severity mapping
 

@@ -35,6 +35,14 @@ class ScanCommand {
       exit(2);
     }
 
+    final moduleCoverage = result.coverage['moduleBoundary'];
+    if (moduleCoverage is Map<String, Object?>) {
+      stderr.writeln(
+        'Module boundary coverage: ${moduleCoverage['status']} '
+        '(${moduleCoverage['scope']}; ${moduleCoverage['checkedFiles']}/${moduleCoverage['totalFiles']} selected files).',
+      );
+    }
+
     if (verbose && result.diagnostics.isNotEmpty) {
       stderr.writeln('Scan diagnostics (${result.diagnostics.length}):');
       for (final diagnostic in result.diagnostics) {

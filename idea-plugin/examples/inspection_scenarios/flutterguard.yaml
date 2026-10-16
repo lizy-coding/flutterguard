@@ -1,0 +1,26 @@
+include:
+  - lib/scenario_01_timer_leak.dart
+  - lib/scenario_02_timer_fixed.dart
+  - lib/scenario_03_stream_leak.dart
+  - lib/scenario_04_delegated_cleanup.dart
+  - lib/scenario_05_one_shot_valid.dart
+  - lib/scenario_06_suppressed.dart
+  - lib/scenario_07_demo_secret.dart
+  - lib/presentation/scenario_08_bad_boundary.dart
+  - lib/presentation/scenario_09_good_boundary.dart
+  - lib/domain/status.dart
+  - lib/data/status_repository.dart
+
+architecture:
+  detect_cycles: false
+  layers:
+    - name: presentation
+      path: lib/presentation/**
+      allowed_deps: [domain]
+    - name: domain
+      path: lib/domain/**
+      allowed_deps: []
+    - name: data
+      path: lib/data/**
+      allowed_deps: [domain]
+  modules: []

@@ -1,0 +1,2 @@
+# Preserve verbatim upstream license notices, including trailing spaces.
+idea-plugin/docs/third-party-notices.txt whitespace=-blank-at-eol

@@ -189,6 +189,7 @@ class RuleRegistry {
         definition.id,
         defaultSeverity: definition.defaultSeverity,
         defaultOptions: definition.defaultOptions,
+        defaultEnabled: definition.defaultEnabled,
       );
       issues.addAll(registration.execute(context, config, graph));
     }

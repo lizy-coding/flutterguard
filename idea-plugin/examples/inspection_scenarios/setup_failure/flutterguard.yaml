@@ -1,0 +1,6 @@
+# 故意无效：enabled 应为 true/false，而不是字符串。
+include:
+  - lib/setup_failure.dart
+rules:
+  lifecycle_resource_not_disposed:
+    enabled: deliberately_invalid

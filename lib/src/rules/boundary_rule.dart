@@ -32,6 +32,7 @@ class BoundaryRule {
           name: boundary.name,
           path: boundary.path,
           allowedDeps: boundary.allowedDeps,
+          entryPoints: boundary.entryPoints,
         ),
     ];
     final violations = DependencyBoundaryEngine.analyze(
@@ -41,6 +42,7 @@ class BoundaryRule {
       graph: importGraph,
       workspace: workspace,
       projectPath: projectPath,
+      protectEntries: kind == BoundaryKind.module,
     );
     final label = kind == BoundaryKind.layer ? '层' : '模块';
     return [
@@ -52,15 +54,21 @@ class BoundaryRule {
           line: violation.edge.line,
           level: severity,
           domain: IssueDomain.architecture,
-          message:
-              '${violation.source.name} $label不可依赖 ${violation.target.name} $label',
+          message: violation.reason == 'private_entry'
+              ? '${violation.source.name} 模块绕过 ${violation.target.name} 的公开入口访问内部实现'
+              : '${violation.source.name} $label不可依赖 ${violation.target.name} $label',
           detail:
               '导入: ${violation.edge.uri}\n'
               '源$label: ${violation.source.name} (${violation.source.path})\n'
               '目标$label: ${violation.target.name} (${violation.target.path})',
-          suggestion: '调整依赖方向，或通过允许的边界抽象解耦',
+          suggestion: violation.reason == 'private_entry'
+              ? '通过目标模块公开入口访问: ${violation.target.entryPoints!.join(', ')}'
+              : '调整依赖方向，或通过允许的边界抽象解耦',
           metadata: {
             'kind': kind.name,
+            'reason': violation.reason,
+            'referenceKind': violation.edge.kind,
+            'entryPoints': violation.target.entryPoints,
             'sourceBoundary': violation.source.name,
             'targetBoundary': violation.target.name,
             'imported': violation.edge.uri,
@@ -77,7 +85,8 @@ class BoundaryRule {
       name: layer ? '层间依赖违规' : '模块间依赖违规',
       domain: IssueDomain.architecture,
       defaultSeverity: RiskLevel.high,
-      purpose: layer ? '检测架构层之间的非法依赖' : '检测业务模块之间的非法依赖',
+      defaultEnabled: true,
+      purpose: layer ? '检测架构层之间的非法依赖' : '检测模块依赖方向与绕过已声明公开入口的访问',
       riskReason: '非法边界依赖会破坏隔离并扩大变更影响范围',
       badExample: layer ? 'presentation 直接导入 data 实现' : 'mqtt 直接导入 ble 实现',
       fixSuggestion: '调整 allowed_deps，或提取稳定接口到允许依赖的边界',

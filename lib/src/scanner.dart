@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import 'baseline.dart';
 import 'config_loader.dart';
+import 'config_tools.dart';
 import 'file_collector.dart';
 import 'path_utils.dart';
 import 'project_resolver.dart';
@@ -36,6 +37,7 @@ class ScanResult {
   final String? structuredOutput;
   final List<ScanDiagnostic> diagnostics;
   final SourceWorkspace sources;
+  final Map<String, Object?> coverage;
 
   const ScanResult({
     required this.projectPath,
@@ -48,6 +50,7 @@ class ScanResult {
     required this.scanMode,
     required this.sources,
     this.structuredOutput,
+    this.coverage = const {},
     this.diagnostics = const [],
   });
 }
@@ -93,6 +96,11 @@ class FlutterGuardScanner {
       files
         ..add(scanTarget.singleFile!)
         ..sort();
+    }
+    config.validateArchitecture(files, resolvedProjectPath);
+    final configErrors = ConfigTools.validateRuleConfig(config);
+    if (configErrors.isNotEmpty) {
+      throw FormatException(configErrors.map((m) => m.message).join('\n'));
     }
     if (files.isEmpty) {
       throw const ScanException(
@@ -141,6 +149,12 @@ class FlutterGuardScanner {
       changedFiles: changedFiles,
     );
     final rawIssues = _analyze(context);
+    final coverage = _coverage(
+      context,
+      scanTarget.singleFile != null
+          ? 'file'
+          : (context.isChanged ? 'changed' : 'project'),
+    );
 
     var issues = rawIssues;
     var suppressedCount = 0;
@@ -186,6 +200,7 @@ class FlutterGuardScanner {
         suppressedCount: suppressedCount,
         suppressedByBaselineCount: suppressedByBaselineCount,
         diagnostics: sources.diagnostics,
+        coverage: coverage,
       );
       if (writeStdout) {
         structuredOutput = json;
@@ -195,6 +210,8 @@ class FlutterGuardScanner {
     }
     if (writeSarif) {
       final sarif = SarifReport.generate(
+        coverage: coverage,
+        diagnostics: sources.diagnostics,
         projectPath: resolvedProjectPath,
         issues: issues,
       );
@@ -217,7 +234,50 @@ class FlutterGuardScanner {
       structuredOutput: structuredOutput,
       sources: sources,
       diagnostics: sources.diagnostics,
+      coverage: coverage,
     );
+  }
+
+  static Map<String, Object?> _coverage(ScanContext context, String scope) {
+    final modules = context.config.architecture.modules;
+    final enabled = context.config
+        .rule('module_violation', defaultSeverity: RiskLevel.high)
+        .enabled;
+    final owned = context.targetFiles
+        .where(
+          (file) => modules.any(
+            (m) => matchesProjectGlob(file, m.path, context.projectPath),
+          ),
+        )
+        .length;
+    final reasons = <String>[];
+    if (modules.any((m) => m.entryPoints == null)) {
+      reasons.add('entry_points_not_declared');
+    }
+    if (modules.any(
+      (m) => !context.allFiles.any(
+        (f) => matchesProjectGlob(f, m.path, context.projectPath),
+      ),
+    )) {
+      reasons.add('module_has_no_selected_files');
+    }
+    if (context.sources.diagnostics.isNotEmpty) reasons.add('scan_diagnostics');
+    final status = !enabled
+        ? 'disabled'
+        : modules.isEmpty
+        ? 'not_configured'
+        : reasons.isEmpty
+        ? 'complete'
+        : 'partial';
+    return {
+      'moduleBoundary': {
+        'status': status,
+        'scope': scope,
+        'checkedFiles': enabled ? owned : 0,
+        'totalFiles': context.allFiles.length,
+        'reasons': reasons,
+      },
+    };
   }
 
   static List<StaticIssue> _analyze(ScanContext context) {

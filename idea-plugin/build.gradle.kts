@@ -5,11 +5,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     java
     id("org.jetbrains.intellij.platform") version "2.2.1"
-    id("org.jetbrains.kotlin.jvm") version "2.0.21"
+    id("org.jetbrains.kotlin.jvm") version (System.getenv("FLUTTERGUARD_KOTLIN_VERSION") ?: "2.0.21")
 }
 
 group = "com.flutterguard"
-version = System.getenv("PLUGIN_VERSION") ?: "0.0.0"
+version = System.getenv("PLUGIN_VERSION") ?: file("../pubspec.yaml").readLines()
+    .first { it.startsWith("version:") }.substringAfter(':').trim()
 
 repositories {
     mavenCentral()
@@ -20,8 +21,10 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2024.3")
+        val localIde = providers.gradleProperty("localIdePath").orNull
+        if (localIde != null) local(localIde) else intellijIdeaCommunity("2024.3")
     }
+    testImplementation("junit:junit:4.13.2")
 }
 
 java {
@@ -30,6 +33,24 @@ java {
 }
 
 tasks {
+    processResources {
+        from("docs") { into("documentation") }
+        from("../LICENSE") {
+            into("META-INF")
+            rename { "LICENSE.txt" }
+        }
+    }
+    test {
+        // Protocol tests use the SDK's Gson/Kotlin libraries without starting an IDE.
+        classpath += sourceSets.main.get().compileClasspath
+        doFirst {
+            // These are plain adapter tests, not IntelliJ fixture tests. The IDE
+            // bootstrap classloader/filesystem flags are neither needed nor portable.
+            jvmArgumentProviders.clear()
+            systemProperties.clear()
+            setJvmArgs(emptyList<String>())
+        }
+    }
     withType<KotlinCompile>().configureEach {
         compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
     }
@@ -40,12 +61,9 @@ intellijPlatform {
 
     pluginConfiguration {
         version = project.version.toString()
-        changeNotes = """
-            Initial IDEA integration with per-file FlutterGuard inspections,
-            native CLI execution, and JSON severity mapping.
-        """.trimIndent()
+        changeNotes = file("docs/changelog.html").readText()
         ideaVersion {
-            sinceBuild = "243"
+            sinceBuild = providers.gradleProperty("pluginSinceBuild").getOrElse("243")
         }
     }
 
@@ -63,7 +81,9 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.3")
+            val auditIde = providers.gradleProperty("verifierIdePath").orNull
+            if (auditIde != null) local(file(auditIde))
+            else ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.3")
         }
     }
 }

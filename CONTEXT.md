@@ -66,3 +66,28 @@ _Avoid_: Scanner crash, invalid report
 An editor annotation derived from a FlutterGuard finding for a selected source
 file.
 _Avoid_: Separate rule engine, public Dart scanner API
+
+**Project constraint**:
+A project-declared restriction on how its modules may depend on and access one
+another, evaluated against source evidence.
+_Avoid_: Universal coding style, inferred business correctness, health score
+
+**Module**:
+A project-declared group of source files with a named boundary and public
+entry points.
+_Avoid_: Any directory by default, runtime plugin, class responsibility
+
+**Public entry point**:
+A source entry explicitly designated by a module for access from other modules.
+Being inside an allowed dependency does not make every file public.
+_Avoid_: Any public Dart identifier, any importable file, package export by default
+
+**Module internal implementation**:
+Source belonging to a module that is not designated as an entry point for
+other modules.
+_Avoid_: Dart private identifier, another package's lib/src by definition
+
+**Check coverage**:
+The portion of the declared project constraints and source scope for which
+the checker has enough evidence to evaluate violations.
+_Avoid_: Finding count, test coverage, correctness guarantee

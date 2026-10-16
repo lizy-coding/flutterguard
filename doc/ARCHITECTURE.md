@@ -49,12 +49,24 @@ reads and parses each source file at most once. Architecture checks share one
 `ImportGraph`; layer and module rules share `BoundaryRule` and
 `DependencyBoundaryEngine`.
 
+SourceWorkspace also caches root pubspec package identity. ImportGraph resolves
+that identity without guessing from file suffixes, and includes import/export
+conditional alternatives. ScanConfig validates unique ownership, dependency
+names and declared entries before rule execution; config check uses the same
+validation. BoundaryRule retains one evaluator for dependency permission and
+module entry access, with reason metadata distinguishing the two violations.
+
+Scanner coverage describes module-check status separately from findings and
+severity gates. File/changed scope is never promoted to a project verdict.
+IDE keeps the full report and projects it onto the current editor only when
+creating annotations; its package action exposes complete scoped results.
+
 ## Rule model
 
 `RuleRegistry.registrations` is the single source of truth. Every registration
 contains:
 
-- one `RuleDefinition`: ID, domain, default severity, documentation, options;
+- one `RuleDefinition`: ID, domain, default enablement/severity, documentation, options;
 - one executor receiving `ScanContext`, effective `RuleConfig`, and an optional
   shared import graph.
 
@@ -75,6 +87,10 @@ belong in `RuleDefinition.defaultOptions`; the current example is `requireTls`.
 - `BoundaryRule` owns both layer and module dependency policy.
 - Framework-specific state rules activate from source imports; there is no
   global framework or confidence switch.
+
+Architecture rules are the default enabled set. Other rule families remain
+registered and tested for explicit opt-in, rather than acting as the primary
+product workflow.
 
 This ownership prevents the same source pattern from being reported by several
 rule families.

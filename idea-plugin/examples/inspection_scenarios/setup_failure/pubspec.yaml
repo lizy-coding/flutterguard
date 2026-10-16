@@ -1,0 +1,4 @@
+name: flutterguard_setup_failure
+publish_to: none
+environment:
+  sdk: ^3.11.0

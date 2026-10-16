@@ -15,6 +15,20 @@ void main() {
     expect(config.configuredRuleIds, isEmpty);
   });
 
+  test('default activation comes from the sole rule registry', () {
+    final active = RuleRegistry.all()
+        .where((d) => d.defaultEnabled)
+        .map((d) => d.id)
+        .toSet();
+    expect(active, {
+      'layer_violation',
+      'module_violation',
+      'circular_dependency',
+    });
+    final template = ConfigTools.initTemplate(withArchitecture: false);
+    expect(template, contains('iot_security:\n    enabled: false'));
+  });
+
   test('generic rule config parses severity and typed options', () {
     final directory = Directory.systemTemp.createTempSync('fg_config_');
     addTearDown(() => directory.deleteSync(recursive: true));

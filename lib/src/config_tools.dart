@@ -52,7 +52,7 @@ class ConfigTools {
     for (final rule in RuleRegistry.all()) {
       buffer
         ..writeln('  ${rule.id}:')
-        ..writeln('    enabled: true')
+        ..writeln('    enabled: ${rule.defaultEnabled}')
         ..writeln('    severity: ${rule.defaultSeverity.name}');
       for (final option in rule.defaultOptions.entries) {
         buffer.writeln('    ${option.key}: ${option.value}');
@@ -151,26 +151,11 @@ class ConfigTools {
       );
     }
 
-    final definitions = {for (final rule in RuleRegistry.all()) rule.id: rule};
-    final knownRules = definitions.keys.toSet();
-    for (final id in config.configuredRuleIds.difference(knownRules)) {
-      messages.add(DoctorMessage(DoctorSeverity.error, 'Unknown rule "$id".'));
-    }
-    for (final id in config.configuredRuleIds.intersection(knownRules)) {
-      final knownOptions = definitions[id]!.defaultOptions.keys.toSet();
-      for (final option
-          in config
-              .configuredOptions(id)
-              .keys
-              .toSet()
-              .difference(knownOptions)) {
-        messages.add(
-          DoctorMessage(
-            DoctorSeverity.error,
-            'Unknown option "rules.$id.$option".',
-          ),
-        );
-      }
+    messages.addAll(validateRuleConfig(config));
+    try {
+      config.validateArchitecture(files, resolvedProjectPath);
+    } on FormatException catch (error) {
+      messages.add(DoctorMessage(DoctorSeverity.error, error.message));
     }
     _checkBoundaries(
       kind: 'layer',
@@ -214,6 +199,32 @@ class ConfigTools {
       );
     }
     return buffer.toString();
+  }
+
+  static List<DoctorMessage> validateRuleConfig(ScanConfig config) {
+    final messages = <DoctorMessage>[];
+    final definitions = {for (final rule in RuleRegistry.all()) rule.id: rule};
+    final knownRules = definitions.keys.toSet();
+    for (final id in config.configuredRuleIds.difference(knownRules)) {
+      messages.add(DoctorMessage(DoctorSeverity.error, 'Unknown rule "$id".'));
+    }
+    for (final id in config.configuredRuleIds.intersection(knownRules)) {
+      final knownOptions = definitions[id]!.defaultOptions.keys.toSet();
+      for (final option
+          in config
+              .configuredOptions(id)
+              .keys
+              .toSet()
+              .difference(knownOptions)) {
+        messages.add(
+          DoctorMessage(
+            DoctorSeverity.error,
+            'Unknown option "rules.$id.$option".',
+          ),
+        );
+      }
+    }
+    return messages;
   }
 
   static void _checkBoundaries({

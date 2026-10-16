@@ -115,6 +115,7 @@ class CircularDependencyRule {
   }
 
   static RuleDefinition describe() => const RuleDefinition(
+    defaultEnabled: true,
     id: 'circular_dependency',
     name: '循环依赖',
     domain: IssueDomain.architecture,

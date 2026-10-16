@@ -1,143 +1,96 @@
 package com.flutterguard
 
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
+import com.intellij.ide.trustedProjects.TrustedProjects
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.progress.ProcessCanceledException
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import java.io.File
-import java.util.concurrent.TimeUnit
 
 class FlutterGuardExternalAnnotator :
-    ExternalAnnotator<PsiFile, List<FlutterGuardExternalAnnotator.Finding>>() {
+    ExternalAnnotator<FlutterGuardExternalAnnotator.Request, FlutterGuardExternalAnnotator.Result>() {
 
-    data class Finding(
-        val ruleId: String = "",
-        val title: String = "",
-        val file: String = "",
-        @SerializedName("fileRelative") val fileRelative: String = "",
-        val line: Int = 0,
-        val severity: String = "medium",
-        val domain: String = "",
-        val message: String = "",
-        val suggestion: String = "",
-    )
-
-    data class Report(
-        val issues: List<Finding> = emptyList(),
-    )
+    data class Request(val path: String, val workDir: String, val stamp: Long, val unsaved: Boolean, val target: String = path, val trusted: Boolean = false)
+    class Result internal constructor(val request: Request, internal val report: ScanReport? = null, val problem: String? = null)
 
     private val logger = Logger.getInstance(FlutterGuardExternalAnnotator::class.java)
 
-    override fun collectInformation(file: PsiFile): PsiFile = file
+    override fun collectInformation(file: PsiFile): Request? {
+        if (!FlutterGuardSettings.getInstance(file.project).enabled) return null
+        val virtualFile = file.virtualFile ?: return null
+        if (virtualFile.fileSystem.protocol != "file" || virtualFile.extension != "dart") return null
+        val document = file.viewProvider.document ?: return null
+        return Request(virtualFile.path, file.project.basePath ?: return null, document.modificationStamp,
+            FileDocumentManager.getInstance().isDocumentUnsaved(document), trusted = TrustedProjects.isProjectTrusted(file.project))
+    }
 
-    override fun doAnnotate(collectedInfo: PsiFile): List<Finding> {
-        val project = collectedInfo.project
-        val settings = FlutterGuardSettings.getInstance(project)
-        if (!settings.enabled) return emptyList()
-
-        val basePath = project.basePath ?: return emptyList()
-        val binary = resolveBinary() ?: run {
-            logger.warn("flutterguard binary not found for ${currentPlatform()}")
-            return emptyList()
+    override fun doAnnotate(request: Request): Result {
+        FlutterGuardScanPolicy.blockedReason(request.trusted, request.unsaved)?.let {
+            return Result(request, problem = it)
         }
-        val filePath = collectedInfo.virtualFile.path
-
         return try {
-            val process = ProcessBuilder(
-                binary.absolutePath,
-                "scan",
-                filePath,
-                "--format",
-                "json",
-                "--stdout",
-                "--no-color",
-                "--fail-on",
-                "none",
-            ).directory(File(basePath)).start()
-
-            if (!process.waitFor(30, TimeUnit.SECONDS)) {
-                process.destroyForcibly()
-                logger.warn("FlutterGuard scan timed out for $filePath")
-                return emptyList()
-            }
-
-            val output = process.inputStream.bufferedReader().readText()
-            val errorOutput = process.errorStream.bufferedReader().readText()
-            if (process.exitValue() > 1) {
-                logger.warn(
-                    "FlutterGuard scan failed with exit ${process.exitValue()}: $errorOutput",
-                )
-                return emptyList()
-            }
-            if (output.isBlank()) return emptyList()
-
-            Gson().fromJson(output, Report::class.java).issues
+            ProgressManager.checkCanceled()
+            val command = GeneralCommandLine(FlutterGuardNativeCli.resolve().absolutePath,
+                "scan", request.target, "--format", "json", "--stdout", "--no-color", "--fail-on", "none")
+                .withWorkDirectory(request.workDir).withCharset(Charsets.UTF_8)
+            val handler = CapturingProcessHandler(command)
+            val indicator = ProgressManager.getInstance().progressIndicator
+            val output = if (indicator == null) handler.runProcess(30_000, true)
+                else handler.runProcessWithProgressIndicator(indicator, 30_000, true)
+            if (output.isCancelled) throw ProcessCanceledException()
+            if (output.isTimeout) return Result(request, problem = "扫描超时（30 秒）；当前文件尚未验证。")
+            if (output.exitCode !in 0..1) return Result(request,
+                problem = "扫描失败（exit ${output.exitCode}）：${output.stderr.trim().take(300)}")
+            Result(request, report = FlutterGuardProtocol.parse(output.stdout))
+        } catch (cancelled: ProcessCanceledException) {
+            throw cancelled
         } catch (error: Exception) {
             logger.warn("FlutterGuard scan failed", error)
-            emptyList()
+            Result(request, problem = "扫描失败：${error.message.orEmpty().take(300)}")
         }
     }
 
-    override fun apply(
-        file: PsiFile,
-        findings: List<Finding>,
-        holder: AnnotationHolder,
-    ) {
+    override fun apply(file: PsiFile, result: Result, holder: AnnotationHolder) {
+        if (!FlutterGuardSettings.getInstance(file.project).enabled) return
         val document = file.viewProvider.document ?: return
-        for (finding in findings) {
-            val lineIndex = (finding.line - 1).coerceIn(0, document.lineCount - 1)
-            val start = document.getLineStartOffset(lineIndex)
-            val end = document.getLineEndOffset(lineIndex)
+        if (file.virtualFile?.path != result.request.path || document.modificationStamp != result.request.stamp) return
+        if (!result.request.unsaved && FileDocumentManager.getInstance().isDocumentUnsaved(document)) return
+        val coverageWarning = result.report?.takeIf { it.moduleCoverage?.status != "complete" }?.coverageSummary()
+        val problems = listOfNotNull(result.problem, coverageWarning) + result.report?.diagnostics.orEmpty()
+        if (problems.isNotEmpty()) {
+            holder.newAnnotation(HighlightSeverity.WARNING, "[FlutterGuard] ${problems.first()}")
+                .range(TextRange(0, document.getLineEndOffset(0)))
+                .tooltip(escape(problems.joinToString("\n"))).create()
+        }
+        for (finding in result.report?.forFile(result.request.path).orEmpty()) {
+            // Project-level findings without a line have no reliable editor anchor.
+            if (finding.line !in 1..document.lineCount) continue
+            val index = finding.line - 1
             val severity = when (finding.severity) {
                 "high" -> HighlightSeverity.ERROR
                 "medium" -> HighlightSeverity.WARNING
                 else -> HighlightSeverity.WEAK_WARNING
             }
-            holder.newAnnotation(
-                severity,
-                "[${finding.ruleId}] ${finding.message}",
-            )
-                .range(TextRange(start, end))
-                .tooltip("${finding.title}\n\n${finding.suggestion}")
-                .create()
+            holder.newAnnotation(severity, "[${finding.ruleId}] ${finding.message}")
+                .range(TextRange(document.getLineStartOffset(index), document.getLineEndOffset(index)))
+                .tooltip(escape("${finding.title}\n\n${finding.suggestion}")).create()
         }
     }
 
-    private fun resolveBinary(): File? {
-        val platform = currentPlatform()
-        val resourcePath = "/bin/flutterguard-$platform"
-        val input = javaClass.getResourceAsStream(resourcePath) ?: return null
-        return try {
-            val suffix = if (platform.startsWith("windows-")) ".exe" else ""
-            val temporary = File.createTempFile("flutterguard-", suffix)
-            temporary.deleteOnExit()
-            input.use { source ->
-                temporary.outputStream().use(source::copyTo)
-            }
-            temporary.setExecutable(true)
-            temporary
-        } catch (error: Exception) {
-            logger.warn("Failed to extract native binary", error)
-            null
-        }
-    }
+    private fun escape(text: String): String = text.replace("&", "&amp;").replace("<", "&lt;")
+        .replace(">", "&gt;").replace("\n", "<br>")
+}
 
-    private fun currentPlatform(): String {
-        val os = System.getProperty("os.name").lowercase()
-        val arch = System.getProperty("os.arch").lowercase()
-        val osPart = when {
-            os.contains("mac") || os.contains("darwin") -> "darwin"
-            os.contains("win") -> "windows"
-            else -> "linux"
-        }
-        val archPart = when {
-            arch.contains("aarch64") || arch.contains("arm64") -> "arm64"
-            else -> "x64"
-        }
-        return "$osPart-$archPart"
+internal object FlutterGuardScanPolicy {
+    fun blockedReason(trusted: Boolean, unsaved: Boolean): String? = when {
+        !trusted -> "项目未受信任；未执行 CLI，检查尚未完成。请先在 IDEA 中核对并信任项目。"
+        unsaved -> "保存文件后扫描；当前编辑内容尚未验证。"
+        else -> null
     }
 }

@@ -29,5 +29,5 @@ printf '\n== Publishing to JetBrains Marketplace ==\n'
 cd "$PLUGIN_DIR"
 ./gradlew publishPlugin
 
-printf '\nDone. Plugin version %s published.\n' "$VERSION"
+printf '\nUpload completed for version %s; Marketplace verification and approval are still pending.\n' "$VERSION"
 printf 'Verify at https://plugins.jetbrains.com/\n'

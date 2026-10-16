@@ -25,21 +25,27 @@ class Device {
   }
 }
 ''');
+  File(
+    p.join(project.path, 'flutterguard.yaml'),
+  ).writeAsStringSync('rules:\n  iot_security:\n    enabled: true\n');
   return project;
 }
 
 void main() {
-  test('scanner uses built-in defaults and sorts findings', () {
-    final project = _project();
-    addTearDown(() => project.deleteSync(recursive: true));
-    final result = FlutterGuardScanner.scan(
-      projectPath: project.path,
-      writeStdout: false,
-    );
-    expect(result.files, hasLength(1));
-    expect(result.issues, isNotEmpty);
-    expect(result.issues.first.level, RiskLevel.high);
-  });
+  test(
+    'scanner honors explicitly enabled legacy checks and sorts findings',
+    () {
+      final project = _project();
+      addTearDown(() => project.deleteSync(recursive: true));
+      final result = FlutterGuardScanner.scan(
+        projectPath: project.path,
+        writeStdout: false,
+      );
+      expect(result.files, hasLength(1));
+      expect(result.issues, isNotEmpty);
+      expect(result.issues.first.level, RiskLevel.high);
+    },
+  );
 
   test('JSON report uses the compact 2.0 contract', () {
     final project = _project();

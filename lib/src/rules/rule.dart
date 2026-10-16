@@ -15,6 +15,7 @@ class RuleDefinition {
   final String name;
   final IssueDomain domain;
   final RiskLevel defaultSeverity;
+  final bool defaultEnabled;
   final String purpose;
   final String riskReason;
   final String badExample;
@@ -31,6 +32,7 @@ class RuleDefinition {
     required this.riskReason,
     required this.badExample,
     required this.fixSuggestion,
+    this.defaultEnabled = false,
     this.defaultOptions = const {},
     this.framework = 'generic',
   });
@@ -46,6 +48,7 @@ class RuleDefinition {
     'name': name,
     'domain': domain.name,
     'severity': defaultSeverity.name,
+    'defaultEnabled': defaultEnabled,
     'purpose': purpose,
     'riskReason': riskReason,
     'badExample': badExample,

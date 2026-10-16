@@ -8,11 +8,13 @@ class BoundaryDefinition {
   final String name;
   final String path;
   final List<String> allowedDeps;
+  final List<String>? entryPoints;
 
   const BoundaryDefinition({
     required this.name,
     required this.path,
     required this.allowedDeps,
+    this.entryPoints,
   });
 }
 
@@ -20,11 +22,13 @@ class BoundaryViolation {
   final ImportEdge edge;
   final BoundaryDefinition source;
   final BoundaryDefinition target;
+  final String reason;
 
   const BoundaryViolation({
     required this.edge,
     required this.source,
     required this.target,
+    this.reason = 'dependency',
   });
 }
 
@@ -36,17 +40,17 @@ class DependencyBoundaryEngine {
     required ImportGraph graph,
     required SourceWorkspace workspace,
     String? projectPath,
+    bool protectEntries = false,
   }) {
     final fileToBoundary = <String, BoundaryDefinition>{};
     for (final file in allFiles.map(normalizePath)) {
+      final owners = <BoundaryDefinition>[];
       for (final boundary in boundaries) {
         try {
-          final matches = projectPath == null
+          if (projectPath == null
               ? Glob(boundary.path.replaceAll('\\', '/')).matches(file)
-              : matchesProjectGlob(file, boundary.path, projectPath);
-          if (matches) {
-            fileToBoundary[file] = boundary;
-            break;
+              : matchesProjectGlob(file, boundary.path, projectPath)) {
+            owners.add(boundary);
           }
         } on Object catch (error) {
           workspace.addDiagnostic(
@@ -58,18 +62,66 @@ class DependencyBoundaryEngine {
           );
         }
       }
+      if (owners.length == 1) {
+        fileToBoundary[file] = owners.single;
+      } else if (owners.length > 1) {
+        workspace.addDiagnostic(
+          ScanDiagnostic(
+            stage: 'boundary_ownership',
+            file: file,
+            message:
+                'Ambiguous module ownership: ${owners.map((b) => b.name).join(', ')}',
+          ),
+        );
+      }
     }
 
     final violations = <BoundaryViolation>[];
     for (final file in sourceFiles.map(normalizePath)) {
       final source = fileToBoundary[file];
-      if (source == null) continue;
+      if (source == null) {
+        workspace.addDiagnostic(
+          ScanDiagnostic(
+            stage: 'boundary_scope',
+            file: file,
+            message:
+                'Source is outside declared boundaries; no boundary verdict.',
+          ),
+        );
+        continue;
+      }
       for (final edge in graph.outgoing(file)) {
         final target = fileToBoundary[edge.target];
-        if (target == null || target.name == source.name) continue;
+        if (target == null) {
+          workspace.addDiagnostic(
+            ScanDiagnostic(
+              stage: 'boundary_scope',
+              file: file,
+              message:
+                  'Target "${edge.uri}" is outside declared boundaries; no boundary verdict.',
+            ),
+          );
+          continue;
+        }
+        if (target.name == source.name) continue;
         if (!source.allowedDeps.contains(target.name)) {
           violations.add(
             BoundaryViolation(edge: edge, source: source, target: target),
+          );
+        } else if (protectEntries &&
+            target.entryPoints != null &&
+            !target.entryPoints!.any(
+              (pattern) => projectPath == null
+                  ? Glob(pattern).matches(edge.target)
+                  : matchesProjectGlob(edge.target, pattern, projectPath),
+            )) {
+          violations.add(
+            BoundaryViolation(
+              edge: edge,
+              source: source,
+              target: target,
+              reason: 'private_entry',
+            ),
           );
         }
       }

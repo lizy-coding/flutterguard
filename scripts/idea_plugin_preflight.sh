@@ -45,6 +45,11 @@ for target in "${NATIVE_TARGETS[@]}"; do
   fi
 done
 
+if (( ${#failures[@]} > 0 )); then
+  printf '\nPreflight aborted: native target set incomplete; existing plugin resources were not overwritten.\n' >&2
+  exit 1
+fi
+
 # ---- 3. Sync native binaries into plugin resources ----
 RESOURCES_DIR="$PLUGIN_DIR/src/main/resources/bin"
 mkdir -p "$RESOURCES_DIR"
@@ -93,8 +98,8 @@ run_gate 'plugin verifier' bash -c "cd '$PLUGIN_DIR' && ./gradlew verifyPlugin"
 run_gate 'buildPlugin' bash -c "cd '$PLUGIN_DIR' && ./gradlew buildPlugin"
 
 # ---- Report ----
-PLUGIN_ZIP=$(ls "$PLUGIN_DIR/build/distributions/"*.zip 2>/dev/null | head -1)
-if [[ -n "$PLUGIN_ZIP" ]]; then
+PLUGIN_ZIP="$PLUGIN_DIR/build/distributions/flutterguard-idea-${VERSION}.zip"
+if [[ -f "$PLUGIN_ZIP" ]]; then
   pass "plugin zip: $PLUGIN_ZIP"
 else
   fail 'plugin zip not produced'

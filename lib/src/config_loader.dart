@@ -5,8 +5,14 @@ import 'dart:io';
 import 'package:yaml/yaml.dart';
 
 import 'static_issue.dart';
+import 'path_utils.dart';
 
-typedef BoundaryConfig = ({String name, String path, List<String> allowedDeps});
+typedef BoundaryConfig = ({
+  String name,
+  String path,
+  List<String> allowedDeps,
+  List<String>? entryPoints,
+});
 
 typedef ArchitectureConfig = ({
   List<BoundaryConfig> layers,
@@ -62,10 +68,11 @@ class ScanConfig {
     String id, {
     required RiskLevel defaultSeverity,
     Map<String, Object?> defaultOptions = const {},
+    bool defaultEnabled = true,
   }) {
     final configured = _rules[id];
     return RuleConfig(
-      enabled: configured?.enabled ?? true,
+      enabled: configured?.enabled ?? defaultEnabled,
       severity: configured?.severity ?? defaultSeverity,
       options: {...defaultOptions, ...?configured?.options},
     );
@@ -78,7 +85,12 @@ class ScanConfig {
     'architecture',
   };
   static const _knownArchitectureKeys = {'layers', 'modules', 'detect_cycles'};
-  static const _knownBoundaryKeys = {'name', 'path', 'allowed_deps'};
+  static const _knownBoundaryKeys = {
+    'name',
+    'path',
+    'allowed_deps',
+    'entry_points',
+  };
 
   factory ScanConfig.fromFile(String path, {bool requireFile = false}) {
     final file = File(path);
@@ -182,7 +194,52 @@ class ScanConfig {
       name: _requiredString(value, 'name', path),
       path: _requiredString(value, 'path', path),
       allowedDeps: _stringList(value['allowed_deps']) ?? const [],
+      entryPoints: _stringList(value['entry_points']),
     );
+  }
+
+  void validateArchitecture(List<String> files, String projectPath) {
+    for (final boundaries in [architecture.layers, architecture.modules]) {
+      final names = boundaries.map((b) => b.name).toSet();
+      if (names.length != boundaries.length) {
+        throw const FormatException('Duplicate architecture boundary names.');
+      }
+      bool matches(String file, String pattern) {
+        try {
+          return matchesProjectGlob(file, pattern, projectPath);
+        } on Object catch (e) {
+          throw FormatException('Invalid boundary pattern "$pattern": $e');
+        }
+      }
+
+      for (final boundary in boundaries) {
+        final unknown = boundary.allowedDeps.where((n) => !names.contains(n));
+        if (unknown.isNotEmpty) {
+          throw FormatException(
+            'Boundary "${boundary.name}" references unknown dependencies: ${unknown.join(', ')}',
+          );
+        }
+        // Validate globs even if the source set is empty.
+        matches('$projectPath/lib/__pattern_check__.dart', boundary.path);
+        for (final entry in boundary.entryPoints ?? <String>[]) {
+          final targets = files.where((f) => matches(f, entry)).toList();
+          if (targets.isEmpty ||
+              targets.any((f) => !matches(f, boundary.path))) {
+            throw FormatException(
+              'Entry "$entry" must match selected files inside module "${boundary.name}".',
+            );
+          }
+        }
+      }
+      for (final file in files) {
+        final owners = boundaries.where((b) => matches(file, b.path)).toList();
+        if (owners.length > 1) {
+          throw FormatException(
+            'Ambiguous boundary ownership for "$file": ${owners.map((b) => b.name).join(', ')}',
+          );
+        }
+      }
+    }
   }
 
   static YamlMap _optionalMap(Object? value, String path) {
@@ -194,7 +251,10 @@ class ScanConfig {
   static List<String>? _stringList(Object? value) {
     if (value == null) return null;
     if (value is! YamlList) throw const FormatException('Expected a list.');
-    return value.map((item) => item.toString()).toList();
+    if (value.any((item) => item is! String || item.trim().isEmpty)) {
+      throw const FormatException('Expected a list of non-empty strings.');
+    }
+    return value.cast<String>().toList();
   }
 
   static bool _boolValue(YamlMap map, String key, bool fallback) {

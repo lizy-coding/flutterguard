@@ -7,65 +7,38 @@ String? resolveImport(
   String importStr,
   Set<String> fileSet, {
   String? projectPath,
+  String? packageName,
   p.Context? context,
 }) {
   context ??= p.context;
-  final source = normalizePath(sourceFile, context: context);
+  final uri = Uri.tryParse(importStr);
+  if (uri == null || uri.hasQuery || uri.hasFragment) return null;
   final normalizedFiles = {
     for (final file in fileSet) normalizePath(file, context: context),
   };
-
-  if (importStr.startsWith('package:')) {
-    final packageRelative = importStr.replaceFirst(
-      RegExp(r'^package:[^/]+/'),
-      '',
-    );
-    return _resolvePackageImport(
-      packageRelative,
-      normalizedFiles,
-      projectPath: projectPath,
-      context: context,
-    );
-  }
-
-  final sourceDir = context.dirname(source);
-  final resolved = context.normalize(context.join(sourceDir, importStr));
-  if (normalizedFiles.contains(resolved)) return resolved;
-  final withExt = resolved.endsWith('.dart') ? resolved : '$resolved.dart';
-  if (normalizedFiles.contains(withExt)) return withExt;
-  return null;
-}
-
-String? _resolvePackageImport(
-  String packageRelative,
-  Set<String> fileSet, {
-  String? projectPath,
-  required p.Context context,
-}) {
-  final relativeWithExt = packageRelative.endsWith('.dart')
-      ? packageRelative
-      : '$packageRelative.dart';
-  final normalizedRelative = context.normalize(relativeWithExt);
-
-  if (projectPath != null) {
+  String candidate;
+  if (uri.scheme == 'package') {
+    final segments = uri.pathSegments;
+    if (projectPath == null ||
+        packageName == null ||
+        segments.length < 2 ||
+        segments.first != packageName) {
+      return null;
+    }
     final projectContext = projectPathContext(projectPath, context: context);
-    final candidate = projectContext.normalize(
-      projectContext.join(projectContext.current, 'lib', normalizedRelative),
+    final lib = projectContext.join(projectContext.current, 'lib');
+    candidate = projectContext.normalize(
+      projectContext.joinAll([lib, ...segments.skip(1)]),
     );
-    if (fileSet.contains(candidate)) return candidate;
+    if (!projectContext.isWithin(lib, candidate)) return null;
+  } else {
+    if (uri.hasScheme || uri.hasAuthority) return null;
+    candidate = context.normalize(
+      context.join(
+        context.dirname(normalizePath(sourceFile, context: context)),
+        uri.path,
+      ),
+    );
   }
-
-  for (final file in fileSet) {
-    final libRelative = _relativeToLib(file, context);
-    if (libRelative == normalizedRelative) return file;
-  }
-
-  return null;
-}
-
-String? _relativeToLib(String file, p.Context context) {
-  final parts = context.split(context.normalize(file));
-  final libIndex = parts.lastIndexOf('lib');
-  if (libIndex == -1 || libIndex == parts.length - 1) return null;
-  return context.joinAll(parts.skip(libIndex + 1));
+  return normalizedFiles.contains(candidate) ? candidate : null;
 }

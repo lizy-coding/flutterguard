@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/source/line_info.dart';
+import 'package:path/path.dart' as p;
+import 'package:yaml/yaml.dart';
 
 import 'path_utils.dart';
 
@@ -56,6 +58,22 @@ class SourceUnit {
 class SourceWorkspace {
   final Map<String, SourceUnit?> _sources = {};
   final List<ScanDiagnostic> _diagnostics = [];
+  final Map<String, String?> _packageNames = {};
+
+  String? packageName(String projectPath) =>
+      _packageNames.putIfAbsent(normalizePath(projectPath), () {
+        final file = File(p.join(projectPath, 'pubspec.yaml'));
+        if (!file.existsSync()) return null;
+        try {
+          final yaml = loadYaml(file.readAsStringSync());
+          if (yaml is YamlMap && yaml['name'] is String) {
+            return yaml['name'] as String;
+          }
+        } on Object catch (error) {
+          _recordFailure(file.path, 'package_identity', error.toString());
+        }
+        return null;
+      });
 
   List<ScanDiagnostic> get diagnostics => List.unmodifiable(_diagnostics);
 

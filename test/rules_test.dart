@@ -167,8 +167,18 @@ void main() {
         projectPath: Directory.current.path,
       );
       final boundaries = <BoundaryConfig>[
-        (name: 'ui', path: '**/boundary_issue.dart', allowedDeps: const []),
-        (name: 'model', path: '**/forbidden_file.dart', allowedDeps: const []),
+        (
+          name: 'ui',
+          path: '**/boundary_issue.dart',
+          allowedDeps: const [],
+          entryPoints: null,
+        ),
+        (
+          name: 'model',
+          path: '**/forbidden_file.dart',
+          allowedDeps: const [],
+          entryPoints: null,
+        ),
       ];
       for (final kind in BoundaryKind.values) {
         final issues =

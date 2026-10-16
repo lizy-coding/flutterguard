@@ -4,11 +4,14 @@ import 'package:path/path.dart' as p;
 
 import 'rules/registry.dart';
 import 'static_issue.dart';
+import 'source_workspace.dart';
 
 class SarifReport {
   static String generate({
     required String projectPath,
     required List<StaticIssue> issues,
+    Map<String, Object?> coverage = const {},
+    List<ScanDiagnostic> diagnostics = const [],
   }) {
     final rules = RuleRegistry.all()..sort((a, b) => a.id.compareTo(b.id));
 
@@ -17,6 +20,10 @@ class SarifReport {
       'version': '2.1.0',
       'runs': [
         {
+          'properties': {
+            'coverage': coverage,
+            'diagnostics': diagnostics.map((d) => d.toJson()).toList(),
+          },
           'tool': {
             'driver': {
               'name': 'FlutterGuard',
