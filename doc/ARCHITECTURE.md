@@ -1,12 +1,12 @@
-# FlutterGuard Architecture
+# BoundaryLens Architecture
 
 ## Shape
 
-FlutterGuard is one publishable Dart package and one executable. The repository
+BoundaryLens is one publishable Dart package and one executable. The repository
 root is the package root.
 
 ```text
-bin/flutterguard.dart          parse and route four command families
+bin/boundarylens.dart          parse and route four command families
 lib/src/cli/                   command parsers and I/O adapters
 lib/src/scanner.dart           scan orchestration
 lib/src/config_loader.dart     YAML to compact generic rule settings
@@ -29,16 +29,17 @@ plugin loader, generated registry, or public Dart scanner API.
 
 ```text
 CLI
- └─ FlutterGuardScanner.scan
+ └─ BoundaryLensScanner.scan
      ├─ ProjectResolver
      ├─ ScanConfig.fromFile
      ├─ FileCollector
      ├─ ScanContext
      │   ├─ SourceWorkspace
      │   └─ changed/all/target file sets
-     ├─ RuleRegistry.analyze
-     │   ├─ one shared ImportGraph when needed
-     │   └─ explicit RuleRegistration executors
+     ├─ RuleRegistry.run → internal RuleRunner
+     │   ├─ declared inputs/scopes/activation and typed options
+     │   ├─ one shared ImportGraph only for active consumers
+     │   └─ RuleRegistration executors + per-rule execution coverage
      ├─ SuppressionFilter
      ├─ optional Baseline
      └─ table / JSON / SARIF report
@@ -70,12 +71,24 @@ contains:
 - one executor receiving `ScanContext`, effective `RuleConfig`, and an optional
   shared import graph.
 
-Configuration defaults and `flutterguard rules` output are derived from these
+Configuration defaults and `boundarylens rules` output are derived from these
 definitions. Do not add another catalog, metadata registry, reflection layer,
 or barrel export.
 
 All rules receive common `enabled` and `severity` settings. Special settings
 belong in `RuleDefinition.defaultOptions`; the current example is `requireTls`.
+
+RuleDefinition.optionTypes independently describes accepted scalar types; defaults
+remain only in defaultOptions. Registry initialization validates unique identities
+and consistent default/schema pairs. config check and scan use the same validation,
+before any source-dependent visitor executes, including for disabled rule options.
+
+The private RuleRunner uses declared inputs, scopes and activation requirements,
+skips disabled/unconfigured/unsupported checks centrally, and validates finding
+ownership. It returns normal findings plus execution coverage. Source evidence is
+still owned by SourceWorkspace; the runner creates no second cache or registry.
+Tests can pass ephemeral registrations to this private service to prove extension
+without adding product rules. This is not an external plugin or user-rule API.
 
 ## Detection ownership
 
@@ -83,7 +96,7 @@ belong in `RuleDefinition.defaultOptions`; the current example is `requireTls`.
 - `ble_scanning` owns scan timeout findings, not generic disconnect pairing.
 - `iot_security` owns credentials and insecure transport findings.
 - Dependency version and broker placement policy stay with ecosystem tools and
-  application configuration rather than FlutterGuard rules.
+  application configuration rather than BoundaryLens rules.
 - `BoundaryRule` owns both layer and module dependency policy.
 - Framework-specific state rules activate from source imports; there is no
   global framework or confidence switch.

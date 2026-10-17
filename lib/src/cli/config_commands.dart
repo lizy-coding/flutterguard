@@ -14,8 +14,8 @@ class ConfigCommands {
         withArchitecture: args['with-architecture'] as bool,
         force: args['force'] as bool,
       );
-      stdout.writeln('Created FlutterGuard config: $outputPath');
-      stdout.writeln('Next: flutterguard config check $projectPath');
+      stdout.writeln('Created BoundaryLens config: $outputPath');
+      stdout.writeln('Next: boundarylens config check $projectPath');
     } on StateError catch (error) {
       _fail(error.message);
     }

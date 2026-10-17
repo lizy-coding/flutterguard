@@ -1,1 +1,1 @@
-rootProject.name = "flutterguard-idea"
+rootProject.name = "boundarylens-idea"

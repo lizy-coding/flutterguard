@@ -1,21 +1,19 @@
-# FlutterGuard end-user license notice
+# BoundaryLens end-user license notice
 
-Prepared 2026-10-10. Release draft: the publisher supplied the public name forest.li; confirm its match to the
-individual or legal entity in the Marketplace Vendor profile before submission.
+BoundaryLens 0.7.1. Updated 2026-10-17. Public publisher: forest.li.
 
 ## Parties and applicable license
 
-FlutterGuard is licensed by its copyright holders, identified in the copyright
-notice below. The product is FlutterGuard; the publisher supplied public name is forest.li; contact:
-zhenyu_li1998@163.com. The final Marketplace entry must identify the actual
-individual or legal entity acting as publisher/licensor.
+BoundaryLens is licensed by its copyright holders, identified in the copyright
+notice below. The product is BoundaryLens; the publisher supplied public name is forest.li; contact:
+zhenyu_li1998@163.com.
 
-JetBrains is not the licensor of FlutterGuard and is not a party to the license
-between the FlutterGuard licensor and the end user. JetBrains does not provide
-FlutterGuard support or warranties. Mandatory rights under applicable law are
+JetBrains is not the licensor of BoundaryLens and is not a party to the license
+between the BoundaryLens licensor and the end user. JetBrains does not provide
+BoundaryLens support or warranties. Mandatory rights under applicable law are
 unaffected by this notice.
 
-The MIT License below grants the rights to the FlutterGuard-owned software and
+The MIT License below grants the rights to the BoundaryLens-owned software and
 documentation. This explanatory notice adds no restriction to those rights.
 Third-party components remain subject to their respective licenses; see
 third-party-notices.txt. This notice does not replace those licenses or the
@@ -23,7 +21,7 @@ separate agreements governing IntelliJ IDEA and JetBrains Marketplace.
 
 ## Product scope and support
 
-FlutterGuard provides static-analysis findings for review. A clean result does
+BoundaryLens provides static-analysis findings for review. A clean result does
 not establish correctness, security, resource ownership, or release acceptance.
 Some rules use syntactic heuristics and may miss issues or report false positives.
 The plugin invokes a bundled local CLI; its data handling is described in

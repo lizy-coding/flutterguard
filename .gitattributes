@@ -1,2 +1,5 @@
 # Preserve verbatim upstream license notices, including trailing spaces.
 idea-plugin/docs/third-party-notices.txt whitespace=-blank-at-eol
+
+# Retain exact upstream license bytes, including their final blank lines.
+idea-plugin/docs/native-licenses/*.txt whitespace=-blank-at-eof

@@ -1,5 +1,5 @@
 name: scan_demo
-description: Target project for flutterguard scan demonstration.
+description: Target project for boundarylens scan demonstration.
 publish_to: none
 
 environment:

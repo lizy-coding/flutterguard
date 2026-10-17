@@ -1,20 +1,20 @@
 import 'dart:io';
 
-import 'package:flutterguard_cli/src/config_loader.dart';
-import 'package:flutterguard_cli/src/import_graph.dart';
-import 'package:flutterguard_cli/src/rules/ble_scanning.dart';
-import 'package:flutterguard_cli/src/rules/bloc_state_management.dart';
-import 'package:flutterguard_cli/src/rules/boundary_rule.dart';
-import 'package:flutterguard_cli/src/rules/circular_dependency.dart';
-import 'package:flutterguard_cli/src/rules/generic_state_management.dart';
-import 'package:flutterguard_cli/src/rules/iot_security.dart';
-import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
-import 'package:flutterguard_cli/src/rules/provider_state_management.dart';
-import 'package:flutterguard_cli/src/rules/riverpod_state_management.dart';
-import 'package:flutterguard_cli/src/rules/state_dependency_cycle.dart';
-import 'package:flutterguard_cli/src/source_workspace.dart';
-import 'package:flutterguard_cli/src/static_issue.dart';
-import 'package:flutterguard_cli/src/suppression.dart';
+import 'package:boundarylens_cli/src/config_loader.dart';
+import 'package:boundarylens_cli/src/import_graph.dart';
+import 'package:boundarylens_cli/src/rules/ble_scanning.dart';
+import 'package:boundarylens_cli/src/rules/bloc_state_management.dart';
+import 'package:boundarylens_cli/src/rules/boundary_rule.dart';
+import 'package:boundarylens_cli/src/rules/circular_dependency.dart';
+import 'package:boundarylens_cli/src/rules/generic_state_management.dart';
+import 'package:boundarylens_cli/src/rules/iot_security.dart';
+import 'package:boundarylens_cli/src/rules/lifecycle_resource.dart';
+import 'package:boundarylens_cli/src/rules/provider_state_management.dart';
+import 'package:boundarylens_cli/src/rules/riverpod_state_management.dart';
+import 'package:boundarylens_cli/src/rules/state_dependency_cycle.dart';
+import 'package:boundarylens_cli/src/source_workspace.dart';
+import 'package:boundarylens_cli/src/static_issue.dart';
+import 'package:boundarylens_cli/src/suppression.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

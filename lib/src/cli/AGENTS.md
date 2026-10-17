@@ -9,7 +9,7 @@ baseline matching, and report generation.
 | file | role |
 |---|---|
 | `cli_parsers.dart` | `ArgParser` definitions for all command families |
-| `scan_command.dart` | scan arguments to `FlutterGuardScanner`, stdout/stderr and severity gate |
+| `scan_command.dart` | scan arguments to `BoundaryLensScanner`, stdout/stderr and severity gate |
 | `baseline_commands.dart` | baseline create argument routing |
 | `config_commands.dart` | config init and check routing |
 | `rule_commands.dart` | rules list and detail I/O |

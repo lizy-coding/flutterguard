@@ -1,4 +1,4 @@
-package com.flutterguard
+package com.boundarylens
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -8,16 +8,16 @@ import javax.swing.SwingUtilities
 import javax.swing.text.html.HTML
 import javax.swing.text.html.HTMLDocument
 
-class FlutterGuardDocumentationTest {
+class BoundaryLensDocumentationTest {
     @Test fun `guide renders HTML and resolves images against bundled page URL`() {
         SwingUtilities.invokeAndWait {
-            val editor = FlutterGuardDocumentation.editor("guide")
+            val editor = BoundaryLensDocumentation.editor("guide")
             assertTrue(editor.scrollableTracksViewportWidth)
             assertEquals("text/html", editor.contentType)
             val document = editor.document as HTMLDocument
-            assertEquals(FlutterGuardDocumentation.page("guide"), document.base)
+            assertEquals(BoundaryLensDocumentation.page("guide"), document.base)
             val visibleText = document.getText(0, document.length)
-            assertTrue(visibleText.contains("FlutterGuard 使用指南"))
+            assertTrue(visibleText.contains("BoundaryLens 使用指南"))
             assertFalse(visibleText.contains("<h1>"))
             val images = document.getIterator(HTML.Tag.IMG)
             var count = 0
@@ -26,7 +26,7 @@ class FlutterGuardDocumentationTest {
         }
     }
     @Test fun `offline guide resolves all five actual screenshots`() {
-        val page = FlutterGuardDocumentation.page("guide")
+        val page = BoundaryLensDocumentation.page("guide")
         val html = page.readText()
         val images = Regex("src=\"([^\"]+)\"").findAll(html).map { it.groupValues[1] }.toList()
         assertEquals(5, images.size)
@@ -40,7 +40,7 @@ class FlutterGuardDocumentationTest {
     }
 
     @Test fun `versioned changes include additions fixes and validation boundaries`() {
-        val html = FlutterGuardDocumentation.page("changelog").readText()
+        val html = BoundaryLensDocumentation.page("changelog").readText()
         for (text in listOf("0.7.1", "2026-10-10", "新增", "修复", "调整", "未发布", "验证范围")) {
             assertTrue(text, html.contains(text))
         }

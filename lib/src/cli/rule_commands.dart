@@ -30,7 +30,7 @@ class RuleCommands {
       );
     }
     stdout.writeln();
-    stdout.writeln('Run flutterguard rules <rule-id> for details.');
+    stdout.writeln('Run boundarylens rules <rule-id> for details.');
   }
 
   static void _describe(String id, {required bool json}) {

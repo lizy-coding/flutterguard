@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutterguard_cli/src/baseline.dart';
-import 'package:flutterguard_cli/src/report_generator.dart';
-import 'package:flutterguard_cli/src/sarif_report.dart';
-import 'package:flutterguard_cli/src/scanner.dart';
-import 'package:flutterguard_cli/src/static_issue.dart';
+import 'package:boundarylens_cli/src/baseline.dart';
+import 'package:boundarylens_cli/src/report_generator.dart';
+import 'package:boundarylens_cli/src/sarif_report.dart';
+import 'package:boundarylens_cli/src/scanner.dart';
+import 'package:boundarylens_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -26,7 +26,7 @@ class Device {
 }
 ''');
   File(
-    p.join(project.path, 'flutterguard.yaml'),
+    p.join(project.path, 'boundarylens.yaml'),
   ).writeAsStringSync('rules:\n  iot_security:\n    enabled: true\n');
   return project;
 }
@@ -37,7 +37,7 @@ void main() {
     () {
       final project = _project();
       addTearDown(() => project.deleteSync(recursive: true));
-      final result = FlutterGuardScanner.scan(
+      final result = BoundaryLensScanner.scan(
         projectPath: project.path,
         writeStdout: false,
       );
@@ -50,7 +50,7 @@ void main() {
   test('JSON report uses the compact 2.0 contract', () {
     final project = _project();
     addTearDown(() => project.deleteSync(recursive: true));
-    final result = FlutterGuardScanner.scan(
+    final result = BoundaryLensScanner.scan(
       projectPath: project.path,
       writeJson: true,
       writeStdout: false,

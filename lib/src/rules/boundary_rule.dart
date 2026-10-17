@@ -62,7 +62,9 @@ class BoundaryRule {
               '源$label: ${violation.source.name} (${violation.source.path})\n'
               '目标$label: ${violation.target.name} (${violation.target.path})',
           suggestion: violation.reason == 'private_entry'
-              ? '通过目标模块公开入口访问: ${violation.target.entryPoints!.join(', ')}'
+              ? (violation.target.entryPoints!.isEmpty
+                    ? '目标模块未开放公开入口；移除跨模块引用或由模块维护者声明入口'
+                    : '通过目标模块公开入口访问: ${violation.target.entryPoints!.join(', ')}')
               : '调整依赖方向，或通过允许的边界抽象解耦',
           metadata: {
             'kind': kind.name,
@@ -86,6 +88,8 @@ class BoundaryRule {
       domain: IssueDomain.architecture,
       defaultSeverity: RiskLevel.high,
       defaultEnabled: true,
+      inputs: const {RuleInput.importGraph},
+      activation: layer ? RuleActivation.layers : RuleActivation.modules,
       purpose: layer ? '检测架构层之间的非法依赖' : '检测模块依赖方向与绕过已声明公开入口的访问',
       riskReason: '非法边界依赖会破坏隔离并扩大变更影响范围',
       badExample: layer ? 'presentation 直接导入 data 实现' : 'mqtt 直接导入 ble 实现',

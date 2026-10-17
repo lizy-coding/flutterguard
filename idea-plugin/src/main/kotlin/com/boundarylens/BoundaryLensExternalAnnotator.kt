@@ -1,4 +1,4 @@
-package com.flutterguard
+package com.boundarylens
 
 import com.intellij.ide.trustedProjects.TrustedProjects
 import com.intellij.execution.configurations.GeneralCommandLine
@@ -13,16 +13,16 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 
-class FlutterGuardExternalAnnotator :
-    ExternalAnnotator<FlutterGuardExternalAnnotator.Request, FlutterGuardExternalAnnotator.Result>() {
+class BoundaryLensExternalAnnotator :
+    ExternalAnnotator<BoundaryLensExternalAnnotator.Request, BoundaryLensExternalAnnotator.Result>() {
 
     data class Request(val path: String, val workDir: String, val stamp: Long, val unsaved: Boolean, val target: String = path, val trusted: Boolean = false)
     class Result internal constructor(val request: Request, internal val report: ScanReport? = null, val problem: String? = null)
 
-    private val logger = Logger.getInstance(FlutterGuardExternalAnnotator::class.java)
+    private val logger = Logger.getInstance(BoundaryLensExternalAnnotator::class.java)
 
     override fun collectInformation(file: PsiFile): Request? {
-        if (!FlutterGuardSettings.getInstance(file.project).enabled) return null
+        if (!BoundaryLensSettings.getInstance(file.project).enabled) return null
         val virtualFile = file.virtualFile ?: return null
         if (virtualFile.fileSystem.protocol != "file" || virtualFile.extension != "dart") return null
         val document = file.viewProvider.document ?: return null
@@ -31,12 +31,12 @@ class FlutterGuardExternalAnnotator :
     }
 
     override fun doAnnotate(request: Request): Result {
-        FlutterGuardScanPolicy.blockedReason(request.trusted, request.unsaved)?.let {
+        BoundaryLensScanPolicy.blockedReason(request.trusted, request.unsaved)?.let {
             return Result(request, problem = it)
         }
         return try {
             ProgressManager.checkCanceled()
-            val command = GeneralCommandLine(FlutterGuardNativeCli.resolve().absolutePath,
+            val command = GeneralCommandLine(BoundaryLensNativeCli.resolve().absolutePath,
                 "scan", request.target, "--format", "json", "--stdout", "--no-color", "--fail-on", "none")
                 .withWorkDirectory(request.workDir).withCharset(Charsets.UTF_8)
             val handler = CapturingProcessHandler(command)
@@ -47,24 +47,24 @@ class FlutterGuardExternalAnnotator :
             if (output.isTimeout) return Result(request, problem = "扫描超时（30 秒）；当前文件尚未验证。")
             if (output.exitCode !in 0..1) return Result(request,
                 problem = "扫描失败（exit ${output.exitCode}）：${output.stderr.trim().take(300)}")
-            Result(request, report = FlutterGuardProtocol.parse(output.stdout))
+            Result(request, report = BoundaryLensProtocol.parse(output.stdout))
         } catch (cancelled: ProcessCanceledException) {
             throw cancelled
         } catch (error: Exception) {
-            logger.warn("FlutterGuard scan failed", error)
+            logger.warn("BoundaryLens scan failed", error)
             Result(request, problem = "扫描失败：${error.message.orEmpty().take(300)}")
         }
     }
 
     override fun apply(file: PsiFile, result: Result, holder: AnnotationHolder) {
-        if (!FlutterGuardSettings.getInstance(file.project).enabled) return
+        if (!BoundaryLensSettings.getInstance(file.project).enabled) return
         val document = file.viewProvider.document ?: return
         if (file.virtualFile?.path != result.request.path || document.modificationStamp != result.request.stamp) return
         if (!result.request.unsaved && FileDocumentManager.getInstance().isDocumentUnsaved(document)) return
         val coverageWarning = result.report?.takeIf { it.moduleCoverage?.status != "complete" }?.coverageSummary()
         val problems = listOfNotNull(result.problem, coverageWarning) + result.report?.diagnostics.orEmpty()
         if (problems.isNotEmpty()) {
-            holder.newAnnotation(HighlightSeverity.WARNING, "[FlutterGuard] ${problems.first()}")
+            holder.newAnnotation(HighlightSeverity.WARNING, "[BoundaryLens] ${problems.first()}")
                 .range(TextRange(0, document.getLineEndOffset(0)))
                 .tooltip(escape(problems.joinToString("\n"))).create()
         }
@@ -87,7 +87,7 @@ class FlutterGuardExternalAnnotator :
         .replace(">", "&gt;").replace("\n", "<br>")
 }
 
-internal object FlutterGuardScanPolicy {
+internal object BoundaryLensScanPolicy {
     fun blockedReason(trusted: Boolean, unsaved: Boolean): String? = when {
         !trusted -> "项目未受信任；未执行 CLI，检查尚未完成。请先在 IDEA 中核对并信任项目。"
         unsaved -> "保存文件后扫描；当前编辑内容尚未验证。"

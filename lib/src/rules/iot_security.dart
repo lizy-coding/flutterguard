@@ -53,6 +53,7 @@ class IotSecurityRule {
     badExample: 'password: "123456"；tcp://broker:1883；BLE 使用 withoutBonding',
     fixSuggestion: '使用环境变量或安全存储管理凭据；使用 TLS 加密通信',
     defaultOptions: {'requireTls': true},
+    optionTypes: {'requireTls': RuleOptionType.boolean},
   );
 }
 

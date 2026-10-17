@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:flutterguard_cli/src/config_loader.dart';
-import 'package:flutterguard_cli/src/rules/lifecycle_resource.dart';
-import 'package:flutterguard_cli/src/static_issue.dart';
+import 'package:boundarylens_cli/src/config_loader.dart';
+import 'package:boundarylens_cli/src/rules/lifecycle_resource.dart';
+import 'package:boundarylens_cli/src/static_issue.dart';
 import 'package:test/test.dart';
 
 void main() {

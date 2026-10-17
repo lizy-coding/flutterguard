@@ -1,6 +1,7 @@
 import 'package:path/path.dart' as p;
 
 import '../import_graph.dart';
+import '../scan_context.dart';
 import 'rule.dart';
 import '../source_workspace.dart';
 import '../static_issue.dart';
@@ -116,6 +117,9 @@ class CircularDependencyRule {
 
   static RuleDefinition describe() => const RuleDefinition(
     defaultEnabled: true,
+    inputs: {RuleInput.importGraph},
+    scopes: {RuleScope.project},
+    activation: RuleActivation.cycles,
     id: 'circular_dependency',
     name: '循环依赖',
     domain: IssueDomain.architecture,

@@ -1,4 +1,4 @@
-name: FlutterGuard
+name: BoundaryLens
 
 on:
   push:
@@ -31,12 +31,12 @@ jobs:
         run: dart test
 
       - name: Scan demo with current checkout
-        run: dart run bin/flutterguard.dart scan example --format json --output .flutterguard/ci --fail-on high --no-color
+        run: dart run bin/boundarylens.dart scan example --format json --output .boundarylens/ci --fail-on high --no-color
 
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: flutterguard-report-${{ matrix.os }}
-          path: example/.flutterguard/ci/report.json
+          name: boundarylens-report-${{ matrix.os }}
+          path: example/.boundarylens/ci/report.json
           if-no-files-found: error

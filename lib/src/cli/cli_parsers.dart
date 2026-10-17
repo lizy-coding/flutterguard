@@ -19,7 +19,7 @@ class CliParsers {
         defaultsTo: 'table',
         allowed: ['table', 'json', 'sarif'],
       )
-      ..addOption('output', abbr: 'o', defaultsTo: '.flutterguard')
+      ..addOption('output', abbr: 'o', defaultsTo: '.boundarylens')
       ..addFlag(
         'stdout',
         help:
@@ -44,7 +44,7 @@ class CliParsers {
       ..addOption(
         'output',
         abbr: 'o',
-        defaultsTo: '.flutterguard/baseline.json',
+        defaultsTo: '.boundarylens/baseline.json',
       )
       ..addFlag('help', abbr: 'h', negatable: false);
     baseline = ArgParser()
@@ -52,7 +52,7 @@ class CliParsers {
       ..addFlag('help', abbr: 'h', negatable: false);
 
     configInit = ArgParser()
-      ..addOption('config', abbr: 'c', defaultsTo: 'flutterguard.yaml')
+      ..addOption('config', abbr: 'c', defaultsTo: 'boundarylens.yaml')
       ..addFlag('with-architecture', negatable: false)
       ..addFlag('force', negatable: false)
       ..addFlag('help', abbr: 'h', negatable: false);

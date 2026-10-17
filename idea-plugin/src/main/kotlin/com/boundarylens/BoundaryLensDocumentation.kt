@@ -1,4 +1,4 @@
-package com.flutterguard
+package com.boundarylens
 
 import com.intellij.ui.components.JBScrollPane
 import java.awt.Dimension
@@ -8,11 +8,11 @@ import javax.swing.JEditorPane
 import javax.swing.text.html.HTMLDocument
 import javax.swing.text.html.HTMLEditorKit
 
-internal object FlutterGuardDocumentation {
+internal object BoundaryLensDocumentation {
     fun page(name: String): URL {
         require(name in setOf("guide", "changelog"))
         return requireNotNull(javaClass.getResource("/documentation/$name.html")) {
-            "Bundled FlutterGuard documentation missing: $name"
+            "Bundled BoundaryLens documentation missing: $name"
         }
     }
 
@@ -31,6 +31,9 @@ internal object FlutterGuardDocumentation {
     }
 
     fun view(name: String): JComponent {
-        return JBScrollPane(editor(name)).apply { preferredSize = Dimension(940, 620) }
+        return JBScrollPane(editor(name)).apply {
+            preferredSize = Dimension(640, 500)
+            minimumSize = Dimension(0, 0)
+        }
     }
 }

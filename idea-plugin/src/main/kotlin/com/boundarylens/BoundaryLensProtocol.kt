@@ -1,4 +1,4 @@
-package com.flutterguard
+package com.boundarylens
 
 import com.google.gson.JsonParser
 import java.nio.file.Path
@@ -16,11 +16,13 @@ internal data class Finding(
 )
 
 internal data class ModuleCoverage(val status: String, val scope: String, val checkedFiles: Int, val totalFiles: Int)
+internal data class RuleCoverage(val status: String, val scope: String, val reasons: List<String>, val checkedFiles: Int)
 internal data class ScanReport(
     val findings: List<Finding>, val diagnostics: List<String>,
     val projectPath: String, val moduleCoverage: ModuleCoverage? = null,
+    val ruleCoverage: Map<String, RuleCoverage> = emptyMap(),
 ) {
-    fun forFile(target: String) = findings.filter { FlutterGuardProtocol.sameFile(it.file, target) }
+    fun forFile(target: String) = findings.filter { BoundaryLensProtocol.sameFile(it.file, target) }
     fun coverageSummary(): String = moduleCoverage?.let {
         val status = when (it.status) {
             "not_configured" -> "未配置模块约束"
@@ -31,9 +33,12 @@ internal data class ScanReport(
         "$status；scope=${it.scope}，${it.checkedFiles}/${it.totalFiles} 文件（仅本次范围，不代表全项目通过）"
     } ?: "CLI 未提供模块覆盖信息，无法判断模块检查是否完成"
     fun text(): String = buildString {
-        appendLine("FlutterGuard — $projectPath")
+        appendLine("BoundaryLens — $projectPath")
         appendLine(coverageSummary())
         appendLine("${findings.size} findings；${diagnostics.size} diagnostics。无发现不等于整体架构通过。")
+        for ((id, check) in ruleCoverage) {
+            if (check.status != "disabled") appendLine("CHECK: $id ${check.status}; scope=${check.scope}; reasons=${check.reasons.joinToString()}")
+        }
         for (diagnostic in diagnostics) appendLine("DIAGNOSTIC: $diagnostic")
         for (finding in findings) {
             appendLine("${finding.file}:${finding.line} [${finding.severity}] ${finding.ruleId}: ${finding.message}")
@@ -44,7 +49,7 @@ internal data class ScanReport(
     }
 }
 
-internal object FlutterGuardProtocol {
+internal object BoundaryLensProtocol {
     fun parse(output: String): ScanReport {
         val root = JsonParser.parseString(output).asJsonObject
         require(root.get("schemaVersion")?.asString == "2.0.0") { "Unsupported report schema" }
@@ -78,7 +83,16 @@ internal object FlutterGuardProtocol {
                 scope in setOf("project", "file", "changed") && checked >= 0 && total >= checked) { "Invalid coverage" }
             ModuleCoverage(status, scope, checked, total)
         }
-        return ScanReport(findings, diagnostics, projectPath, coverage)
+        val ruleCoverage = root.getAsJsonObject("coverage")?.getAsJsonObject("rules")?.entrySet()?.associate { entry ->
+            val check = entry.value.asJsonObject
+            val status = check.get("status")?.asString ?: error("Missing rule status")
+            val scope = check.get("scope")?.asString ?: error("Missing rule scope")
+            val checked = check.get("checkedFiles")?.asInt ?: error("Missing rule count")
+            require(entry.key.isNotBlank() && status in setOf("disabled", "not_configured", "unsupported_scope", "not_applicable", "complete", "partial") &&
+                scope in setOf("project", "file", "changed") && checked >= 0) { "Invalid rule coverage" }
+            entry.key to RuleCoverage(status, scope, check.getAsJsonArray("reasons")?.map { it.asString }.orEmpty(), checked)
+        }.orEmpty()
+        return ScanReport(findings, diagnostics, projectPath, coverage, ruleCoverage)
     }
 
     fun sameFile(first: String, second: String) = canonical(Path.of(first)) == canonical(Path.of(second))

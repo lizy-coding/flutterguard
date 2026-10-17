@@ -1,10 +1,10 @@
-package com.flutterguard
+package com.boundarylens
 
 import java.io.File
 import java.io.IOException
 import java.util.Locale
 
-internal object FlutterGuardNativeCli {
+internal object BoundaryLensNativeCli {
     private var cached: File? = null
 
     fun resourceName(osName: String, architecture: String): String {
@@ -22,7 +22,7 @@ internal object FlutterGuardNativeCli {
             else -> error("Unsupported architecture: $architecture")
         }
         require(osPart == "darwin" || archPart == "x64") { "No bundled CLI for $osPart-$archPart" }
-        return "flutterguard-$osPart-$archPart" + if (osPart == "windows") ".exe" else ""
+        return "boundarylens-$osPart-$archPart" + if (osPart == "windows") ".exe" else ""
     }
 
     @Synchronized
@@ -30,7 +30,7 @@ internal object FlutterGuardNativeCli {
         cached?.takeIf { it.isFile && it.canExecute() }?.let { return it }
         val name = resourceName(System.getProperty("os.name"), System.getProperty("os.arch"))
         val input = javaClass.getResourceAsStream("/bin/$name") ?: error("Bundled CLI missing: $name")
-        val temporary = File.createTempFile("flutterguard-", if (name.endsWith(".exe")) ".exe" else "")
+        val temporary = File.createTempFile("boundarylens-", if (name.endsWith(".exe")) ".exe" else "")
         try {
             input.use { source -> temporary.outputStream().use(source::copyTo) }
             if (!temporary.setExecutable(true) && !temporary.canExecute()) throw IOException("CLI is not executable")

@@ -23,7 +23,7 @@ void main() {
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -31,21 +31,21 @@ void main() {
     ], workingDirectory: Directory.current.path);
 
     expect(result.exitCode, 0);
-    expect((result.stdout as String).trim(), 'flutterguard $version');
+    expect((result.stdout as String).trim(), 'boundarylens $version');
   });
 
   test(
     'scan exits with setup error when the project matches no Dart files',
     () {
       final project = Directory.systemTemp.createTempSync(
-        'flutterguard_cli_empty_project_',
+        'boundarylens_cli_empty_project_',
       );
       addTearDown(() => project.deleteSync(recursive: true));
 
       final entrypoint = p.join(
         Directory.current.path,
         'bin',
-        'flutterguard.dart',
+        'boundarylens.dart',
       );
       final result = Process.runSync(Platform.resolvedExecutable, [
         entrypoint,
@@ -54,7 +54,7 @@ void main() {
         '--format',
         'json',
         '--output',
-        '.flutterguard/test',
+        '.boundarylens/test',
         '--no-color',
       ], workingDirectory: Directory.current.path);
 
@@ -62,7 +62,7 @@ void main() {
       expect(result.stderr, contains('No Dart files matched'));
       expect(
         File(
-          p.join(project.path, '.flutterguard', 'test', 'report.json'),
+          p.join(project.path, '.boundarylens', 'test', 'report.json'),
         ).existsSync(),
         isFalse,
       );
@@ -73,7 +73,7 @@ void main() {
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -90,13 +90,13 @@ void main() {
 
   test('--stdout with --format json writes valid JSON to stdout', () {
     final output = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_stdout_output_',
+      'boundarylens_cli_stdout_output_',
     );
     addTearDown(() => output.deleteSync(recursive: true));
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -119,7 +119,7 @@ void main() {
 
   test('single .dart file path scans only that file', () {
     final project = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_single_file_',
+      'boundarylens_cli_single_file_',
     );
     addTearDown(() => project.deleteSync(recursive: true));
     Directory(p.join(project.path, 'lib')).createSync();
@@ -129,7 +129,7 @@ environment:
   sdk: ^3.11.0
 ''');
     File(
-      p.join(project.path, 'flutterguard.yaml'),
+      p.join(project.path, 'boundarylens.yaml'),
     ).writeAsStringSync('rules:\n  iot_security:\n    enabled: true\n');
     final selectedFile = File(p.join(project.path, 'lib', 'selected.dart'))
       ..writeAsStringSync('''
@@ -146,7 +146,7 @@ void connect() {
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -171,7 +171,7 @@ void connect() {
 
   test('single .dart file without parent pubspec exits with error', () {
     final directory = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_orphan_file_',
+      'boundarylens_cli_orphan_file_',
     );
     addTearDown(() => directory.deleteSync(recursive: true));
     final file = File(p.join(directory.path, 'orphan.dart'))
@@ -179,7 +179,7 @@ void connect() {
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -198,7 +198,7 @@ void connect() {
 
   test('JSON issue includes fileRelative field', () {
     final project = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_relative_file_',
+      'boundarylens_cli_relative_file_',
     );
     addTearDown(() => project.deleteSync(recursive: true));
     Directory(p.join(project.path, 'lib')).createSync();
@@ -208,7 +208,7 @@ environment:
   sdk: ^3.11.0
 ''');
     File(
-      p.join(project.path, 'flutterguard.yaml'),
+      p.join(project.path, 'boundarylens.yaml'),
     ).writeAsStringSync('rules:\n  iot_security:\n    enabled: true\n');
     File(p.join(project.path, 'lib', 'device.dart')).writeAsStringSync('''
 void connect() {
@@ -219,7 +219,7 @@ void connect() {
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -240,7 +240,7 @@ void connect() {
 
   test('changed-only clean scan succeeds and writes an empty JSON report', () {
     final project = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_clean_project_',
+      'boundarylens_cli_clean_project_',
     );
     addTearDown(() => project.deleteSync(recursive: true));
     Directory(p.join(project.path, 'lib')).createSync();
@@ -249,14 +249,14 @@ void connect() {
     ).writeAsStringSync('class Clean {}\n');
     _runGit(project, ['init', '-b', 'main']);
     _runGit(project, ['config', 'user.email', 'test@example.com']);
-    _runGit(project, ['config', 'user.name', 'FlutterGuard Test']);
+    _runGit(project, ['config', 'user.name', 'BoundaryLens Test']);
     _runGit(project, ['add', '.']);
     _runGit(project, ['commit', '-m', 'initial']);
 
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -268,14 +268,14 @@ void connect() {
       '--format',
       'json',
       '--output',
-      '.flutterguard/test',
+      '.boundarylens/test',
       '--no-color',
     ], workingDirectory: Directory.current.path);
 
     expect(result.exitCode, 0);
     expect(result.stdout, contains('No changed Dart files matched'));
     final report = File(
-      p.join(project.path, '.flutterguard', 'test', 'report.json'),
+      p.join(project.path, '.boundarylens', 'test', 'report.json'),
     );
     expect(report.existsSync(), isTrue);
     final payload =
@@ -286,7 +286,7 @@ void connect() {
 
   test('explicitly selected default config must exist', () {
     final project = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_required_config_',
+      'boundarylens_cli_required_config_',
     );
     addTearDown(() => project.deleteSync(recursive: true));
     Directory(p.join(project.path, 'lib')).createSync();
@@ -297,14 +297,14 @@ void connect() {
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
       'scan',
       project.path,
       '--config',
-      'flutterguard.yaml',
+      'boundarylens.yaml',
       '--no-color',
     ], workingDirectory: Directory.current.path);
 
@@ -315,7 +315,7 @@ void connect() {
 
   test('target project config is not shadowed by the working directory', () {
     final sandbox = Directory.systemTemp.createTempSync(
-      'flutterguard_cli_config_scope_',
+      'boundarylens_cli_config_scope_',
     );
     addTearDown(() => sandbox.deleteSync(recursive: true));
     final workingProject = Directory(p.join(sandbox.path, 'working'))
@@ -326,11 +326,11 @@ void connect() {
     File(
       p.join(targetProject.path, 'lib', 'target.dart'),
     ).writeAsStringSync('class Target {}\n');
-    File(p.join(workingProject.path, 'flutterguard.yaml')).writeAsStringSync('''
+    File(p.join(workingProject.path, 'boundarylens.yaml')).writeAsStringSync('''
 include:
   - cwd_only/**
 ''');
-    File(p.join(targetProject.path, 'flutterguard.yaml')).writeAsStringSync('''
+    File(p.join(targetProject.path, 'boundarylens.yaml')).writeAsStringSync('''
 include:
   - lib/**
 ''');
@@ -338,7 +338,7 @@ include:
     final entrypoint = p.join(
       Directory.current.path,
       'bin',
-      'flutterguard.dart',
+      'boundarylens.dart',
     );
     final result = Process.runSync(Platform.resolvedExecutable, [
       entrypoint,
@@ -347,14 +347,14 @@ include:
       '--format',
       'json',
       '--output',
-      '.flutterguard/test',
+      '.boundarylens/test',
       '--no-color',
     ], workingDirectory: workingProject.path);
 
     expect(result.exitCode, 0);
     expect(
       File(
-        p.join(targetProject.path, '.flutterguard', 'test', 'report.json'),
+        p.join(targetProject.path, '.boundarylens', 'test', 'report.json'),
       ).existsSync(),
       isTrue,
     );

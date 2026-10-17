@@ -50,7 +50,7 @@ class SuppressionFilter {
 
   static Set<String>? _parseLine(String line) {
     final match = RegExp(
-      r'flutterguard:\s*ignore\s+([A-Za-z0-9_,\s-]+)',
+      r'(?:boundarylens|flutterguard):\s*ignore\s+([A-Za-z0-9_,\s-]+)',
     ).firstMatch(line);
     if (match == null) return null;
     final raw = match.group(1) ?? '';

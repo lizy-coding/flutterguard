@@ -5,7 +5,7 @@ class BleSuppressedDevice {}
 class BleSuppressedService {
   late BleSuppressedDevice _device;
 
-  // flutterguard: ignore ble_scanning
+  // boundarylens: ignore ble_scanning
   void startScan() {
     // scanning without timeout, suppressed
   }

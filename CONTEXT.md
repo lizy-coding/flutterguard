@@ -1,14 +1,14 @@
-# FlutterGuard Context
+# BoundaryLens Context
 
-FlutterGuard is an independent static-analysis tool and IDE integration for
+BoundaryLens is an independent static-analysis tool and IDE integration for
 Dart/Flutter projects. Consumer projects own their business contracts and gates.
 
 ## Language
 
-**FlutterGuard**:
+**BoundaryLens**:
 The independently maintained static-analysis product whose findings describe
 rule-defined risks in a Dart/Flutter project.
-_Avoid_: FlutterGuard Flow, runtime tracing SDK, observability SDK
+_Avoid_: BoundaryLens Flow, runtime tracing SDK, observability SDK
 
 **Scan**:
 A static-analysis assessment of a project's Dart sources under an effective
@@ -63,14 +63,19 @@ The acceptance threshold that determines whether visible findings fail a scan.
 _Avoid_: Scanner crash, invalid report
 
 **IDE inspection**:
-An editor annotation derived from a FlutterGuard finding for a selected source
+An editor annotation derived from a BoundaryLens finding for a selected source
 file.
 _Avoid_: Separate rule engine, public Dart scanner API
 
 **Project constraint**:
-A project-declared restriction on how its modules may depend on and access one
-another, evaluated against source evidence.
+A project-declared restriction on observable source relationships within an
+explicit project scope, evaluated against source evidence.
 _Avoid_: Universal coding style, inferred business correctness, health score
+
+**Detection capability**:
+A supported kind of source evidence and check that defines which project
+constraints BoundaryLens can evaluate and where it cannot establish a verdict.
+_Avoid_: Any natural-language requirement, universal semantic analysis
 
 **Module**:
 A project-declared group of source files with a named boundary and public

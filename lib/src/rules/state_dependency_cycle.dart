@@ -8,6 +8,7 @@ import '../import_utils.dart';
 import '../path_utils.dart';
 import 'rule.dart';
 import '../source_workspace.dart';
+import '../scan_context.dart';
 import '../static_issue.dart';
 import 'state_management_utils.dart';
 
@@ -332,6 +333,8 @@ class StateDependencyCycleRule {
   }
 
   static RuleDefinition describe() => const RuleDefinition(
+    inputs: {RuleInput.projectSyntax},
+    scopes: {RuleScope.project, RuleScope.changed},
     id: 'state_dependency_cycle',
     name: '状态依赖环',
     domain: IssueDomain.architecture,

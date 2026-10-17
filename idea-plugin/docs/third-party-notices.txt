@@ -1,8 +1,10 @@
-FlutterGuard third-party notices
+BoundaryLens third-party notices
 
-This is a conservative inventory of the resolved Dart runtime dependency closure.
-Tree shaking may remove some code. It is not a substitute for a final native SDK
-third-party redistribution review against the frozen release build.
+This inventory combines resolved Dart runtime package licenses with identified
+native runtime components from the pinned Dart SDK. Original component license
+texts are retained. Tree shaking and build options can remove code; conservative
+supplemental notices do not assert that each component is linked into the binary.
+The native review scope is the first macOS ARM64 distribution.
 
 
 === _fe_analyzer_shared 85.0.0 ===
@@ -652,3 +654,11 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=== Native runtime license supplement ===
+Dart SDK 60a57cd42d64dc03e9f07aa60a2e250755c1ef28 DEPS and direct runtime build entries were reviewed for the first macOS ARM64 distribution.
+The original component licenses are distributed in the sibling native-licenses/ directory.
+ICU, zlib, BoringSSL and double-conversion are identified runtime dependencies.
+Perfetto and libc++/libc++abi notices are retained conservatively, including optional build components.
+The exact revisions, original URLs and license hashes are in license-inventory.json.
+This is an inventory of identified components, not a claim that every component is retained after linking or tree shaking.

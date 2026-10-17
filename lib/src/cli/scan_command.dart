@@ -16,7 +16,7 @@ class ScanCommand {
 
     late final ScanResult result;
     try {
-      result = FlutterGuardScanner.scan(
+      result = BoundaryLensScanner.scan(
         projectPath: projectPath,
         configPath: configPath,
         outputDir: args['output'] as String,
@@ -76,7 +76,7 @@ class ScanCommand {
 
     if (format == 'sarif') {
       stdout.writeln(
-        'FlutterGuard scanned ${result.files.length} files, found '
+        'BoundaryLens scanned ${result.files.length} files, found '
         '${result.issues.length} visible issues '
         '(${result.suppressedCount} suppressed, '
         '${result.suppressedByBaselineCount} baseline).',

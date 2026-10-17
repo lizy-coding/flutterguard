@@ -1,4 +1,19 @@
 <html><body>
+<h2>0.7.1 发布候选 — 2026-10-17（尚未发布）</h2>
+<p>首发限定 macOS Apple Silicon / ARM64 与 IDEA 2026.1；插件元数据声明系统与架构依赖，
+发布预检只接收对应 native，CI 同步收窄到 macos-15。其他平台后续单独验收。
+修正设置页指南内容区的最小与首选尺寸，长段落和更新记录换行已在本机实看。</p>
+<h2>未发布 — 首版标准整改（2026-10-16）</h2>
+<ul><li>内置规则声明输入、范围、激活条件和参数类型；统一跳过禁用规则，输出逐规则执行状态。</li>
+<li>config check 与 scan 提前拒绝无效参数，修复校验结果取决于源码形状的问题。</li>
+<li>注册时校验 ID 与默认值/schema 一致性，执行时校验 finding 归属；不开放用户自定义规则。</li>
+<li>构建/Verifier 默认统一至 IDEA 2026.1.5 / 261、Kotlin 2.3，替换弃用的读动作及分析刷新调用。</li>
+<li>发布 CI 更新 macOS ARM/Intel runner，并在四平台 native 完整后构建插件；远端和 UI 验收独立记录。</li></ul>
+<h2>BoundaryLens 更名 — 2026-10-16（未发布，沿用本地 0.7.1）</h2>
+<p>原产品 FlutterGuard 更名为 BoundaryLens；IDEA ID 为 com.boundarylens，
+CLI 为 boundarylens，Dart 包为 boundarylens_cli。GitHub 地址与历史版权不变。
+旧 flutterguard.yaml 和 flutterguard 抑制注释继续兼容；新配置使用 boundarylens.yaml。
+安装新插件前请停用旧 com.flutterguard，避免重复检查。本记录不代表市场已发布。</p>
 <h2>未发布 — 模块公开入口保护（2026-10-16）</h2>
 <ul><li>定位收敛为项目配置的模块公开入口与允许依赖，默认只启用架构类检查；非架构旧规则需显式启用，旧截图仅作辅助场景。</li>
 <li>新增当前 Dart 包扫描：最近 pubspec 确定嵌套包，完整只读报告可复制。</li>
@@ -9,7 +24,7 @@
 <h3>新增</h3>
 <ul>
 <li>内置使用指南：五张 IDEA 实拍截图、操作入口、预期结果与检测边界，离线可查看。</li>
-<li>Tools → FlutterGuard: Usage Guide &amp; Changelog；设置页直接查看场景与版本记录。</li>
+<li>Tools → BoundaryLens: Usage Guide &amp; Changelog；设置页直接查看场景与版本记录。</li>
 <li>手动扫描当前已保存 Dart 文件，显示 findings 数量、诊断或失败原因。</li>
 <li>随包提供 MIT 用户许可说明、隐私声明及第三方 notices；指南展示发布者联系与数据读取边界。</li>
 </ul>

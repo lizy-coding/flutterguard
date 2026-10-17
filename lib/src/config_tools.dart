@@ -183,7 +183,7 @@ class ConfigTools {
 
   static String formatDoctorResult(DoctorResult result) {
     final buffer = StringBuffer()
-      ..writeln('FlutterGuard config check')
+      ..writeln('BoundaryLens config check')
       ..writeln('Project: ${result.projectPath}')
       ..writeln('Config: ${result.configPath}')
       ..writeln('Config exists: ${result.configExists}')
@@ -203,27 +203,34 @@ class ConfigTools {
 
   static List<DoctorMessage> validateRuleConfig(ScanConfig config) {
     final messages = <DoctorMessage>[];
+    RuleRegistry.validateDefinitions();
     final definitions = {for (final rule in RuleRegistry.all()) rule.id: rule};
     final knownRules = definitions.keys.toSet();
     for (final id in config.configuredRuleIds.difference(knownRules)) {
       messages.add(DoctorMessage(DoctorSeverity.error, 'Unknown rule "$id".'));
     }
     for (final id in config.configuredRuleIds.intersection(knownRules)) {
-      final knownOptions = definitions[id]!.defaultOptions.keys.toSet();
-      for (final option
-          in config
-              .configuredOptions(id)
-              .keys
-              .toSet()
-              .difference(knownOptions)) {
-        messages.add(
-          DoctorMessage(
-            DoctorSeverity.error,
-            'Unknown option "rules.$id.$option".',
-          ),
-        );
+      final definition = definitions[id]!;
+      for (final option in config.configuredOptions(id).entries) {
+        final type = definition.optionTypes[option.key];
+        if (type == null) {
+          messages.add(
+            DoctorMessage(
+              DoctorSeverity.error,
+              'Unknown option "rules.$id.${option.key}".',
+            ),
+          );
+        } else if (!type.accepts(option.value)) {
+          messages.add(
+            DoctorMessage(
+              DoctorSeverity.error,
+              'rules.$id.${option.key} must be ${type.name}.',
+            ),
+          );
+        }
       }
     }
+
     return messages;
   }
 

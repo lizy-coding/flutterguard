@@ -1,4 +1,4 @@
-# FlutterGuard External Contract
+# BoundaryLens External Contract
 
 Version: 0.7 / JSON schema 2.0.0
 
@@ -7,7 +7,7 @@ layout are documented in `ARCHITECTURE.md` and are not compatibility contracts.
 
 ## Identity and scope
 
-FlutterGuard is an independently maintained local static analysis CLI and IDE
+BoundaryLens is an independently maintained local static analysis CLI and IDE
 integration for Dart/Flutter projects. Its current detectors cover configured
 architecture boundaries, lifecycle/resource risks, IoT transport/security, and
 state-management patterns. Detector availability is not a guarantee of business
@@ -29,14 +29,21 @@ network proxy, widget library, or general formatting/style linter.
 ## Commands
 
 ```text
-flutterguard scan [path] [options]
-flutterguard baseline create [path] [options]
-flutterguard config init [path] [options]
-flutterguard config check [path] [options]
-flutterguard rules [rule-id] [--format table|json]
+boundarylens scan [path] [options]
+boundarylens baseline create [path] [options]
+boundarylens config init [path] [options]
+boundarylens config check [path] [options]
+boundarylens rules [rule-id] [--format table|json]
 ```
 
 Global options are `--help` and `--version`.
+
+The package is boundarylens_cli, the executable is boundarylens and the IDEA ID
+is com.boundarylens. Default configuration is boundarylens.yaml; when it is
+absent, flutterguard.yaml is read for migration. The two files are never merged;
+explicit --config does not fall back. Both boundarylens and legacy flutterguard
+suppression prefixes remain accepted. Default report output is .boundarylens/;
+existing baselines remain readable through an explicit --baseline path.
 
 ### Scan options
 
@@ -44,7 +51,7 @@ Global options are `--help` and `--version`.
 |---|---|
 | `--config`, `-c` | Explicit config; missing explicit files are errors |
 | `--format`, `-f` | `table`, `json`, or `sarif`; default `table` |
-| `--output`, `-o` | Report directory; default `.flutterguard` |
+| `--output`, `-o` | Report directory; default `.boundarylens` |
 | `--verbose`, `-v` | Print diagnostics, detail, and evidence |
 | `--no-color` | Disable ANSI colors |
 | `--fail-on` | `none`, `high`, `medium`, or `low` |
@@ -63,7 +70,7 @@ Global options are `--help` and `--version`.
 ## Project and files
 
 Project discovery walks upward from the requested path and recognizes
-`flutterguard.yaml`, `pubspec.yaml`, or `lib/`. Default source selection is:
+`boundarylens.yaml`, `pubspec.yaml`, or `lib/`. Default source selection is:
 
 ```yaml
 include: [lib/**]
@@ -156,6 +163,10 @@ state_manager_created_in_build
 `rules [rule-id]` is the authoritative description of purpose, default
 severity, framework, options, example, and remediation.
 Its JSON metadata also exposes defaultEnabled from the same rule definition.
+Metadata additionally describes inputs, scopes, activation and optionTypes.
+requireTls accepts only a boolean; invalid values are rejected before source
+analysis. config check reports validation failures with its existing exit 1;
+scan rejects invalid setup with exit 2 and no structured stdout report.
 
 ## Lifecycle detection boundary
 
@@ -239,9 +250,21 @@ severity and does not by itself trigger the finding gate.
 module_violation metadata.reason is dependency or private_entry; referenceKind
 identifies import/export and entryPoints records the target's declaration.
 
+coverage.rules is an additive map keyed by built-in rule ID. Each entry records
+status, scope, reasons and checkedFiles. Status is disabled, not_configured,
+unsupported_scope, not_applicable, complete or partial. These are execution states,
+not finding severities. Rule inputs distinguish target syntax, project syntax and
+the local import graph. Unsupported or unavailable inputs are not a successful
+empty check. Syntax input failure skips that check; usable graph subsets may
+still produce findings with partial coverage. The legacy moduleBoundary summary
+remains conservative and compatible; consumers must not infer every rule's
+coverage from it. Execution status does not change existing severity gate codes.
+Circular dependency checking is project-only; state dependency cycles support
+project/changed scopes, not single-file certification.
+
 ## IDE severity mapping
 
-| FlutterGuard | IDE | SARIF |
+| BoundaryLens | IDE | SARIF |
 |---|---|---|
 | high | ERROR | error |
 | medium | WARNING | warning |
@@ -252,7 +275,7 @@ identifies import/export and entryPoints records the target's declaration.
 Supported comments are same-line and immediately preceding-line forms:
 
 ```dart
-// flutterguard: ignore iot_security
+// boundarylens: ignore iot_security
 final endpoint = localEndpoint;
 ```
 
@@ -280,7 +303,7 @@ root:
 dart pub get
 dart analyze
 dart test
-dart run bin/flutterguard.dart scan example --format json --no-color
+dart run bin/boundarylens.dart scan example --format json --no-color
 dart pub publish --dry-run
 ```
 

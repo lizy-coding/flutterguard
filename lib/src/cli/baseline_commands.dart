@@ -11,7 +11,7 @@ class BaselineCommands {
     final projectPath = args.rest.isNotEmpty ? args.rest.first : '.';
     final output = args['output'] as String;
     try {
-      final result = FlutterGuardScanner.scan(
+      final result = BoundaryLensScanner.scan(
         projectPath: projectPath,
         configPath: configPath,
         writeStdout: false,
@@ -28,7 +28,7 @@ class BaselineCommands {
         ),
       );
       stdout.writeln(
-        'Created FlutterGuard baseline: $outputPath '
+        'Created BoundaryLens baseline: $outputPath '
         '(${result.rawIssues.length} issues)',
       );
     } on ScanException catch (error) {

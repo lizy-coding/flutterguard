@@ -1,4 +1,3 @@
-import '../import_graph.dart';
 import '../scan_context.dart';
 import '../static_issue.dart';
 import 'ble_scanning.dart';
@@ -11,11 +10,12 @@ import 'lifecycle_resource.dart';
 import 'provider_state_management.dart';
 import 'riverpod_state_management.dart';
 import 'rule.dart';
+import 'rule_runner.dart';
 import 'state_dependency_cycle.dart';
 
 /// The single source of truth for rule metadata, defaults, and execution.
 class RuleRegistry {
-  static final List<RuleRegistration> registrations = List.unmodifiable([
+  static final List<RuleRegistration> registrations = _validated([
     RuleRegistration(
       definition: LifecycleResourceRule.describe(),
       execute: (context, config, _) => LifecycleResourceRule(
@@ -157,6 +157,11 @@ class RuleRegistry {
     ),
   ]);
 
+  static List<RuleRegistration> _validated(List<RuleRegistration> values) {
+    RuleRunner.validateDefinitions(values);
+    return List.unmodifiable(values);
+  }
+
   static List<RuleDefinition> all() => [
     for (final registration in registrations) registration.definition,
   ];
@@ -168,31 +173,11 @@ class RuleRegistry {
     return null;
   }
 
-  static List<StaticIssue> analyze(ScanContext context) {
-    final needsImportGraph =
-        context.config.architecture.layers.isNotEmpty ||
-        context.config.architecture.modules.isNotEmpty ||
-        (!context.isChanged && context.config.architecture.detectCycles);
-    final graph = needsImportGraph
-        ? ImportGraph.build(
-            files: context.allFiles,
-            sourceFiles: context.targetFiles,
-            workspace: context.sources,
-            projectPath: context.projectPath,
-          )
-        : null;
+  static void validateDefinitions() =>
+      RuleRunner.validateDefinitions(registrations);
 
-    final issues = <StaticIssue>[];
-    for (final registration in registrations) {
-      final definition = registration.definition;
-      final config = context.config.rule(
-        definition.id,
-        defaultSeverity: definition.defaultSeverity,
-        defaultOptions: definition.defaultOptions,
-        defaultEnabled: definition.defaultEnabled,
-      );
-      issues.addAll(registration.execute(context, config, graph));
-    }
-    return issues;
-  }
+  static RuleRunResult run(ScanContext context) =>
+      RuleRunner.run(context, registrations);
+
+  static List<StaticIssue> analyze(ScanContext context) => run(context).issues;
 }

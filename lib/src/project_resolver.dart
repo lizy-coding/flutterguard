@@ -10,9 +10,14 @@ class ResolvedScanTarget {
 }
 
 class ProjectResolver {
-  static const defaultConfigPath = 'flutterguard.yaml';
+  static const defaultConfigPath = 'boundarylens.yaml';
+  static const legacyConfigPath = 'flutterguard.yaml';
 
-  static const _discoveryMarkers = [defaultConfigPath, 'pubspec.yaml'];
+  static const _discoveryMarkers = [
+    defaultConfigPath,
+    legacyConfigPath,
+    'pubspec.yaml',
+  ];
 
   static ResolvedScanTarget resolveScanTarget(String? explicitPath) {
     if (explicitPath != null && explicitPath.endsWith('.dart')) {
@@ -46,7 +51,13 @@ class ProjectResolver {
     required String projectPath,
     required String? explicitConfig,
   }) {
-    final configPath = explicitConfig ?? defaultConfigPath;
+    final configPath =
+        explicitConfig ??
+        (File(p.join(projectPath, defaultConfigPath)).existsSync()
+            ? defaultConfigPath
+            : File(p.join(projectPath, legacyConfigPath)).existsSync()
+            ? legacyConfigPath
+            : defaultConfigPath);
     final resolvedPath = p.isAbsolute(configPath)
         ? p.normalize(configPath)
         : p.normalize(p.join(projectPath, configPath));

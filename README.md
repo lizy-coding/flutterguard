@@ -1,6 +1,6 @@
-# FlutterGuard
+# BoundaryLens
 
-FlutterGuard is an independently maintained static analysis tool for
+BoundaryLens is an independently maintained static analysis tool for
 Dart/Flutter projects, with a CLI and an IntelliJ adapter. Applications consume
 JSON or SARIF reports; they do not depend on a runtime SDK or private scanner API.
 
@@ -28,14 +28,14 @@ declared entry, while its own facade may export internal files. Omitting
 entry_points preserves dependency-only checks and reports partial protection.
 
 Consumer projects own their business contracts, module admission, platform
-acceptance, and CI policy. FlutterGuard does not read a project's generated
+acceptance, and CI policy. BoundaryLens does not read a project's generated
 Agent contracts or require a particular repository layout, generator, or host.
 Use Dart/Flutter format, analysis, and tests for their existing responsibilities;
-use FlutterGuard only where an explicit detector adds useful evidence.
+use BoundaryLens only where an explicit detector adds useful evidence.
 
 ## IntelliJ IDEA plugin
 
-This repository is the source and release-maintenance home for the FlutterGuard
+This repository is the source and release-maintenance home for the BoundaryLens
 IDEA plugin: [lizy-coding/flutterguard](https://github.com/lizy-coding/flutterguard).
 The plugin delegates detection to the bundled CLI maintained in this same repository.
 
@@ -50,33 +50,37 @@ availability and approval must be recorded after an actual submission.
 
 ## Install
 
+BoundaryLens is currently a local source iteration. The new package name is not
+claimed to be published on pub.dev. See [rename migration](doc/RENAMING.md) and
+[the next module-check milestones](doc/MODULE_DETECTION_NEXT_STEPS.md).
+
 ```bash
-dart pub global activate flutterguard_cli
-flutterguard --version
+dart pub global activate --source path .
+boundarylens --version
 ```
 
 From a source checkout:
 
 ```bash
 dart pub get
-dart run bin/flutterguard.dart scan example
+dart run bin/boundarylens.dart scan example
 ```
 
 ## Commands
 
 ```text
-flutterguard scan [path] [options]
-flutterguard baseline create [path]
-flutterguard config init [path]
-flutterguard config check [path]
-flutterguard rules [rule-id] [--format table|json]
+boundarylens scan [path] [options]
+boundarylens baseline create [path]
+boundarylens config init [path]
+boundarylens config check [path]
+boundarylens rules [rule-id] [--format table|json]
 ```
 
 The core scan options are:
 
 - `--config`, `-c`: explicit configuration file.
 - `--format`, `-f`: `table`, `json`, or `sarif`.
-- `--output`, `-o`: report directory; default `.flutterguard`.
+- `--output`, `-o`: report directory; default `.boundarylens`.
 - `--stdout`: print JSON/SARIF to stdout instead of writing report files.
 - `--fail-on`: `none`, `high`, `medium`, or `low`.
 - `--changed-only --base <ref>`: scan Git-changed Dart files.
@@ -94,8 +98,8 @@ Install the CLI independently of the application package. An agent or toolset
 can invoke it with an explicit package/file target and configuration:
 
 ```bash
-flutterguard config check /path/to/app
-flutterguard scan /path/to/app/lib/example.dart --config /path/to/app/flutterguard.yaml --format json --stdout --no-color --fail-on none
+boundarylens config check /path/to/app
+boundarylens scan /path/to/app/lib/example.dart --config /path/to/app/boundarylens.yaml --format json --stdout --no-color --fail-on none
 ```
 
 Exit 1 still carries a usable structured report; exit 2 is a failed invocation.
@@ -104,7 +108,7 @@ as findings; an empty finding list alone is not proof of complete verification.
 
 ## IDE integration
 
-| FlutterGuard severity | IDE inspection level | SARIF level |
+| BoundaryLens severity | IDE inspection level | SARIF level |
 |---|---|---|
 | `high` | ERROR | error |
 | `medium` | WARNING | warning |
@@ -116,8 +120,8 @@ Configuration is optional. Generate a complete starter file from the rule
 registry:
 
 ```bash
-flutterguard config init .
-flutterguard config check .
+boundarylens config init .
+boundarylens config check .
 ```
 
 Minimal example:
@@ -155,7 +159,7 @@ architecture:
 ```
 
 Every rule accepts `enabled` and `severity`. Rule-specific scalar options are
-listed by `flutterguard rules <rule-id>`.
+listed by `boundarylens rules <rule-id>`.
 
 ## Rules
 
@@ -186,9 +190,9 @@ concept: `ruleId`, `severity`, and `domain`. SARIF 2.1.0 is suitable for GitHub
 Code Scanning.
 
 ```bash
-flutterguard baseline create .
-flutterguard scan . \
-  --baseline .flutterguard/baseline.json \
+boundarylens baseline create .
+boundarylens scan . \
+  --baseline .boundarylens/baseline.json \
   --format sarif \
   --fail-on high
 ```
@@ -196,7 +200,7 @@ flutterguard scan . \
 Suppression comments remain available for precise false positives:
 
 ```dart
-// flutterguard: ignore iot_security
+// boundarylens: ignore iot_security
 final endpoint = loadLocalDevelopmentEndpoint();
 ```
 
@@ -213,7 +217,7 @@ doc/                 architecture and external contract
 scripts/             native release packaging only
 ```
 
-FlutterGuard is a single Dart package. There is no Melos workspace, runtime
+BoundaryLens is a single Dart package. There is no Melos workspace, runtime
 SDK, plugin system, or public Dart scanner API.
 
 ## Development
@@ -223,7 +227,7 @@ dart pub get
 dart format --output=none --set-exit-if-changed bin lib test
 dart analyze
 dart test
-dart run bin/flutterguard.dart scan example --format json --no-color
+dart run bin/boundarylens.dart scan example --format json --no-color
 dart pub publish --dry-run
 ```
 
@@ -242,7 +246,7 @@ redistribution, version/tag, and publisher access. A nonzero exit means at
 least one automated release gate failed.
 
 See [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) for internal boundaries and
-[doc/FLUTTERGUARD_SPEC.md](doc/FLUTTERGUARD_SPEC.md) for the external
+[doc/BOUNDARYLENS_SPEC.md](doc/BOUNDARYLENS_SPEC.md) for the external
 contract.
 
 ## License

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.7.1 BoundaryLens release candidate (2026-10-17, not published)
+
+- First IDEA distribution targets macOS Apple Silicon / ARM64 on IDEA2026.1;
+  descriptor OS/architecture dependencies restrict delivery. Other IDEA hosts
+  are deferred independently of CLI source portability.
+- Built-in rules declare input facts, supported scopes, activation and option
+  types. A shared internal runner validates configuration before execution,
+  prepares facts and reports per-rule coverage without a user plugin API.
+- Preserve rule execution status and reasons in IDE package/file reports;
+  expose invalid typed options as setup failures, independently of source shape.
+- Lock CLI dependencies and enforce the lock during release builds; include
+  license notices in native archives and isolate Plugin Verifier extraction.
+- Align default build/verifier with IDEA2026.1.5, Kotlin2.3 and Verifier1.410;
+  update the release workflow for the declared macOS ARM64 target.
+- Fix the offline guide layout and verify wrapping, screenshots and changelog
+  rendering in the local IDEA settings window.
+
+## Unreleased — BoundaryLens rename (2026-10-16)
+
+- Rename the product, Dart package (`boundarylens_cli`), executable
+  (`boundarylens`) and IntelliJ plugin (`com.boundarylens`). Repository URL and
+  existing copyright notices remain unchanged. This is not a published release.
+- Prefer `boundarylens.yaml` while retaining `flutterguard.yaml` fallback;
+  accept both suppression prefixes during migration. Finding IDs and report
+  schemas remain unchanged. See `doc/RENAMING.md` for installation migration.
+- Define the next module-check milestones in `doc/MODULE_DETECTION_NEXT_STEPS.md`.
+
 ## 0.7.1 (2026-07-22)
 
 - **rule:** Added OverlayEntry to lifecycle resource detection.

@@ -25,5 +25,9 @@
 - Use `SourceWorkspace` from context; never re-read/re-parse files.
 - Respect `RuleConfig.enabled`; emit `config.severity`.
 - Scalar defaults in `RuleDefinition.defaultOptions`.
+- Parameter types belong in `RuleDefinition.optionTypes`; defaults and schema must agree.
+- Declare inputs/scopes/activation in the definition. The private RuleRunner owns
+  shared preparation, central skipping, execution status and identity validation.
+  Do not wire a new detector into scanner/IDE or introduce a second registry.
 
 See root AGENTS.md §Per-layer constraints for MUST NOT list.

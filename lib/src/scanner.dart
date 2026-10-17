@@ -55,11 +55,11 @@ class ScanResult {
   });
 }
 
-class FlutterGuardScanner {
+class BoundaryLensScanner {
   static ScanResult scan({
     required String projectPath,
     String? configPath,
-    String outputDir = '.flutterguard',
+    String outputDir = '.boundarylens',
     bool writeJson = false,
     bool writeSarif = false,
     required bool writeStdout,
@@ -147,14 +147,18 @@ class FlutterGuardScanner {
       mode: scanMode,
       sources: sources,
       changedFiles: changedFiles,
+      scope: scanTarget.singleFile != null
+          ? RuleScope.file
+          : (scanMode == ScanMode.changed
+                ? RuleScope.changed
+                : RuleScope.project),
     );
-    final rawIssues = _analyze(context);
-    final coverage = _coverage(
-      context,
-      scanTarget.singleFile != null
-          ? 'file'
-          : (context.isChanged ? 'changed' : 'project'),
-    );
+    final execution = RuleRegistry.run(context);
+    final rawIssues = _sortIssues(execution.issues);
+    final coverage = {
+      ..._coverage(context, context.scope.name),
+      'rules': execution.coverage,
+    };
 
     var issues = rawIssues;
     var suppressedCount = 0;
@@ -280,9 +284,7 @@ class FlutterGuardScanner {
     };
   }
 
-  static List<StaticIssue> _analyze(ScanContext context) {
-    final allIssues = RuleRegistry.analyze(context);
-
+  static List<StaticIssue> _sortIssues(List<StaticIssue> allIssues) {
     allIssues.sort((a, b) {
       final levelOrder = {
         RiskLevel.high: 0,

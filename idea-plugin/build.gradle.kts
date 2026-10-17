@@ -5,10 +5,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     java
     id("org.jetbrains.intellij.platform") version "2.2.1"
-    id("org.jetbrains.kotlin.jvm") version (System.getenv("FLUTTERGUARD_KOTLIN_VERSION") ?: "2.0.21")
+    id("org.jetbrains.kotlin.jvm") version (System.getenv("BOUNDARYLENS_KOTLIN_VERSION") ?: "2.3.0")
 }
 
-group = "com.flutterguard"
+group = "com.boundarylens"
 version = System.getenv("PLUGIN_VERSION") ?: file("../pubspec.yaml").readLines()
     .first { it.startsWith("version:") }.substringAfter(':').trim()
 
@@ -22,7 +22,8 @@ repositories {
 dependencies {
     intellijPlatform {
         val localIde = providers.gradleProperty("localIdePath").orNull
-        if (localIde != null) local(localIde) else intellijIdeaCommunity("2024.3")
+        if (localIde != null) local(localIde) else intellijIdeaUltimate("2026.1.5")
+        pluginVerifier("1.410")
     }
     testImplementation("junit:junit:4.13.2")
 }
@@ -54,6 +55,13 @@ tasks {
     withType<KotlinCompile>().configureEach {
         compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
     }
+    verifyPlugin {
+        offline.set(gradle.startParameter.isOffline)
+        // Avoid clearing a shared ~/.pluginVerifier extraction directory used
+        // by another project or audit. A supplied home can hold offline Dart.
+        systemProperty("plugin.verifier.home.dir", providers.gradleProperty("verifierHomePath")
+            .getOrElse(layout.buildDirectory.dir("pluginVerifierHome").get().asFile.absolutePath))
+    }
 }
 
 intellijPlatform {
@@ -63,7 +71,7 @@ intellijPlatform {
         version = project.version.toString()
         changeNotes = file("docs/changelog.html").readText()
         ideaVersion {
-            sinceBuild = providers.gradleProperty("pluginSinceBuild").getOrElse("243")
+            sinceBuild = providers.gradleProperty("pluginSinceBuild").getOrElse("261")
         }
     }
 
@@ -80,10 +88,14 @@ intellijPlatform {
     }
 
     pluginVerification {
+        // These constraints are delivery selectors, not class-bearing plugins.
+        // The release preflight checks descriptor, Mach-O target and host smoke.
+        // Official Verifier flag: JetBrains/intellij-plugin-verifier 1.409+.
+        freeArgs.add("-ignore-os-arch")
         ides {
             val auditIde = providers.gradleProperty("verifierIdePath").orNull
             if (auditIde != null) local(file(auditIde))
-            else ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.3")
+            else ide(IntelliJPlatformType.IntellijIdeaUltimate, "2026.1.5")
         }
     }
 }

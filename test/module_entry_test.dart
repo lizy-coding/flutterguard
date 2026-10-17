@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutterguard_cli/src/scanner.dart';
-import 'package:flutterguard_cli/src/baseline.dart';
+import 'package:boundarylens_cli/src/scanner.dart';
+import 'package:boundarylens_cli/src/baseline.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -29,7 +29,7 @@ void main() {
   }) {
     source('lib/payment/api.dart', "export 'internal.dart';");
     source('lib/payment/internal.dart', 'class Payment {}');
-    source('flutterguard.yaml', '''
+    source('boundarylens.yaml', '''
 include: [lib/**]
 architecture:
   modules:
@@ -46,7 +46,7 @@ $extra
   }
 
   ScanResult scan({String? target, String? baseline}) =>
-      FlutterGuardScanner.scan(
+      BoundaryLensScanner.scan(
         projectPath: target ?? root.path,
         writeStdout: true,
         writeJson: true,
@@ -144,7 +144,7 @@ $extra
   test('entry outside module and missing entry fail configuration', () {
     source('lib/checkout/main.dart', 'class Checkout {}');
     config();
-    final f = File(p.join(root.path, 'flutterguard.yaml'));
+    final f = File(p.join(root.path, 'boundarylens.yaml'));
     f.writeAsStringSync(
       f.readAsStringSync().replaceAll(
         'entry_points: [lib/payment/api.dart]',
@@ -194,12 +194,12 @@ $extra
     expect(coverage(r)['scope'], 'file');
     expect(coverage(r)['checkedFiles'], 1);
     expect(coverage(r)['totalFiles'], 3);
-    expect(Directory(p.join(root.path, '.flutterguard')).existsSync(), isFalse);
+    expect(Directory(p.join(root.path, '.boundarylens')).existsSync(), isFalse);
   });
   test('module finding supports suppression and severity override', () {
     source(
       'lib/checkout/main.dart',
-      "// flutterguard: ignore module_violation\nimport '../payment/internal.dart';",
+      "// boundarylens: ignore module_violation\nimport '../payment/internal.dart';",
     );
     config(extra: 'rules:\n  module_violation:\n    severity: low');
     final r = scan();
@@ -225,7 +225,7 @@ $extra
     source('lib/checkout/main.dart', "import '../payment/internal.dart';");
     config();
     ProcessResult cli() => Process.runSync(Platform.resolvedExecutable, [
-      p.join(Directory.current.path, 'bin/flutterguard.dart'),
+      p.join(Directory.current.path, 'bin/boundarylens.dart'),
       'scan',
       root.path,
       '--format',
@@ -266,7 +266,7 @@ $extra
         expect(result.exitCode, 0, reason: result.stderr as String);
       }
       source('lib/checkout/main.dart', "import '../payment/internal.dart';");
-      final result = FlutterGuardScanner.scan(
+      final result = BoundaryLensScanner.scan(
         projectPath: root.path,
         changedOnly: true,
         base: 'HEAD',
@@ -282,7 +282,7 @@ $extra
   test('SARIF carries scope coverage and resolution diagnostics', () {
     source('lib/checkout/main.dart', "import '../payment/missing.dart';");
     config();
-    final result = FlutterGuardScanner.scan(
+    final result = BoundaryLensScanner.scan(
       projectPath: root.path,
       writeStdout: true,
       writeSarif: true,
@@ -297,6 +297,6 @@ $extra
       (properties['diagnostics'] as List).single,
       containsPair('stage', 'reference_resolution'),
     );
-    expect(Directory(p.join(root.path, '.flutterguard')).existsSync(), isFalse);
+    expect(Directory(p.join(root.path, '.boundarylens')).existsSync(), isFalse);
   });
 }

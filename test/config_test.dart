@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:flutterguard_cli/src/config_loader.dart';
-import 'package:flutterguard_cli/src/config_tools.dart';
-import 'package:flutterguard_cli/src/rules/registry.dart';
-import 'package:flutterguard_cli/src/static_issue.dart';
+import 'package:boundarylens_cli/src/config_loader.dart';
+import 'package:boundarylens_cli/src/config_tools.dart';
+import 'package:boundarylens_cli/src/rules/registry.dart';
+import 'package:boundarylens_cli/src/static_issue.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -32,7 +32,7 @@ void main() {
   test('generic rule config parses severity and typed options', () {
     final directory = Directory.systemTemp.createTempSync('fg_config_');
     addTearDown(() => directory.deleteSync(recursive: true));
-    final file = File(p.join(directory.path, 'flutterguard.yaml'))
+    final file = File(p.join(directory.path, 'boundarylens.yaml'))
       ..writeAsStringSync('''
 rules:
   iot_security:
@@ -66,7 +66,7 @@ rules:
   test('invalid config values fail fast', () {
     final directory = Directory.systemTemp.createTempSync('fg_bad_config_');
     addTearDown(() => directory.deleteSync(recursive: true));
-    final file = File(p.join(directory.path, 'flutterguard.yaml'))
+    final file = File(p.join(directory.path, 'boundarylens.yaml'))
       ..writeAsStringSync('rules:\n  ble_scanning: false\n');
     expect(() => ScanConfig.fromFile(file.path), throwsFormatException);
   });
@@ -78,7 +78,7 @@ rules:
     File(
       p.join(project.path, 'lib', 'main.dart'),
     ).writeAsStringSync('class A {}');
-    File(p.join(project.path, 'flutterguard.yaml')).writeAsStringSync('''
+    File(p.join(project.path, 'boundarylens.yaml')).writeAsStringSync('''
 rules:
   removed_rule:
     enabled: true
@@ -95,7 +95,7 @@ rules:
     File(
       p.join(project.path, 'lib', 'main.dart'),
     ).writeAsStringSync('class A {}');
-    File(p.join(project.path, 'flutterguard.yaml')).writeAsStringSync('''
+    File(p.join(project.path, 'boundarylens.yaml')).writeAsStringSync('''
 rules:
   ble_scanning:
     allowlist: [LegacyScanner]
@@ -105,7 +105,7 @@ rules:
       throwsFormatException,
     );
 
-    File(p.join(project.path, 'flutterguard.yaml')).writeAsStringSync('''
+    File(p.join(project.path, 'boundarylens.yaml')).writeAsStringSync('''
 rules:
   ble_scanning:
     timeoutAlias: 5000

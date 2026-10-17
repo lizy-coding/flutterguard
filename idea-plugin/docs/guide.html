@@ -1,11 +1,12 @@
 <html><body>
-<h1>FlutterGuard 使用指南</h1>
+<h1>BoundaryLens 使用指南</h1>
+<p>首发支持 macOS Apple Silicon / ARM64、IDEA 2026.1；Windows、Linux 和 Intel Mac 不在本包支持范围。</p>
 <p>检查显式资源字段和已配置的依赖边界，在源码与 Problems 列表展示证据。
 先完成 Dart SDK 配置，再用已保存的文件验证效果。</p>
 <h2>三步开始</h2>
 <ol><li>启用 Dart 插件，为当前项目配置 Dart SDK。</li>
-<li>启用本页上方的 FlutterGuard 开关，打开并保存本地 .dart 文件。</li>
-<li>Tools → FlutterGuard: Scan Current Saved File，或编辑器右键调用同一动作。</li></ol>
+<li>启用本页上方的 BoundaryLens 开关，打开并保存本地 .dart 文件。</li>
+<li>Tools → BoundaryLens: Scan Current Saved File，或编辑器右键调用同一动作。</li></ol>
 <p>下列图片来自实际 IDEA 2026.1.5 窗口，随插件安装，查看不需要网络。
 黄色对应 medium，红色对应 high；Problems 区分无问题、规则发现与扫描失败。</p>
 <h2>核心场景：模块公开入口保护</h2>
@@ -23,7 +24,7 @@
 <p>presentation 导入 lib/device/device.dart：允许；直接导入 lib/device/src/session.dart：
 module_violation（private_entry）；device 模块内部引用自己的 src：允许。
 关系本身不允许时报告 dependency。入口必须由项目维护，工具不推断设计优劣。</p>
-<p>Tools → FlutterGuard: Scan Current Dart Package 从当前 Dart 文件最近的 pubspec.yaml 确定包，
+<p>Tools → BoundaryLens: Scan Current Dart Package 从当前 Dart 文件最近的 pubspec.yaml 确定包，
 不会把 IDE 工作区自动当作嵌套包根。结果在可复制的只读文本报告中显示完整路径、行号、发现和诊断。</p>
 <p>覆盖状态区分 not_configured（未配置）、disabled（禁用）、complete（本次范围已检查）、partial（不完整）；
 旧 CLI 没有 coverage 时显示无法判断。省略 entry_points 的旧模块配置仍检查允许关系，但不代表公开入口已检查。
@@ -48,22 +49,22 @@ Problems 显示 lifecycle_resource_not_disposed，可据此定位字段和所属
 <img src="screenshots/03-secret-error.png" width="640" height="503" alt="演示 token 的红色标注与 iot_security 规则">
 <h2>4. 配置失败：检查未完成</h2>
 <p>enabled 不是 boolean 时显示 exit 2 和具体错误；不能把它当作 0 findings。
-截图另含 IDEA 自身的拼写提示，它不是 FlutterGuard finding。</p>
+截图另含 IDEA 自身的拼写提示，它不是 BoundaryLens finding。</p>
 <img src="screenshots/04-configuration-failure.png" width="640" height="499" alt="配置错误、文件级告警及 exit 2">
 <h2>5. 非法依赖：检查配置约束</h2>
 <p>配置 presentation 只允许依赖 domain 后，直接导入 data 会触发 layer_violation，
 第 2 行 import 被标红。未配置边界时不推断项目架构。</p>
 <img src="screenshots/05-boundary-error.png" width="640" height="467" alt="非法层依赖、import 红色标注和 layer_violation">
 <h2>使用边界与排查</h2>
-<ul><li>没有标注时先查看是否启用 Dart 支持及 FlutterGuard，并执行手动扫描确认结果。</li>
+<ul><li>没有标注时先查看是否启用 Dart 支持及 BoundaryLens，并执行手动扫描确认结果。</li>
 <li>未保存或扫描期间改变文档会使结果失效。手动扫描不会自动保存。</li>
 <li>init/initState 本身不要求 dispose。一次性 addPostFrameCallback 没有注销配对。</li>
 <li>生命周期规则检查显式实例字段；类型推断、别名、继承和跨对象清理暂不覆盖。</li>
 <li>0 findings 只表示没有可见发现，不证明业务正确性、所有权、所有执行路径或真机验收。</li>
-<li>需要明确抑制时使用 // flutterguard: ignore &lt;rule-id&gt;；抑制不等于修复。</li></ul>
+<li>需要明确抑制时使用 // boundarylens: ignore &lt;rule-id&gt;；抑制不等于修复。</li></ul>
 <p>当前本地包已验证 macOS arm64 / IDEA 2026.1.5。其他平台与旧版 IDE 验证状态独立维护。</p>
 <h2>许可、隐私与支持</h2>
-<p>FlutterGuard 自有代码与文档采用 MIT License。许可由版权持有人授予；
+<p>BoundaryLens 自有代码与文档采用 MIT License。许可由版权持有人授予；
 公开发布者 forest.li，联系邮箱 zhenyu_li1998@163.com。JetBrains 不是本插件许可协议的当事方。
 许可证与用户许可说明见随包 META-INF/LICENSE.txt、documentation/eula.md，
 第三方条款见 documentation/third-party-notices.txt。</p>

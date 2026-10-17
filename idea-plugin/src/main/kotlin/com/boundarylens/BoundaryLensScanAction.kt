@@ -1,4 +1,4 @@
-package com.flutterguard
+package com.boundarylens
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.notification.NotificationGroupManager
@@ -18,7 +18,7 @@ import com.intellij.openapi.fileTypes.PlainTextFileType
 import java.nio.file.Files
 import java.nio.file.Path
 
-open class FlutterGuardScanAction(private val packageScan: Boolean = false) : AnAction() {
+open class BoundaryLensScanAction(private val packageScan: Boolean = false) : AnAction() {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(event: AnActionEvent) {
@@ -30,25 +30,25 @@ open class FlutterGuardScanAction(private val packageScan: Boolean = false) : An
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project ?: return
         val file = event.getData(CommonDataKeys.PSI_FILE) ?: return
-        val annotator = FlutterGuardExternalAnnotator()
-        val snapshot = ReadAction.compute<FlutterGuardExternalAnnotator.Request?, RuntimeException> {
+        val annotator = BoundaryLensExternalAnnotator()
+        val snapshot = ReadAction.computeBlocking<BoundaryLensExternalAnnotator.Request?, RuntimeException> {
             annotator.collectInformation(file)
         }
         if (snapshot == null) {
-            notify(project, "未扫描：请启用 FlutterGuard 并选择本地 Dart 文件。", NotificationType.WARNING)
+            notify(project, "未扫描：请启用 BoundaryLens 并选择本地 Dart 文件。", NotificationType.WARNING)
             return
         }
         if (!snapshot.trusted) {
             notify(project, "项目未受信任；未执行 CLI，检查尚未完成。请先在 IDEA 中核对并信任项目。", NotificationType.WARNING)
             return
         }
-        val packageRoot = if (packageScan) FlutterGuardScanTarget.packageRoot(snapshot.path) else null
+        val packageRoot = if (packageScan) BoundaryLensScanTarget.packageRoot(snapshot.path) else null
         if (packageScan && packageRoot == null) {
             notify(project, "未扫描：当前 Dart 文件没有祖先 pubspec.yaml；无法确定目标包。", NotificationType.WARNING)
             return
         }
         val request = snapshot.copy(target = packageRoot ?: snapshot.path, workDir = packageRoot ?: snapshot.workDir)
-        object : Task.Backgroundable(project, "FlutterGuard: ${file.name}", true) {
+        object : Task.Backgroundable(project, "BoundaryLens: ${file.name}", true) {
             override fun run(indicator: ProgressIndicator) {
                 val result = annotator.doAnnotate(request)
                 ApplicationManager.getApplication().invokeLater {
@@ -68,11 +68,11 @@ open class FlutterGuardScanAction(private val packageScan: Boolean = false) : An
                     }
                     result.report?.let { report ->
                         val display = "目标：${request.target}\n${if (packageScan) "包扫描" else "单文件扫描"}；仅已保存的磁盘内容。\n\n" + report.text()
-                        val reportFile = LightVirtualFile("FlutterGuard report.txt", PlainTextFileType.INSTANCE, display)
+                        val reportFile = LightVirtualFile("BoundaryLens report.txt", PlainTextFileType.INSTANCE, display)
                         reportFile.isWritable = false
                         FileEditorManager.getInstance(project).openFile(reportFile, true)
                     }
-                    DaemonCodeAnalyzer.getInstance(project).restart(file)
+                    DaemonCodeAnalyzer.getInstance(project).restart(file, "BoundaryLens scan completed")
                 }
             }
         }.queue()
@@ -80,14 +80,14 @@ open class FlutterGuardScanAction(private val packageScan: Boolean = false) : An
 
     private fun notify(project: Project, message: String, type: NotificationType) {
         val safe = message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        NotificationGroupManager.getInstance().getNotificationGroup("FlutterGuard")
-            .createNotification("FlutterGuard", safe, type).notify(project)
+        NotificationGroupManager.getInstance().getNotificationGroup("BoundaryLens")
+            .createNotification("BoundaryLens", safe, type).notify(project)
     }
 }
 
-class FlutterGuardScanPackageAction : FlutterGuardScanAction(true)
+class BoundaryLensScanPackageAction : BoundaryLensScanAction(true)
 
-internal object FlutterGuardScanTarget {
+internal object BoundaryLensScanTarget {
     fun packageRoot(file: String): String? {
         var directory = Path.of(file).toAbsolutePath().normalize().parent
         while (directory != null) {

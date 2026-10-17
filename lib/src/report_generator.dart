@@ -80,7 +80,7 @@ class ReportGenerator {
     final bold = noColor ? '' : _Ansi.bold;
     final reset = noColor ? '' : _Ansi.reset;
     buffer
-      ..writeln('$bold FlutterGuard Report$reset — ${p.basename(projectPath)}')
+      ..writeln('$bold BoundaryLens Report$reset — ${p.basename(projectPath)}')
       ..writeln(
         ' Files: ${scannedFileCount ?? issues.map((issue) => issue.file).toSet().length}  '
         'Issues: ${issues.length}',

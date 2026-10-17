@@ -1,10 +1,10 @@
-# flutterguard — Agent Guide
+# boundarylens — Agent Guide
 
 ## Identity and integration boundary
 
-FlutterGuard is an independent static analysis CLI and IDE integration for
-Dart/Flutter projects. The Dart package is `flutterguard_cli`; the executable is
-`flutterguard`. Application integrations use CLI JSON or SARIF reports.
+BoundaryLens is an independent static analysis CLI and IDE integration for
+Dart/Flutter projects. The Dart package is `boundarylens_cli`; the executable is
+`boundarylens`. Application integrations use CLI JSON or SARIF reports.
 `lib/src` is private implementation, and the package adds no runtime SDK to a
 scanned application.
 
@@ -40,7 +40,7 @@ doc/             architecture, external spec, roadmap
 - Follow explicit entry points, imports, and files changed by the task. Start
   with at most 8 additional files and record why any expansion is needed.
 - Documentation or registration updates do not justify a whole-repository
-  scan, registry refresh, recursive file walk, or `flutterguard scan .`.
+  scan, registry refresh, recursive file walk, or `boundarylens scan .`.
   Output-count limits alone do not prove that source traversal is bounded.
 - Preserve unrelated dirty files. Keep proposed edits within the task's
   declared paths and the host's allowed paths; use one explicit reviewable
@@ -56,8 +56,8 @@ dart pub get
 dart format --output=none --set-exit-if-changed bin lib test
 dart analyze
 dart test
-dart run bin/flutterguard.dart scan example --format json --no-color
-dart compile exe bin/flutterguard.dart -o flutterguard
+dart run bin/boundarylens.dart scan example --format json --no-color
+dart compile exe bin/boundarylens.dart -o boundarylens
 dart pub publish --dry-run
 ```
 
@@ -79,7 +79,7 @@ Run publishing commands only for a release requested in the current task.
 - `RuleRegistry.registrations` is the only metadata/default/execution registry.
 - Rules receive generic `RuleConfig`; rule-specific defaults belong to
   `RuleDefinition.defaultOptions`.
-- `FlutterGuardScanner` owns scan orchestration, suppression, baseline
+- `BoundaryLensScanner` owns scan orchestration, suppression, baseline
   filtering, and report generation. CLI and IDE adapters own their I/O only.
 
 ## Per-layer constraints
@@ -123,7 +123,7 @@ contracts when changing the CLI or kernel.
   platform matrices, or project-specific presets in the scanner or IDE.
 - Consumers own business contracts, admission, tests, and CI policy. Integrate
   through the CLI and reports; do not couple dependency resolution or Git hooks
-  to FlutterGuard.
+  to BoundaryLens.
 - Before adding a rule, document a concrete defect, existing-tool coverage,
   required inputs, supported positive/negative cases, and remediation.
 - Prefer removing speculative detectors over building type/data-flow systems
@@ -134,7 +134,7 @@ contracts when changing the CLI or kernel.
 1. Implement or extend a detector under `lib/src/rules/`.
 2. Add exactly one registration and definition in `lib/src/rules/registry.dart`.
 3. Add positive, negative, disabled, and output-contract coverage as needed.
-4. Update `doc/FLUTTERGUARD_SPEC.md` only for external contract changes.
+4. Update `doc/BOUNDARYLENS_SPEC.md` only for external contract changes.
 5. Run the complete Dart verification gate.
 
 Generic file size, formatting, and missing-const checks belong to Dart lints or
@@ -148,7 +148,7 @@ aliases to the finding taxonomy.
 - This file defines repository constraints and execution entry points.
 - Scoped `AGENTS.md` files define directory responsibilities.
 - `doc/ARCHITECTURE.md` defines internal boundaries.
-- `doc/FLUTTERGUARD_SPEC.md` defines external behavior.
+- `doc/BOUNDARYLENS_SPEC.md` defines external behavior.
 - `README.md` is user onboarding; `EVOLUTION_PLAN.md` holds local evolution
   checkpoints and execution order.
 
