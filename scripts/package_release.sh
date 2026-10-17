@@ -6,6 +6,7 @@ VERSION="$(grep '^version:' "$ROOT_DIR/pubspec.yaml" | awk '{print $2}')"
 SRC="$ROOT_DIR/bin/boundarylens.dart"
 DIST="$ROOT_DIR/dist"
 cd "$ROOT_DIR"
+export PUB_HOSTED_URL=https://pub.dev
 dart pub get --enforce-lockfile
 
 case "$(uname -s)" in

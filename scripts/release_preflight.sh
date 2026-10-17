@@ -6,6 +6,9 @@ set -u -o pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Release locks use the canonical registry, independently of a local mirror.
+export PUB_HOSTED_URL=https://pub.dev
+
 failures=()
 
 pass() {
@@ -51,7 +54,12 @@ else
   fail 'clean Git worktree (commit, stash, or remove local changes before publishing)'
 fi
 
-run_gate 'resolve locked dependencies' dart pub get --enforce-lockfile
+if ! dart pub get --enforce-lockfile; then
+  fail 'resolve locked dependencies'
+  printf '\nPreflight aborted: dependencies were not resolved; later checks require them.\n' >&2
+  exit 1
+fi
+pass 'resolve locked dependencies'
 run_gate 'format gate' dart format --output=none --set-exit-if-changed bin lib test
 run_gate 'static analysis' dart analyze
 run_gate 'test suite' dart test

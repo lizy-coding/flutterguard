@@ -15,6 +15,9 @@
 - Read package version from root `pubspec.yaml`. Check the native CLI's
   `--version` agrees with it; the entry point currently has its own version
   constant, so agreement must be verified when versions change.
+- Release preflight and native packaging resolve the committed lock against
+  `https://pub.dev`, independently of a developer's local mirror setting.
+  Dependency resolution must succeed before downstream CLI checks run.
 - Native package folders are `dist/boundarylens-<version>-<os>-<arch>`.
   Packaging builds for the actual host/target and must run `dart compile exe`
   and the resulting binary's version check.
