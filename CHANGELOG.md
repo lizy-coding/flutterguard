@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.1 BoundaryLens release candidate (2026-10-17, not published)
+## 0.7.1 — First BoundaryLens distribution (2026-10-17)
 
 - First IDEA distribution targets macOS Apple Silicon / ARM64 on IDEA2026.1;
   descriptor OS/architecture dependencies restrict delivery. Other IDEA hosts
@@ -17,11 +17,11 @@
 - Fix the offline guide layout and verify wrapping, screenshots and changelog
   rendering in the local IDEA settings window.
 
-## Unreleased — BoundaryLens rename (2026-10-16)
+### Rename migration
 
 - Rename the product, Dart package (`boundarylens_cli`), executable
   (`boundarylens`) and IntelliJ plugin (`com.boundarylens`). Repository URL and
-  existing copyright notices remain unchanged. This is not a published release.
+  existing copyright notices remain unchanged.
 - Prefer `boundarylens.yaml` while retaining `flutterguard.yaml` fallback;
   accept both suppression prefixes during migration. Finding IDs and report
   schemas remain unchanged. See `doc/RENAMING.md` for installation migration.

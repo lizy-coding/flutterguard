@@ -26,8 +26,10 @@ Source and release maintenance: [lizy-coding/flutterguard](https://github.com/li
 Use [GitHub Issues](https://github.com/lizy-coding/flutterguard/issues) for bug reports
 and [GitHub Releases](https://github.com/lizy-coding/flutterguard/releases) for published
 release records. The [maintenance guide](RELEASING.md) maps the plugin's source,
-documentation, licensing and release evidence in this repository. The current
-local candidate is not a published Marketplace release.
+documentation, licensing and release evidence in this repository.
+The macOS ARM64 ZIP is distributed through the
+[0.7.1 GitHub release](https://github.com/lizy-coding/flutterguard/releases/tag/v0.7.1).
+GitHub availability does not indicate Marketplace approval.
 
 Install the plugin ZIP through **Settings → Plugins → Install Plugin from Disk**.
 Install/enable the JetBrains Dart plugin to activate Dart inspections. Without

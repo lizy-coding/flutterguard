@@ -1,4 +1,15 @@
 <html><body>
+<h2>0.7.1 — BoundaryLens（2026-10-17）</h2>
+<p>首个 BoundaryLens 分发版本面向 macOS Apple Silicon / ARM64、IDEA 2026.1。
+项目声明 boundarylens.yaml 中的模块路径、公开 entry_points 和允许依赖；
+通过当前文件标注与当前 Dart 包报告展示违规、诊断及本次检查覆盖范围。</p>
+<ul><li>默认启用架构检查；历史非架构规则需项目显式 enabled: true。</li>
+<li>统一规则输入、范围与参数预校验；配置失败不会显示为零发现。</li>
+<li>保留单文件、增量扫描、baseline、抑制注释与 JSON/SARIF 报告契约。</li>
+<li>新插件 ID 为 com.boundarylens；安装前停用旧 FlutterGuard。旧配置与抑制前缀继续兼容。</li>
+<li>离线指南、更新记录、MIT、隐私声明与原生第三方 notices 随包提供。</li></ul>
+<p>GitHub 安装包分发和 Marketplace 审批分别记录。其他平台与 IDE 版本另行验收。</p>
+<hr><h2>开发历史（以下为发布前快照）</h2>
 <h2>0.7.1 发布候选 — 2026-10-17（尚未发布）</h2>
 <p>首发限定 macOS Apple Silicon / ARM64 与 IDEA 2026.1；插件元数据声明系统与架构依赖，
 发布预检只接收对应 native，CI 同步收窄到 macos-15。其他平台后续单独验收。

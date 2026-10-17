@@ -45,13 +45,19 @@ The plugin delegates detection to the bundled CLI maintained in this same reposi
 - [User license](idea-plugin/docs/eula.md) and [privacy statement](idea-plugin/docs/privacy.md)
 - [Marketplace submission preparation](idea-plugin/release-review/marketplace-submission.md)
 
-Local preparation does not publish these materials or the plugin. Marketplace
-availability and approval must be recorded after an actual submission.
+GitHub release assets and Marketplace approval are tracked separately.
+Marketplace availability is recorded only after an actual approval.
 
 ## Install
 
-BoundaryLens is currently a local source iteration. The new package name is not
-claimed to be published on pub.dev. See [rename migration](doc/RENAMING.md) and
+The first binary distribution targets **macOS Apple Silicon / ARM64**. Download
+the CLI archive or IDEA plugin ZIP from the
+[0.7.1 GitHub release](https://github.com/lizy-coding/flutterguard/releases/tag/v0.7.1).
+The plugin targets IDEA 2026.1 (261) with the Dart plugin enabled. Other native
+platforms are outside this first distribution.
+
+The package name is not claimed to be published on pub.dev. To install from a
+source checkout, use the commands below. See [rename migration](doc/RENAMING.md) and
 [the next module-check milestones](doc/MODULE_DETECTION_NEXT_STEPS.md).
 
 ```bash

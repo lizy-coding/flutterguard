@@ -56,8 +56,8 @@ public links. Do not mark the local 0.7.1 iteration as already released.
 - Resolve IDE project-trust / configured outside-package read behavior.
 - Use consistent IDE compatibility targets and obtain a final Plugin Verifier
   verdict for the exact submitted ZIP; complete host smoke tests and preflight.
-- Verify packaged EULA, MIT, privacy, notices and all five replacement screenshots;
-  record final SHA-256. Build success is not approval.
+- Verify packaged EULA, MIT, privacy and notices; record final SHA-256. Use only
+  accurate current-workflow media in the listing. Build success is not approval.
 - Submit only after these gates and publisher declarations are complete. Record
   upload receipt and eventual approval separately.
 
