@@ -1,9 +1,9 @@
 # IDEA 截图场景
 
 这是独立的 Dart 示例项目，代码只用于编辑器检查，不需要运行应用、连接设备或修改业务仓库。
-先重启 IDEA 加载最新 FlutterGuard，再打开本目录的项目和下列文件。
+先重启 IDEA 加载最新 BoundaryLens，再打开本目录的项目和下列文件。
 
-每次截图前：保存文件 → **Tools → FlutterGuard: Scan Current Saved File**。
+每次截图前：保存文件 → **Tools → BoundaryLens: Scan Current Saved File**。
 告警截图请将鼠标停在对应行上，让 ruleId 和建议一起出现；无告警截图请包含扫描完成通知。
 只保留菜单操作后的最新通知，避免把其他文件的通知混入截图。
 
@@ -26,4 +26,4 @@
 2 high、2 medium，1 条显式抑制，0 diagnostics。场景 10 的预期为 exit 2。
 
 首次反馈先给场景 **1、2、7、10** 的截图即可。如果体验异常，也可以直接发你看到的菜单、
-通知或 Settings → Tools → FlutterGuard，不需要再解释代码。
+通知或 Settings → Tools → BoundaryLens，不需要再解释代码。

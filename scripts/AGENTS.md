@@ -15,11 +15,11 @@
 - Read package version from root `pubspec.yaml`. Check the native CLI's
   `--version` agrees with it; the entry point currently has its own version
   constant, so agreement must be verified when versions change.
-- Native package folders are `dist/flutterguard-<version>-<os>-<arch>`.
+- Native package folders are `dist/boundarylens-<version>-<os>-<arch>`.
   Packaging builds for the actual host/target and must run `dart compile exe`
   and the resulting binary's version check.
-- Export `PLUGIN_VERSION` from pubspec for IDEA builds; an unset Gradle version
-  falls back to `0.0.0`, which is not evidence of the intended release version.
+- Export `PLUGIN_VERSION` from pubspec for IDEA builds; Gradle also reads the
+  root pubspec when unset. Verify the packaged version rather than assuming it.
 
 ## Gate and mutation boundaries
 
@@ -28,11 +28,14 @@ dry-run. Its dependency resolution and example scan can write local files;
 its dry-run never uploads a package. Preserve unrelated work instead of
 removing files to satisfy its clean-worktree gate.
 
-IDEA preflight requires four versioned native binaries: macOS arm64, macOS
-x64, Linux x64, and Windows x64. It copies them into
+The first IDEA release targets only macOS arm64, as confirmed by the user.
+Preflight runs on that host and requires its versioned native binary and matching
+OS/architecture descriptor dependencies. It copies the binary into
 `idea-plugin/src/main/resources/bin/`, changes executable modes where relevant,
 and invokes Gradle `check`, `verifyPlugin`, and `buildPlugin`. It does not
-compile missing binaries or prove Marketplace publication.
+compile missing binaries or prove Marketplace publication. Other native resources
+are rejected in this distribution. CLI portability is independent of this first
+IDE release; adding a target requires a separate distribution decision and smoke.
 
 Keep CLI preflight, native packaging, IDEA verification, and publication
 statuses distinct. A documentation refresh needs changed-path and whitespace

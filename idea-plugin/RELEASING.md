@@ -1,4 +1,4 @@
-# FlutterGuard plugin release maintenance
+# BoundaryLens plugin release maintenance
 
 Canonical repository: https://github.com/lizy-coding/flutterguard.
 This repository maintains the IDEA plugin and the CLI it bundles together.
@@ -9,7 +9,7 @@ Public publisher name: forest.li; contact: zhenyu_li1998@163.com.
 | Responsibility | Authoritative local source |
 |---|---|
 | Detection and rule definitions | `../lib/src/rules/` and its sole registry |
-| IntelliJ integration / metadata | `src/main/kotlin/com/flutterguard/`, `src/main/resources/META-INF/plugin.xml` |
+| IntelliJ integration / metadata | `src/main/kotlin/com/boundarylens/`, `src/main/resources/META-INF/plugin.xml` |
 | Installation and scenarios | `README.md`, `examples/inspection_scenarios/` |
 | Offline guide / real screenshots | `docs/guide.html`, `docs/screenshots/` |
 | What's New and bundled history | `docs/changelog.html` |
@@ -37,6 +37,11 @@ public release revision and be checked for anonymous access before submission.
 Do not invent a Marketplace listing URL before a listing is created.
 
 ## Release sequence
+
+First release target confirmed on 2026-10-17: macOS Apple Silicon / ARM64,
+IDEA 2026.1 (tested IU-261.27258.48), CLI SDK 3.13.2. The plugin descriptor
+declares OS/architecture dependencies; the release workflow uses macos-15.
+Windows, Linux and Intel Mac are not part of this first IDEA distribution.
 
 1. Review the local diff and resolve the open submission gates in
    [marketplace-submission.md](release-review/marketplace-submission.md).

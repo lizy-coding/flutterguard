@@ -1,0 +1,26 @@
+JDK: Temurin 21.0.12.1
+Mode: local IDE / offline
+Command: bash scripts/idea_plugin_preflight.sh
+Preflight artifact observed SHA256: 98f6abc602bbf15ec4a760a89d9908d3284d126479bbd2a549cebf76cac594a2
+Full log: /private/tmp/boundarylens-20261017-idea-preflight-jdk21.log
+
+PASS  plugin project exists
+PASS  native binary: boundarylens-0.7.1-macos-arm64/boundarylens
+PASS  synced: boundarylens-0.7.1-macos-arm64/boundarylens -> resources/bin/boundarylens-darwin-arm64
+PASS  native version
+PASS  native ARM64 Mach-O
+PASS  plugin.xml id matches
+PASS  platform dependency: com.intellij.modules.os.mac
+PASS  platform dependency: com.intellij.modules.arch.arm64
+PASS  gradlew exists
+BUILD SUCCESSFUL in 23s
+PASS  gradle check/buildPlugin
+Plugin com.boundarylens:0.7.1 against IU-261.27258.48: Compatible
+BUILD SUCCESSFUL in 24s
+PASS  plugin verifier
+PASS  plugin zip: /Users/forest/code/flutterguard/idea-plugin/build/distributions/boundarylens-idea-0.7.1.zip
+Preflight PASSED. Plugin zip: /Users/forest/code/flutterguard/idea-plugin/build/distributions/boundarylens-idea-0.7.1.zip
+
+Dart optional dependency unresolved in that Gradle invocation.
+Independent fixed-copy API verification: Compatible with Dart 510.0.0 and -ignore-os-arch.
+Verifier cache cleanup errors logged: 146

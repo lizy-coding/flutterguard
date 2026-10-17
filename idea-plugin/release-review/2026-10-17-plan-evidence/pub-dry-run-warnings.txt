@@ -1,0 +1,47 @@
+Package validation found the following 2 potential issues:
+* 22 checked-in files are ignored by a `.gitignore`.
+  Previous versions of Pub would include those in the published package.
+
+  Consider adjusting your `.gitignore` files to not ignore those files, and if you do not wish to
+  publish these files use `.pubignore`. See also dart.dev/go/pubignore
+
+  Files that are checked in while gitignored:
+
+  .github/workflows/flutterguard.yml
+  bin/flutterguard.dart
+  doc/FLUTTERGUARD_SPEC.md
+  example/flutterguard.yaml
+  flutterguard.yaml
+  idea-plugin/examples/inspection_scenarios/flutterguard.yaml
+  idea-plugin/examples/inspection_scenarios/setup_failure/flutterguard.yaml
+  idea-plugin/examples/module_boundary/flutterguard.yaml
+  idea-plugin/src/main/kotlin/com/flutterguard/FlutterGuardConfigurable.kt
+  idea-plugin/src/main/kotlin/com/flutterguard/FlutterGuardDocumentation.kt
+  ...
+
+
+* 41 checked-in files are modified in git.
+
+  Usually you want to publish from a clean git state.
+
+  Consider committing these files or reverting the changes.
+
+  Modified files:
+
+  CHANGELOG.md
+  README.md
+  doc/ARCHITECTURE.md
+  doc/EVOLUTION_ROADMAP.md
+  example/README.md
+  example/pubspec.yaml
+  idea-plugin/README.md
+  idea-plugin/RELEASING.md
+  idea-plugin/build.gradle.kts
+  idea-plugin/docs/changelog.html
+  ...
+
+  Run `git status` for more information.
+
+The server may enforce additional checks.
+
+Package has 2 warnings.

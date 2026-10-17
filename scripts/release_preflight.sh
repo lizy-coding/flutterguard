@@ -28,7 +28,7 @@ run_gate() {
   fi
 }
 
-printf 'FlutterGuard release preflight (no package upload)\n'
+printf 'BoundaryLens release preflight (no package upload)\n'
 printf 'Repository: %s\n\n' "$ROOT_DIR"
 
 for required_file in pubspec.yaml README.md CHANGELOG.md LICENSE; do
@@ -51,11 +51,11 @@ else
   fail 'clean Git worktree (commit, stash, or remove local changes before publishing)'
 fi
 
-run_gate 'resolve dependencies' dart pub get
+run_gate 'resolve locked dependencies' dart pub get --enforce-lockfile
 run_gate 'format gate' dart format --output=none --set-exit-if-changed bin lib test
 run_gate 'static analysis' dart analyze
 run_gate 'test suite' dart test
-run_gate 'CLI smoke scan' dart run bin/flutterguard.dart scan example --format json --no-color --fail-on high
+run_gate 'CLI smoke scan' dart run bin/boundarylens.dart scan example --format json --no-color --fail-on high
 run_gate 'pub.dev dry run' dart pub publish --server https://pub.dev --dry-run
 
 VERSION="$(awk '/^version:[[:space:]]*/ { print $2; exit }' pubspec.yaml)"

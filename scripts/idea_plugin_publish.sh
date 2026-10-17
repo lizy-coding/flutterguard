@@ -6,7 +6,12 @@ PLUGIN_DIR="$ROOT_DIR/idea-plugin"
 VERSION="$(grep '^version:' "$ROOT_DIR/pubspec.yaml" | awk '{print $2}')"
 export PLUGIN_VERSION="$VERSION"
 
-printf 'FlutterGuard IDEA Plugin publish — version %s\n\n' "$VERSION"
+printf 'BoundaryLens IDEA Plugin publish — version %s\n\n' "$VERSION"
+
+if [[ -n "$(git -C "$ROOT_DIR" status --porcelain)" ]]; then
+  printf 'Publish aborted: freeze and commit the reviewed source before uploading.\n' >&2
+  exit 1
+fi
 
 # ---- Gate: preflight must pass ----
 printf '== Running preflight ==\n'

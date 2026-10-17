@@ -1,0 +1,3 @@
+Deprecated method com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.restart() : void is invoked in com.boundarylens.BoundaryLensConfigurable.apply() : void
+Deprecated method com.intellij.openapi.application.ReadAction.compute(com.intellij.openapi.util.ThrowableComputable action) : T is invoked in com.boundarylens.BoundaryLensScanAction.actionPerformed(AnActionEvent) : void
+Deprecated method com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.restart(com.intellij.psi.PsiFile psiFile) : void is invoked in com.boundarylens.BoundaryLensScanAction.actionPerformed$1.run$lambda$0(Project, PsiFile, BoundaryLensExternalAnnotator.Request, BoundaryLensScanAction, BoundaryLensExternalAnnotator.Result) : void

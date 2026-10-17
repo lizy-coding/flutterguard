@@ -1,0 +1,1 @@
+Compatible. 3 usages of deprecated API

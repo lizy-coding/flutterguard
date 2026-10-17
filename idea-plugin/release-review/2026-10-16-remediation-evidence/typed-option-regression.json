@@ -1,0 +1,26 @@
+[
+  {
+    "command": "config",
+    "sourceHasVariable": false,
+    "exit": 1,
+    "invalidOptionRejected": true
+  },
+  {
+    "command": "scan",
+    "sourceHasVariable": false,
+    "exit": 2,
+    "invalidOptionRejected": true
+  },
+  {
+    "command": "config",
+    "sourceHasVariable": true,
+    "exit": 1,
+    "invalidOptionRejected": true
+  },
+  {
+    "command": "scan",
+    "sourceHasVariable": true,
+    "exit": 2,
+    "invalidOptionRejected": true
+  }
+]

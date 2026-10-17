@@ -18,7 +18,7 @@ run_gate() {
   if "$@"; then pass "$label"; else fail "$label"; fi
 }
 
-printf 'FlutterGuard IDEA Plugin release preflight\n'
+printf 'BoundaryLens IDEA Plugin release preflight\n'
 printf 'Version: %s\n' "$VERSION"
 printf 'Plugin dir: %s\n\n' "$PLUGIN_DIR"
 
@@ -30,12 +30,15 @@ if [[ ! -f "$PLUGIN_DIR/build.gradle.kts" ]]; then
 fi
 pass 'plugin project exists'
 
-# ---- 2. Verify native binaries are built for all 3 platforms ----
+# First Marketplace release is explicitly macOS ARM64. The descriptor must
+# restrict delivery too; a filename or README statement is not a platform gate.
+if [[ "$(uname -s)" != Darwin || "$(uname -m)" != arm64 ]]; then
+  fail 'release validation requires the declared macOS ARM64 host'
+  exit 1
+fi
+# ---- 2. Verify the declared native target before mutating resources ----
 NATIVE_TARGETS=(
-  "flutterguard-${VERSION}-macos-arm64/flutterguard"
-  "flutterguard-${VERSION}-macos-x64/flutterguard"
-  "flutterguard-${VERSION}-linux-x64/flutterguard"
-  "flutterguard-${VERSION}-windows-x64/flutterguard.exe"
+  "boundarylens-${VERSION}-macos-arm64/boundarylens"
 )
 for target in "${NATIVE_TARGETS[@]}"; do
   if [[ -x "$NATIVE_DIST/$target" ]] || [[ -f "$NATIVE_DIST/$target" ]]; then
@@ -46,7 +49,7 @@ for target in "${NATIVE_TARGETS[@]}"; do
 done
 
 if (( ${#failures[@]} > 0 )); then
-  printf '\nPreflight aborted: native target set incomplete; existing plugin resources were not overwritten.\n' >&2
+  printf '\nPreflight aborted: declared native target missing; existing plugin resources were not overwritten.\n' >&2
   exit 1
 fi
 
@@ -64,19 +67,28 @@ sync_binary() {
   fi
 }
 
-sync_binary "flutterguard-${VERSION}-macos-arm64/flutterguard" "flutterguard-darwin-arm64"
-sync_binary "flutterguard-${VERSION}-macos-x64/flutterguard" "flutterguard-darwin-x64"
-sync_binary "flutterguard-${VERSION}-linux-x64/flutterguard" "flutterguard-linux-x64"
-sync_binary "flutterguard-${VERSION}-windows-x64/flutterguard.exe" "flutterguard-windows-x64.exe"
+sync_binary "boundarylens-${VERSION}-macos-arm64/boundarylens" "boundarylens-darwin-arm64"
+run_gate 'native version' bash -c '[[ "$("$1" --version)" == "boundarylens $2" ]]' _ "$RESOURCES_DIR/boundarylens-darwin-arm64" "$VERSION"
+run_gate 'native ARM64 Mach-O' bash -c 'file "$1" | grep -q "Mach-O 64-bit executable arm64"' _ "$RESOURCES_DIR/boundarylens-darwin-arm64"
+for extra in boundarylens-darwin-x64 boundarylens-linux-x64 boundarylens-windows-x64.exe; do
+  if [[ -e "$RESOURCES_DIR/$extra" ]]; then fail "undeclared native resource: $extra"; fi
+done
 
 # ---- 4. Verify plugin descriptor ----
 PLUGIN_XML="$PLUGIN_DIR/src/main/resources/META-INF/plugin.xml"
 if [[ -f "$PLUGIN_XML" ]]; then
-  if grep -q '<id>com.flutterguard</id>' "$PLUGIN_XML"; then
+  if grep -q '<id>com.boundarylens</id>' "$PLUGIN_XML"; then
     pass 'plugin.xml id matches'
   else
-    fail 'plugin.xml id does not match com.flutterguard'
+    fail 'plugin.xml id does not match com.boundarylens'
   fi
+  for dependency in com.intellij.modules.os.mac com.intellij.modules.arch.arm64; do
+    if grep -q "<depends>$dependency</depends>" "$PLUGIN_XML"; then
+      pass "platform dependency: $dependency"
+    else
+      fail "missing platform dependency: $dependency"
+    fi
+  done
 else
   fail "plugin.xml not found at $PLUGIN_XML"
 fi
@@ -88,17 +100,37 @@ else
   fail 'gradlew missing (run: cd idea-plugin && gradle wrapper)'
 fi
 
-# ---- 6. Gradle check (compile + test) ----
-run_gate 'gradle check' bash -c "cd '$PLUGIN_DIR' && ./gradlew check"
-
-# ---- 7. Plugin verifier ----
-run_gate 'plugin verifier' bash -c "cd '$PLUGIN_DIR' && ./gradlew verifyPlugin"
-
-# ---- 8. Build plugin distribution ----
-run_gate 'buildPlugin' bash -c "cd '$PLUGIN_DIR' && ./gradlew buildPlugin"
+if (( ${#failures[@]} > 0 )); then exit 1; fi
+gradle_args=(--no-daemon)
+if [[ -n "${BOUNDARYLENS_LOCAL_IDE_PATH:-}" ]]; then
+  gradle_args+=("-PlocalIdePath=$BOUNDARYLENS_LOCAL_IDE_PATH" "-PverifierIdePath=$BOUNDARYLENS_LOCAL_IDE_PATH")
+fi
+if [[ "${BOUNDARYLENS_GRADLE_OFFLINE:-false}" == true ]]; then gradle_args+=(--offline); fi
+if [[ -n "${BOUNDARYLENS_VERIFIER_HOME:-}" ]]; then
+  gradle_args+=("-PverifierHomePath=$BOUNDARYLENS_VERIFIER_HOME")
+fi
+# ---- 6-8. Build and verify the same declared distribution ----
+cd "$PLUGIN_DIR"
+run_gate 'gradle check/buildPlugin' ./gradlew "${gradle_args[@]}" check buildPlugin
+verifier_marker="$PLUGIN_DIR/build/.release-verifier-start"
+touch "$verifier_marker"
+run_gate 'plugin verifier' ./gradlew "${gradle_args[@]}" verifyPlugin
+fresh_report=false
+for dependencies in "$PLUGIN_DIR"/build/reports/pluginVerifier/*/plugins/com.boundarylens/"$VERSION"/dependencies.txt; do
+  if [[ -f "$dependencies" && "$dependencies" -nt "$verifier_marker" ]]; then
+    fresh_report=true
+    verdict="${dependencies%/dependencies.txt}/verification-verdict.txt"
+    if grep -qx 'Compatible' "$verdict" && grep -Eq 'Dart:[0-9]' "$dependencies"; then
+      pass 'fresh Compatible verdict with resolved Dart dependency'
+    else
+      fail 'Verifier must be Compatible and resolve the real Dart plugin'
+    fi
+  fi
+done
+if [[ "$fresh_report" != true ]]; then fail 'fresh Verifier dependency report missing'; fi
 
 # ---- Report ----
-PLUGIN_ZIP="$PLUGIN_DIR/build/distributions/flutterguard-idea-${VERSION}.zip"
+PLUGIN_ZIP="$PLUGIN_DIR/build/distributions/boundarylens-idea-${VERSION}.zip"
 if [[ -f "$PLUGIN_ZIP" ]]; then
   pass "plugin zip: $PLUGIN_ZIP"
 else

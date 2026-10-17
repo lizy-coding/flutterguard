@@ -1,13 +1,17 @@
-# FlutterGuard for IntelliJ IDEA
+# BoundaryLens for IntelliJ IDEA
+
+Renamed from FlutterGuard. The new plugin ID is `com.boundarylens`; disable the
+old `com.flutterguard` installation before testing this ZIP to avoid duplicate
+inspections. Settings are independent. See [migration](../doc/RENAMING.md).
 
 Core scope: **module public-entry protection**. Architecture checks are enabled
 by default; legacy non-architecture checks require explicit `enabled: true` in project rules. Projects declare module paths,
-public `entry_points` and allowed dependencies in `flutterguard.yaml`; no per-class annotations.
+public `entry_points` and allowed dependencies in `boundarylens.yaml`; no per-class annotations.
 See the [bundled guide](docs/guide.html) for a configuration and allowed/private-import examples.
 The [module-boundary example](examples/module_boundary/README.md) is the primary acceptance target;
 older inspection screenshots below remain auxiliary evidence only.
 
-Use **Tools → FlutterGuard: Scan Current Dart Package** with a Dart source selected
+Use **Tools → BoundaryLens: Scan Current Dart Package** with a Dart source selected
 to scan its nearest `pubspec.yaml` package (including nested packages). The read-only
 text report is copyable and retains all finding locations and diagnostics.
 Module coverage distinguishes not_configured, disabled, complete and partial; an
@@ -27,14 +31,14 @@ local candidate is not a published Marketplace release.
 
 Install the plugin ZIP through **Settings → Plugins → Install Plugin from Disk**.
 Install/enable the JetBrains Dart plugin to activate Dart inspections. Without
-Dart, FlutterGuard does not register its annotator.
+Dart, BoundaryLens does not register its annotator.
 
-**Settings → Tools → FlutterGuard** contains one project-local enable switch.
+**Settings → Tools → BoundaryLens** contains one project-local enable switch.
 The plugin scans saved local `.dart` files with its bundled native CLI. The CLI
-resolves the target package and its `flutterguard.yaml`; the IDE never supplies
+resolves the target package and its `boundarylens.yaml`; the IDE never supplies
 consumer-specific rules or enforces a CI severity gate.
 
-For an explicit outcome, use **Tools → FlutterGuard: Scan Current Saved File**
+For an explicit outcome, use **Tools → BoundaryLens: Scan Current Saved File**
 or the editor context menu. It reports visible finding count and diagnostics,
 and refreshes annotations. It does not save your edits automatically.
 
@@ -45,8 +49,8 @@ reports, and scanner diagnostics remain visible as file-level warnings.
 
 ## 插件内直接查看截图与更新记录
 
-**Tools → FlutterGuard: Usage Guide & Changelog** 打开设置页中的内置指南。
-**Settings → Tools → FlutterGuard** 的“场景截图与使用说明”直接展示五张随安装包携带的截图，
+**Tools → BoundaryLens: Usage Guide & Changelog** 打开设置页中的内置指南。
+**Settings → Tools → BoundaryLens** 的“场景截图与使用说明”直接展示五张随安装包携带的截图，
 “更新记录”展示按版本组织的新增、修复、调整与验证范围；两者均可离线查看。
 Plugins 详情页的 **What's New** 使用同一份 [changelog](docs/changelog.html)，避免重复维护更新摘要。
 
@@ -87,7 +91,7 @@ Dart SDK 已为该示例项目配置；其他项目需要自行启用 Dart 支�
 
 ![配置错误与 exit 2 提示](docs/screenshots/04-configuration-failure.png)
 
-本图另含 IDEA 自身的拼写提示，它不是 FlutterGuard finding。
+本图另含 IDEA 自身的拼写提示，它不是 BoundaryLens finding。
 
 ### 非法层依赖
 
@@ -100,7 +104,7 @@ init/initState 本身不要求 dispose；一次性回调没有注销配对。
 
 ## Build and verification
 
-Default SDK: IDEA Community 2024.3, Java 21, Kotlin 2.0.21. Version comes from the
+Default SDK: IDEA Ultimate 2026.1.5 (261), Java 21, Kotlin 2.3.0. Version comes from the
 root pubspec unless `PLUGIN_VERSION` is explicitly supplied.
 
 ```bash
@@ -113,16 +117,17 @@ Kotlin compiler to that SDK's metadata, for example:
 
 ```bash
 JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' \
-FLUTTERGUARD_KOTLIN_VERSION=2.3.0 \
+BOUNDARYLENS_KOTLIN_VERSION=2.3.0 \
 ./gradlew -PlocalIdePath='/Applications/IntelliJ IDEA.app/Contents' -PpluginSinceBuild=261 check buildPlugin
 ```
 
-A local SDK build validates that host only; it does not establish 2024.3 or
+A local SDK build validates that host only; it does not establish other IDE versions or
 cross-platform compatibility. `buildPlugin` does not supply absent CLI resources.
 The current local resource set must be inspected before installing its ZIP.
 
 Release packaging uses `bash scripts/idea_plugin_preflight.sh` from the root. It
-requires all four versioned native binaries, syncs resources, runs the declared
+requires the versioned macOS ARM64 binary on a matching host, checks the
+Marketplace OS/architecture selectors, syncs resources, runs the declared
 IDE verifier, and builds the distribution. No Marketplace publication occurs
 until separately authorized.
 
@@ -136,9 +141,10 @@ Use a small project with `pubspec.yaml`, `lib/`, and optional configuration:
 4. Disable and re-enable the plugin in Tools settings; verify highlighting updates.
 5. Use invalid configuration; verify a visible failure, then fix and save.
 
-Native resource names: `flutterguard-darwin-arm64`, `flutterguard-darwin-x64`,
-`flutterguard-linux-x64`, `flutterguard-windows-x64.exe`. Hosts outside this set
-show an unsupported-host warning rather than guessing another executable.
+First Marketplace distribution: macOS Apple Silicon / ARM64 only, with native
+resource `boundarylens-darwin-arm64`. Descriptor dependencies restrict installation
+to macOS ARM64 and IDEA 2026.1. Windows, Linux and Intel Mac are deferred;
+internal resource-name mappings do not declare release support for those targets.
 
 ## 发布前审查
 
@@ -149,7 +155,7 @@ show an unsupported-host warning rather than guessing another executable.
 
 ## 许可与协议材料
 
-FlutterGuard 沿用根目录 MIT 许可证；[用户许可说明](docs/eula.md) 明确许可方、
+BoundaryLens 沿用根目录 MIT 许可证；[用户许可说明](docs/eula.md) 明确许可方、
 JetBrains 非协议当事方、检测能力边界和第三方许可证关系，不额外限制 MIT 权利。
 公开发布者名称为 forest.li，联系邮箱为 zhenyu_li1998@163.com。
 [市场提交清单](release-review/marketplace-submission.md) 区分随包材料与本人需要完成的账户协议步骤。

@@ -4,11 +4,11 @@ $rootDir = Split-Path -Parent $PSScriptRoot
 $pubspec = Join-Path $rootDir "pubspec.yaml"
 $versionLine = Select-String -Path $pubspec -Pattern "^version:" | Select-Object -First 1
 $version = ($versionLine.Line -split "\s+")[1]
-$src = Join-Path $rootDir "bin\flutterguard.dart"
+$src = Join-Path $rootDir "bin\boundarylens.dart"
 $dist = Join-Path $rootDir "dist"
-$name = "flutterguard-$version-windows-x64"
+$name = "boundarylens-$version-windows-x64"
 $outDir = Join-Path $dist $name
-$bin = Join-Path $outDir "flutterguard.exe"
+$bin = Join-Path $outDir "boundarylens.exe"
 $archive = Join-Path $dist "$name.zip"
 
 if (Test-Path $outDir) {

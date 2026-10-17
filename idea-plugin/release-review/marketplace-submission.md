@@ -1,6 +1,10 @@
 # Marketplace submission preparation
 
 Prepared 2026-10-10. Status: **HOLD — not ready to upload**.
+Updated 2026-10-17 for the first macOS Apple Silicon distribution; dated audits
+remain historical. [Remediation](2026-10-16-release-remediation.md) closed the
+internal rule-contract, typed-option and local UI gaps. Final public source,
+publisher decisions and submission materials remain independent gates.
 This document records proposed submission materials, not acceptance of an
 agreement, a published release, or JetBrains approval.
 
@@ -12,15 +16,15 @@ This association is prepared locally; the current materials have not been pushed
 
 | Field | Prepared value / remaining action |
 |---|---|
-| Name / ID | FlutterGuard / com.flutterguard; check uniqueness in Marketplace |
+| Name / ID | BoundaryLens / com.boundarylens; check uniqueness in Marketplace |
 | Public contact | zhenyu_li1998@163.com |
 | Vendor website / source | https://github.com/lizy-coding/flutterguard |
 | Vendor legal identity | Public name forest.li confirmed; verify individual/entity identity against account |
-| License | Existing MIT License; accompanying docs/eula.md is a release draft |
-| Privacy | docs/privacy.md; publish the frozen statement and verify its public URL |
+| License | Existing MIT License and docs/eula.md notice; owner verifies Vendor profile at submission |
+| Privacy | Publisher confirmed the support policy on 2026-10-17; publish docs/privacy.md and verify its public URL |
 | Description / What's New | plugin.xml English primary description / docs/changelog.html |
-| Screenshots | Five manually captured images in docs/screenshots/; check final media presentation |
-| Compatibility | Do not infer support from default Gradle settings; freeze IDE/OS/architecture range |
+| Screenshots | Offline legacy images are labeled auxiliary. Do not upload them as current module-entry marketing screenshots; capture the new set manually when available |
+| Compatibility | First release: macOS ARM64 only, IDEA261; OS/architecture dependency selectors and native host gate |
 
 The source, EULA, privacy and notices URLs must point to the publicly accessible
 release revision. Local files and proposed repository paths are not verified
@@ -56,6 +60,28 @@ public links. Do not mark the local 0.7.1 iteration as already released.
   record final SHA-256. Build success is not approval.
 - Submit only after these gates and publisher declarations are complete. Record
   upload receipt and eventual approval separately.
+
+## Current implementation scope (2026-10-17)
+
+- Default build and verifier target IDEA2026.1.5, Java21, Kotlin2.3; current
+  tested host is IU-261.27258.48 / Dart510.0.0 / macOS ARM64.
+- Platform dependencies are preserved for Marketplace delivery filtering.
+  Official Verifier `-ignore-os-arch` checks API compatibility independently;
+  preflight separately checks the descriptor selectors, matching host, Mach-O
+  ARM64, native version and bundled CLI smoke. This flag alone does not prove
+  installation filtering or another OS works.
+- Root CLI dependencies are locked in pubspec.lock; release commands enforce it.
+- No remote push, release tag, account declaration or Marketplace upload is
+  authorized by this local preparation. The publisher confirmed the actual
+  support policy on 2026-10-17; a local policy file is not a verified public URL.
+- New module screenshots improve onboarding but are not treated as a universal
+  Marketplace screenshot mandate: the explicit screenshot requirement in the
+  checked approval guideline applies to color-scheme/theme plugins. This scanner
+  can prepare an accurate English listing without claiming the old images show
+  the new default workflow. The offline guide retains labeled historical images.
+
+Platform distribution reference checked 2026-10-17:
+[OS/architecture-specific versions](https://plugins.jetbrains.com/docs/marketplace/os-architecture-specific-plugin-versions.html).
 
 ## Official references checked 2026-10-10
 

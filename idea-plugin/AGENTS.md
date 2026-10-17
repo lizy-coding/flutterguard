@@ -5,11 +5,11 @@ configuration, and finding ownership remain in the root Dart scanner.
 
 ## Entry points and protocol
 
-- `FlutterGuardExternalAnnotator` collects the selected Dart file, invokes the
+- `BoundaryLensExternalAnnotator` collects the selected Dart file, invokes the
   native CLI, retains the full report, and projects current-file findings into annotations.
-- `FlutterGuardSettings` owns the project-local enabled flag only. The IDE
+- `BoundaryLensSettings` owns the project-local enabled flag only. The IDE
   displays findings without a severity gate; gate policy belongs to CLI callers.
-- `META-INF/plugin.xml` declares plugin ID `com.flutterguard` and its editor,
+- `META-INF/plugin.xml` declares plugin ID `com.boundarylens` and its editor,
   project-service, settings, and optional Dart integration entry points.
 - The annotator invokes `scan <absolute-file.dart> --format json --stdout
   --no-color --fail-on none` with the IDE project as working directory.
@@ -22,22 +22,21 @@ configuration, and finding ownership remain in the root Dart scanner.
 
 ## Native resources and version
 
-The preflight packages these native resources:
+The first release is macOS ARM64 only. The preflight packages this native resource:
 
 ```text
-src/main/resources/bin/flutterguard-darwin-arm64
-src/main/resources/bin/flutterguard-darwin-x64
-src/main/resources/bin/flutterguard-linux-x64
-src/main/resources/bin/flutterguard-windows-x64.exe
+src/main/resources/bin/boundarylens-darwin-arm64
 ```
 
 `../scripts/idea_plugin_preflight.sh` copies these from versioned `dist/`
 packages and runs Gradle check, verifier, and build. Its preflight is mutating.
-Runtime resource lookup is owned by `FlutterGuardNativeCli`; Windows includes
+Runtime resource lookup is owned by `BoundaryLensNativeCli`; Windows includes
 the `.exe` suffix. Extract once per IDE process and reject unsupported hosts.
-Resource-name tests are not Windows runtime acceptance.
-`PLUGIN_VERSION` is supplied from the root pubspec; do not interpret the Gradle
-`0.0.0` fallback as an intended release.
+The descriptor declares com.intellij.modules.os.mac and com.intellij.modules.arch.arm64
+so Marketplace limits delivery. Resource-name mapping tests do not declare release
+support for the other hosts.
+`PLUGIN_VERSION` is supplied from the root pubspec; Gradle reads that same file
+when unset. Verify the version in the packaged descriptor and native executable.
 
 For integration changes, select the annotator/settings/descriptor files and
 CLI output contract tests that match the change. Validate supported native
@@ -57,8 +56,8 @@ Filter to the selected file only when rendering editor annotations. Drain stdout
 cancellation, and show scanner failures/diagnostics instead of empty success.
 
 `./gradlew check buildPlugin` is the implementation gate. `-PlocalIdePath` and
-`FLUTTERGUARD_KOTLIN_VERSION` allow a matching installed SDK/compiler for local
-validation; they do not replace the default 2024.3 release compatibility gate.
+`BOUNDARYLENS_KOTLIN_VERSION` allow a matching installed SDK/compiler for local
+validation; they must match the declared 261 / IDEA 2026.1.5 compatibility line.
 See `README.md` here for installation and manual acceptance.
 
 ## Package reports and module coverage
