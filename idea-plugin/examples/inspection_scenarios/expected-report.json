@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "2.0.0",
+  "summary": {
+    "total": 4,
+    "high": 2,
+    "medium": 2,
+    "low": 0,
+    "suppressed": 1,
+    "suppressedByBaseline": 0,
+    "diagnostics": 0,
+    "byDomain": {
+      "architecture": {
+        "high": 2,
+        "medium": 0,
+        "low": 0,
+        "total": 2
+      },
+      "performance": {
+        "high": 0,
+        "medium": 2,
+        "low": 0,
+        "total": 2
+      }
+    }
+  },
+  "expectedFindings": [
+    {
+      "fileRelative": "lib/scenario_07_demo_secret.dart",
+      "line": 3,
+      "ruleId": "iot_security",
+      "severity": "high"
+    },
+    {
+      "fileRelative": "lib/presentation/scenario_08_bad_boundary.dart",
+      "line": 2,
+      "ruleId": "layer_violation",
+      "severity": "high"
+    },
+    {
+      "fileRelative": "lib/scenario_01_timer_leak.dart",
+      "line": 6,
+      "ruleId": "lifecycle_resource_not_disposed",
+      "severity": "medium"
+    },
+    {
+      "fileRelative": "lib/scenario_03_stream_leak.dart",
+      "line": 5,
+      "ruleId": "lifecycle_resource_not_disposed",
+      "severity": "medium"
+    }
+  ],
+  "noFindings": [
+    "lib/scenario_02_timer_fixed.dart",
+    "lib/scenario_04_delegated_cleanup.dart",
+    "lib/scenario_05_one_shot_valid.dart",
+    "lib/scenario_06_suppressed.dart",
+    "lib/presentation/scenario_09_good_boundary.dart"
+  ]
+}

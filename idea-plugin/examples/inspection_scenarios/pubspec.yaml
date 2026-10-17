@@ -1,0 +1,6 @@
+name: boundarylens_inspection_scenarios
+description: Saved-file inspection examples for local IDEA screenshot acceptance.
+publish_to: none
+
+environment:
+  sdk: ^3.11.0

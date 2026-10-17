@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-16",
+  "status": "NO_GO",
+  "zip": "idea-plugin/build/distributions/boundarylens-idea-0.7.1.zip",
+  "zipSha256": "14dc0f7f17516e2c7a88d01ce6d0430018c1b864516b978354ad5b60bff8646d",
+  "zipBytes": 4225520,
+  "dartTests": 83,
+  "ideaTests": 21,
+  "ideaFailures": 0,
+  "verifier": {
+    "ide": "IU-261.27258.48",
+    "dartPlugin": "510.0.0",
+    "verdict": "Compatible",
+    "deprecatedUsageReportPresent": false
+  },
+  "nativeTargets": {
+    "macos-arm64": "PASS",
+    "macos-x64": "MISSING",
+    "linux-x64": "MISSING",
+    "windows-x64": "MISSING"
+  },
+  "sourceFreeze": "PENDING",
+  "privacyRetention": "PENDING_BY_USER_DECISION",
+  "uiAcceptance": {
+    "host": "IDEA 2026.1.5 / Dart 510.0.0 / macOS arm64",
+    "firstInstalledZipSha256": "0d07f2b21ada3d210838b9618e10b9870086138100368e308ba8923d7023bcf3",
+    "editorViolation": "PASS: module_violation at bad.dart:1",
+    "packageViolation": "PASS: 1 finding, 0 diagnostics, project 4/4",
+    "fixedPackage": "PASS: 0 findings, 0 diagnostics, project 4/4",
+    "partial": "PASS: entry_points_not_declared",
+    "unconfigured": "PASS: not_configured, 0/4",
+    "invalidOption": "PASS: exit 2 requireTls must be boolean",
+    "singleFile": "PASS: 1 finding, file 1/4, cycles unsupported_scope",
+    "guideAndChangelog": "PASS: guide paragraphs wrap; screenshots fit content area; changelog wraps",
+    "layoutFix": "PASS_AFTER_IDE_RESTART",
+    "oldPluginDisabled": true,
+    "demoInputsRestored": true,
+    "forgeSessionPreserved": false,
+    "finalInstalledJarMatchesZip": true,
+    "restartAuthorized": true,
+    "forgeSessionStoppedWithAuthorization": true,
+    "layoutScope": "Current IDEA settings window on macOS arm64; other sizes/hosts not certified"
+  },
+  "ideaVersion": {
+    "since-build": "261",
+    "until-build": "261.*"
+  },
+  "nativeSha256": "f41c47c9277b18b2692a70594b0ba8335e2c9200460856a630594397b622029a"
+}

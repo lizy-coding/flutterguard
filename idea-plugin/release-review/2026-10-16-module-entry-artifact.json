@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-16",
+  "gitBase": "fb86f4ffa322bb0dbe69748c5c594296bf44657d",
+  "dirtyWorktree": true,
+  "version": "0.7.1 local iteration, unpublished",
+  "artifact": "idea-plugin/build/distributions/flutterguard-idea-0.7.1.zip",
+  "sha256": "4d034c603103777101b0ba8975b95e5a77a37d0519cbd91916d5e9dd94f7b32f",
+  "size": 4209070,
+  "nativeSha256": "5ec6458095f6547df332e6c3bbfea64e2736c9540eed8d3858518af305938e49",
+  "dartSdk": "3.13.2 macos_arm64",
+  "ideRange": {
+    "since-build": "261",
+    "until-build": "261.*"
+  },
+  "dartTests": {
+    "passed": 68,
+    "failed": 0
+  },
+  "ideaTests": [
+    {
+      "name": "com.flutterguard.FlutterGuardDocumentationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.flutterguard.FlutterGuardNativeCliTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.flutterguard.FlutterGuardProtocolTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.flutterguard.FlutterGuardScanTargetTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "cliDryRun": {
+    "exit": 65,
+    "warnings": 2,
+    "hints": 1,
+    "reason": "dirty tracked files; deleted tracked StartupActivity ignored by pub packaging; version increment hint"
+  },
+  "manualNewUi": "PENDING",
+  "pluginVerifier": "PENDING",
+  "otherNativePlatforms": "PENDING",
+  "marketplace": "NOT_SUBMITTED",
+  "sourceHashes": {
+    "lib/src/import_utils.dart": "d6a6d3e10604094b4be2ac2a3447900e6cd42794e722385245e3c54590103492",
+    "lib/src/import_graph.dart": "ad5edce81970771a51af75b54f225d64e17770c1f51f619f7fff5caa25be7465",
+    "lib/src/source_workspace.dart": "6667964447fcd7bda8262f0b7f7f9124403c40fbe8ea8eeb1859f7575d2c402e",
+    "lib/src/config_loader.dart": "6e1b6187df69c438a76e5522e4beb62137bfe8ed06af9c084958c1773a8118b6",
+    "lib/src/config_tools.dart": "00a55d369980c3d5d4426eefec4b6c627ede55a23f124de453b79d7f500160c2",
+    "lib/src/boundary_engine.dart": "48ffbeba21cb6910a84daf07cb1ca06937da00c904183cb576579f8ceeef5d34",
+    "lib/src/rules/boundary_rule.dart": "771f6b3326e49c255409ba41f785617dd97ded0b76b9363ed1d173d479c63799",
+    "lib/src/rules/registry.dart": "f08d4844e1e4b8ba4a7cf1591a935503c384a03b280b05625483472bb6d32e7c",
+    "lib/src/rules/rule.dart": "967777b0c2e5f9271bebf786d3b83b9bde15f9f27b08e9f06f8ab5d709ddbb95",
+    "lib/src/scanner.dart": "8b71352c3d4a3925f8d4b3fd090b2d42732778813e0f04c8a1863367cc772acc",
+    "lib/src/report_generator.dart": "1321513b1db03a3341d6d51eef5b3b65f15662fdd227c28ecb66df73728ca1b9",
+    "lib/src/sarif_report.dart": "47ab89f2ae42ccdececbb083362723600a7ca9d61bbdd2942f73a29c0e46671f",
+    "lib/src/cli/scan_command.dart": "c88d64825cb32f0bbc3e656f67b8c611183cf141138b0f4f3e3490431449a631",
+    "idea-plugin/src/main/kotlin/com/flutterguard/FlutterGuardProtocol.kt": "a4a506883240b2e4fdeed09bf0610c56d61eeefb85532746fc144edba7c6a0a9",
+    "idea-plugin/src/main/kotlin/com/flutterguard/FlutterGuardExternalAnnotator.kt": "dd710e96f526d072b38a977313fb5e699ff3b16108253d7fdf4f4eb8691e0919",
+    "idea-plugin/src/main/kotlin/com/flutterguard/FlutterGuardScanAction.kt": "126977ef41c751bd06268d239654e5934568b6b13edb38a7eea7392e2dce5296"
+  }
+}

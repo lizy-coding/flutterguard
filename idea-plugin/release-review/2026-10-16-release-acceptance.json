@@ -1,0 +1,314 @@
+{
+  "date": "2026-10-16",
+  "decision": "NO_GO",
+  "gitHead": "ca8092573a05abd7341b3f05b9c6402c568779d3",
+  "dirtyWorktree": true,
+  "artifact": "idea-plugin/build/distributions/boundarylens-idea-0.7.1.zip",
+  "sha256": "362146023e34b90155762454c9c3e1cd825a07083b68c9eb1d08e15cdb97ca0f",
+  "size": 4209037,
+  "id": "com.boundarylens",
+  "version": "0.7.1",
+  "ideRange": {
+    "since-build": "261",
+    "until-build": "261.*"
+  },
+  "nativeResources": [
+    "bin/boundarylens-darwin-arm64"
+  ],
+  "nativeSha256": "fa1667f04d45976931b8b87b1d294b3566c1060a9e143384217f5ad861bf017b",
+  "nativeMatchesFreshCompile": true,
+  "refreshReason": "Use this acceptance-run compiler output; previous native byte mismatch alone did not prove semantic drift.",
+  "dartTestsPassed": 72,
+  "ideaTests": [
+    {
+      "name": "com.boundarylens.BoundaryLensDocumentationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.boundarylens.BoundaryLensNativeCliTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.boundarylens.BoundaryLensProtocolTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.boundarylens.BoundaryLensScanTargetTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "nativeScenarios": [
+    {
+      "case": "package_private_entry",
+      "passed": true,
+      "exit": 1,
+      "status": "complete",
+      "scope": "project",
+      "findings": 1
+    },
+    {
+      "case": "single_public_entry",
+      "passed": true,
+      "exit": 0,
+      "status": "complete",
+      "scope": "file",
+      "findings": 0
+    },
+    {
+      "case": "single_private_entry",
+      "passed": true,
+      "exit": 1,
+      "status": "complete",
+      "scope": "file",
+      "findings": 1
+    },
+    {
+      "case": "fixed_package",
+      "passed": true,
+      "exit": 0,
+      "status": "complete",
+      "scope": "project",
+      "findings": 0
+    },
+    {
+      "case": "legacy_dependency_only",
+      "passed": true,
+      "exit": 0,
+      "status": "partial",
+      "scope": "project",
+      "findings": 0
+    },
+    {
+      "case": "no_public_entries",
+      "passed": true,
+      "exit": 1,
+      "status": "complete",
+      "scope": "project",
+      "findings": 2
+    },
+    {
+      "case": "missing_declared_entry",
+      "passed": true,
+      "exit": 2,
+      "status": null,
+      "scope": null,
+      "findings": null
+    },
+    {
+      "case": "unknown_module",
+      "passed": true,
+      "exit": 2,
+      "status": null,
+      "scope": null,
+      "findings": null
+    },
+    {
+      "case": "ambiguous_ownership",
+      "passed": true,
+      "exit": 2,
+      "status": null,
+      "scope": null,
+      "findings": null
+    },
+    {
+      "case": "conditional_export_private_entry",
+      "passed": true,
+      "exit": 1,
+      "status": "complete",
+      "scope": "project",
+      "findings": 1
+    },
+    {
+      "case": "old_config_fallback",
+      "passed": true,
+      "exit": 1,
+      "status": "complete",
+      "scope": "project",
+      "findings": 1
+    },
+    {
+      "case": "unconfigured",
+      "passed": true,
+      "exit": 0,
+      "status": "not_configured",
+      "scope": "project",
+      "findings": 0
+    }
+  ],
+  "parameterValidation": [
+    {
+      "case": "config_check_bad_bool",
+      "exit": 0
+    },
+    {
+      "case": "scan_no_variable_bad_bool",
+      "exit": 0
+    },
+    {
+      "case": "scan_variable_bad_bool",
+      "exit": 2
+    }
+  ],
+  "cliPreflight": {
+    "exit": 1,
+    "failedGates": [
+      "clean worktree",
+      "pub.dev dry-run"
+    ],
+    "pubDryRunExit": 65
+  },
+  "ideaPreflight": {
+    "exit": 1,
+    "versionedNativeTargetsPresent": 0,
+    "required": 4,
+    "existingResourcePreserved": true
+  },
+  "verifier": {
+    "inputSha256": "362146023e34b90155762454c9c3e1cd825a07083b68c9eb1d08e15cdb97ca0f",
+    "target": "IU-261.27258.48",
+    "exit": 0,
+    "verdict": "Compatible. 3 usages of deprecated API",
+    "deprecatedUsages": 3,
+    "optionalDartResolved": false,
+    "fullRangeValidated": false
+  },
+  "bundleChecks": {
+    "metadata": true,
+    "native": true,
+    "MIT": true,
+    "documentation": true,
+    "noOldClasses": true
+  },
+  "runtimeLicenseInventory": [
+    {
+      "name": "_fe_analyzer_shared",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "analyzer",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "args",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "async",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "collection",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "convert",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "crypto",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "file",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "glob",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "meta",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "package_config",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "path",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "pub_semver",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "source_span",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "string_scanner",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "term_glyph",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "typed_data",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "watcher",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    },
+    {
+      "name": "yaml",
+      "versionMatches": true,
+      "licenseHashMatches": true
+    }
+  ],
+  "nativeVmNoticesClosed": false,
+  "publicRepository": {
+    "public": true,
+    "defaultBranch": "main",
+    "newCliOnDefaultBranchHttp": 404,
+    "privacyOnDefaultBranchHttp": 404
+  },
+  "manualUi": "PENDING_NOT_INSTALLED_OR_TESTED_THIS_RUN",
+  "firstReleaseFoundation": "FAIL_NOT_IMPLEMENTED",
+  "legalMaterials": "DRAFT",
+  "sourceHashes": {
+    "pubspec.yaml": "34a2f2486eed37f5ec7e7fe2077427eeeec0fb549ca45e5cab2820ec825a196d",
+    "bin/boundarylens.dart": "d45df9bf37f8fa5e1ceba9cd205b43ec1420badcf865aaedf238326021406113",
+    "lib/src/rules/rule.dart": "967777b0c2e5f9271bebf786d3b83b9bde15f9f27b08e9f06f8ab5d709ddbb95",
+    "lib/src/rules/registry.dart": "f08d4844e1e4b8ba4a7cf1591a935503c384a03b280b05625483472bb6d32e7c",
+    "lib/src/config_loader.dart": "6e1b6187df69c438a76e5522e4beb62137bfe8ed06af9c084958c1773a8118b6",
+    "lib/src/config_tools.dart": "a8ae65b60d1ddd72fe17dff31e6c9a37b35a8cf0db48187c9f0d725bd9971530",
+    "lib/src/scanner.dart": "303142dee0288078d4bcb7e20c9a79f95fd170ec9b321e72da2b0afd70e9fd97",
+    "idea-plugin/build.gradle.kts": "fd5b2342b398d22f216e3563b0b0e4b5838cce0c03791ea03ecc33a15cb0bb69",
+    "idea-plugin/src/main/resources/META-INF/plugin.xml": "77ead689e6692708b86b20b74d78563b8d7bf68fe554119ada6b2109abdd0f19"
+  },
+  "rawLogs": "/private/tmp/boundarylens-release-acceptance-20261016",
+  "remoteActions": "No push, upload, agreement acceptance or account modifications"
+}

@@ -1,0 +1,4 @@
+name: module_boundary_example
+publish_to: none
+environment:
+  sdk: ^3.11.5

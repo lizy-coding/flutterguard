@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-16",
+  "gitBase": "ca80925",
+  "dirtyWorktree": true,
+  "name": "BoundaryLens",
+  "dartPackage": "boundarylens_cli",
+  "executable": "boundarylens",
+  "pluginId": "com.boundarylens",
+  "artifact": "idea-plugin/build/distributions/boundarylens-idea-0.7.1.zip",
+  "sha256": "2165815ee216923e44294985bddf99d6cd61a31fd14fbd641ba89087b91e8357",
+  "size": 4209027,
+  "nativeSha256": "2ec343f7728c54b71cf2dcd12fbb4b78029962b8e4dcdc780f73b1f29c5cf59b",
+  "dartTests": 72,
+  "ideaTests": 18,
+  "ideRange": {
+    "since-build": "261",
+    "until-build": "261.*"
+  },
+  "dartSdk": "3.13.2 macos_arm64",
+  "pubDryRunExit": 65,
+  "pubDryRunWarnings": 2,
+  "legacyConfigFallback": true,
+  "legacySuppression": true,
+  "newUiManualAcceptance": "PENDING",
+  "marketplace": "NOT_SUBMITTED",
+  "remoteUnchanged": "git@github.com:lizy-coding/flutterguard.git"
+}

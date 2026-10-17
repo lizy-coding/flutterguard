@@ -1,0 +1,84 @@
+{
+  "checkedDate": "2026-10-17",
+  "repository": "lizy-coding/flutterguard",
+  "visibility": "public",
+  "defaultBranch": "main",
+  "remoteMain": "f9388cc9b5030e3eef342674c0f061dd771f5ddf",
+  "remoteDevelop": "9f9be84a73dc4b99a956a8529b8c334849566b03",
+  "runs": {
+    "checkedAt": "2026-10-17",
+    "total": 30,
+    "runs": [
+      {
+        "id": 29881226287,
+        "name": "FlutterGuard",
+        "sha": "9f9be84a73dc4b99a956a8529b8c334849566b03",
+        "conclusion": "failure",
+        "url": "https://github.com/lizy-coding/flutterguard/actions/runs/29881226287",
+        "date": "2026-07-22T00:46:51Z"
+      },
+      {
+        "id": 29881223793,
+        "name": "FlutterGuard",
+        "sha": "9f9be84a73dc4b99a956a8529b8c334849566b03",
+        "conclusion": "failure",
+        "url": "https://github.com/lizy-coding/flutterguard/actions/runs/29881223793",
+        "date": "2026-07-22T00:46:48Z"
+      },
+      {
+        "id": 29673010811,
+        "name": "Release",
+        "sha": "3f8f0107a89b89505fb0034f05c9fece3e469004",
+        "conclusion": "success",
+        "url": "https://github.com/lizy-coding/flutterguard/actions/runs/29673010811",
+        "date": "2026-07-19T04:14:11Z"
+      },
+      {
+        "id": 29673010169,
+        "name": "FlutterGuard",
+        "sha": "3f8f0107a89b89505fb0034f05c9fece3e469004",
+        "conclusion": "success",
+        "url": "https://github.com/lizy-coding/flutterguard/actions/runs/29673010169",
+        "date": "2026-07-19T04:14:10Z"
+      },
+      {
+        "id": 29673009243,
+        "name": "FlutterGuard",
+        "sha": "3f8f0107a89b89505fb0034f05c9fece3e469004",
+        "conclusion": "success",
+        "url": "https://github.com/lizy-coding/flutterguard/actions/runs/29673009243",
+        "date": "2026-07-19T04:14:08Z"
+      }
+    ]
+  },
+  "releases": [
+    {
+      "tag": "v0.7.0",
+      "publishedAt": "2026-07-19T04:16:06Z",
+      "url": "https://github.com/lizy-coding/flutterguard/releases/tag/v0.7.0",
+      "assets": [
+        "flutterguard-0.7.0-linux-x64.tar.gz",
+        "flutterguard-0.7.0-macos-arm64.tar.gz",
+        "flutterguard-0.7.0-windows-x64.zip"
+      ]
+    },
+    {
+      "tag": "v0.5.0",
+      "publishedAt": "2026-07-13T06:15:06Z",
+      "url": "https://github.com/lizy-coding/flutterguard/releases/tag/v0.5.0",
+      "assets": [
+        "flutterguard-0.5.0-linux-x64.tar.gz",
+        "flutterguard-0.5.0-macos-arm64.tar.gz",
+        "flutterguard-0.5.0-windows-x64.zip"
+      ]
+    },
+    {
+      "tag": "0.1.1",
+      "publishedAt": "2026-05-20T03:41:20Z",
+      "url": "https://github.com/lizy-coding/flutterguard/releases/tag/0.1.1",
+      "assets": []
+    }
+  ],
+  "privacyAtRemoteMain": "404",
+  "currentWorkingTreeRemoteEvidence": "PENDING"
+}

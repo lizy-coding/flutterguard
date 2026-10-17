@@ -1,0 +1,19 @@
+include:
+  - lib/**
+
+rules:
+  lifecycle_resource_not_disposed:
+    enabled: true
+    severity: medium
+  ble_scanning:
+    enabled: true
+    severity: medium
+  iot_security:
+    enabled: true
+    severity: high
+    requireTls: true
+
+architecture:
+  layers: []
+  modules: []
+  detect_cycles: false

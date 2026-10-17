@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-17",
+  "timezone": "Asia/Shanghai",
+  "recordedAt": "2026-10-17T10:07:43.801369+08:00",
+  "status": "NO_GO",
+  "source": {
+    "head": "ca8092573a05abd7341b3f05b9c6402c568779d3",
+    "frozen": false,
+    "dirty": true,
+    "rootLockfileTracked": false,
+    "selectedInputSha256": {
+      "pubspec.yaml": "34a2f2486eed37f5ec7e7fe2077427eeeec0fb549ca45e5cab2820ec825a196d",
+      "pubspec.lock": "0e02bf6190c67ac0a7db5df06ff463fa36b0ac88b074d27a83a03e951553a6e8",
+      "bin/boundarylens.dart": "d45df9bf37f8fa5e1ceba9cd205b43ec1420badcf865aaedf238326021406113",
+      "scripts/idea_plugin_preflight.sh": "6556f8aacc68a19c7771822f1d538d969a4b8c0ddebb6ce1724cee2e77923320",
+      "scripts/release_preflight.sh": "f9e4c9b7787d5250ec28dd29248abd1c0a876ab938aeeb2cc50fa5be7784f6b2",
+      ".github/workflows/release.yml": "cb8aacd1b88e4e139142e40da8d972070afff2060a787d8dc2d1164526fddee5",
+      "idea-plugin/build.gradle.kts": "1bb2b3a9ef7a71c8f22564747035905881d1ace2f9184d239e2b5749d90a9b70",
+      "idea-plugin/src/main/resources/META-INF/plugin.xml": "ee4c1814296f8e4e1af9b1bf9f619064e5b16a36a71e5cf40f9f6cf333ab7eaf"
+    },
+    "selectedHashesAreNotAWholeTreeFreeze": true
+  },
+  "identity": {
+    "name": "BoundaryLens",
+    "pluginId": "com.boundarylens",
+    "version": "0.7.1",
+    "ideaVersion": {
+      "since-build": "261",
+      "until-build": "261.*"
+    },
+    "dependencies": [
+      "com.intellij.modules.platform",
+      "Dart",
+      "com.intellij.modules.os.mac",
+      "com.intellij.modules.arch.arm64"
+    ],
+    "nativeResource": "bin/boundarylens-darwin-arm64",
+    "nativeSha256": "0e6f03f476628f3484ab71687d2bc7c0c6f2936d7f00a261f74dd0574845ea61",
+    "legacyClasses": []
+  },
+  "artifact": {
+    "snapshotPath": "/private/tmp/boundarylens-review-20261017-11196c6c8d7b.zip",
+    "sharedBuildPath": "idea-plugin/build/distributions/boundarylens-idea-0.7.1.zip",
+    "sharedPathMayChange": true,
+    "bytes": 4226433,
+    "sha256": "11196c6c8d7b8687a52eb6537a363bfe13ef3b3883b9d390e6e3f1593ee736f2",
+    "jarSha256": "decc01d1b38bd637940598a2ff5297dfe39240b738f70f29bfb6bf10c4f2289f",
+    "nativeCopiesMatch": true
+  },
+  "releaseTargets": {
+    "idea": [
+      "macos-arm64"
+    ],
+    "ideTested": "IU-261.27258.48",
+    "dartSdkTested": "3.13.2",
+    "otherIdeaPlatformsRequiredForThisRelease": false
+  },
+  "checks": {
+    "dependencies": "PASS_OFFLINE",
+    "format": {
+      "status": "PASS",
+      "files": 63,
+      "changed": 0
+    },
+    "analyze": "PASS",
+    "dartFocusedTests": {
+      "status": "PASS",
+      "count": 43,
+      "paths": [
+        "test/rename_contract_test.dart",
+        "test/cli_test.dart",
+        "test/module_entry_test.dart",
+        "test/rule_contract_test.dart"
+      ]
+    },
+    "fullDartGate": "NOT_RERUN_THIS_REVIEW",
+    "nativeVersion": "boundarylens 0.7.1",
+    "nativeFileType": "Mach-O 64-bit executable arm64",
+    "ideaPreflight": {
+      "status": "PASS",
+      "jdk": "Temurin 21.0.12.1",
+      "localIde": true,
+      "offline": true,
+      "artifactSha256ObservedAfterRun": "98f6abc602bbf15ec4a760a89d9908d3284d126479bbd2a549cebf76cac594a2",
+      "artifactBytes": 4226301,
+      "testCount": 23,
+      "suites": [
+        {
+          "name": "com.boundarylens.BoundaryLensDistributionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "timestamp": "2026-10-17T02:03:52"
+        },
+        {
+          "name": "com.boundarylens.BoundaryLensDocumentationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "timestamp": "2026-10-17T02:03:52"
+        },
+        {
+          "name": "com.boundarylens.BoundaryLensNativeCliTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "timestamp": "2026-10-17T02:03:53"
+        },
+        {
+          "name": "com.boundarylens.BoundaryLensProtocolTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "timestamp": "2026-10-17T02:03:53"
+        },
+        {
+          "name": "com.boundarylens.BoundaryLensScanTargetTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "timestamp": "2026-10-17T02:03:53"
+        }
+      ],
+      "defaultDartResolution": "UNRESOLVED",
+      "cacheCleanupErrorsLogged": 146
+    },
+    "fixedCopyVerifier": {
+      "version": "1.410",
+      "rawVerdict": "Compatible",
+      "dartDependencyResolved": true,
+      "dartPlugin": "510.0.0",
+      "ignoreOsArch": true,
+      "strictVerdict": "2 missing mandatory dependencies",
+      "scope": "API compatibility only; Marketplace delivery and runtime installation unverified"
+    },
+    "pubDryRun": {
+      "exitCode": 65,
+      "warnings": 2,
+      "upload": false,
+      "cause": [
+        "gitignored checked-in legacy paths",
+        "modified checked-in files"
+      ]
+    },
+    "firstJdk25Attempt": "FAILED_BUILD_RUNTIME_INCOMPATIBILITY"
+  },
+  "uiAcceptance": {
+    "fixedCopy": "PENDING",
+    "historicalEvidence": "2026-10-16-release-remediation.md",
+    "historicalZipSha256": "14dc0f7f17516e2c7a88d01ce6d0430018c1b864516b978354ad5b60bff8646d"
+  },
+  "remaining": [
+    "source-and-lockfile-freeze",
+    "non-publishing-remote-validation-path",
+    "hard-tag-version-check",
+    "same-source-native-and-zip-rebuild",
+    "automated-verifier-with-resolved-Dart-plugin",
+    "current-artifact-install-and-module-media",
+    "public-source-and-policy-links",
+    "publisher-policy-and-account-steps"
+  ],
+  "operations": {
+    "committed": false,
+    "pushed": false,
+    "releaseTagCreated": false,
+    "githubReleasePublished": false,
+    "marketplaceUploaded": false,
+    "agreementsAccepted": false,
+    "remoteRepoRenamed": false,
+    "workspaceMoved": false
+  }
+}

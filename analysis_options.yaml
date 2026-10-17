@@ -1,6 +1,8 @@
+include: package:lints/recommended.yaml
+
 analyzer:
   exclude:
-    - archive/**
+    - test/fixtures/**
   language:
     strict-casts: true
     strict-inference: true
@@ -8,8 +10,6 @@ analyzer:
 linter:
   rules:
     - avoid_dynamic_calls
-    - prefer_const_constructors
     - prefer_const_declarations
     - prefer_final_locals
     - unawaited_futures
-    - use_key_in_widget_constructors

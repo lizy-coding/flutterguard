@@ -1,7 +1,78 @@
 # Changelog
 
-## Unreleased
+## 0.7.1 — First BoundaryLens distribution (2026-10-17)
 
+- First IDEA distribution targets macOS Apple Silicon / ARM64 on IDEA2026.1;
+  descriptor OS/architecture dependencies restrict delivery. Other IDEA hosts
+  are deferred independently of CLI source portability.
+- Built-in rules declare input facts, supported scopes, activation and option
+  types. A shared internal runner validates configuration before execution,
+  prepares facts and reports per-rule coverage without a user plugin API.
+- Preserve rule execution status and reasons in IDE package/file reports;
+  expose invalid typed options as setup failures, independently of source shape.
+- Lock CLI dependencies and enforce the lock during release builds; include
+  license notices in native archives and isolate Plugin Verifier extraction.
+- Align default build/verifier with IDEA2026.1.5, Kotlin2.3 and Verifier1.410;
+  update the release workflow for the declared macOS ARM64 target.
+- Fix the offline guide layout and verify wrapping, screenshots and changelog
+  rendering in the local IDEA settings window.
+
+### Rename migration
+
+- Rename the product, Dart package (`boundarylens_cli`), executable
+  (`boundarylens`) and IntelliJ plugin (`com.boundarylens`). Repository URL and
+  existing copyright notices remain unchanged.
+- Prefer `boundarylens.yaml` while retaining `flutterguard.yaml` fallback;
+  accept both suppression prefixes during migration. Finding IDs and report
+  schemas remain unchanged. See `doc/RENAMING.md` for installation migration.
+- Define the next module-check milestones in `doc/MODULE_DETECTION_NEXT_STEPS.md`.
+
+## 0.7.1 (2026-07-22)
+
+- **rule:** Added OverlayEntry to lifecycle resource detection.
+- **rule:** Upgraded `iot_security` from line-based regex to AST visitor
+  traversal (`VariableDeclaration`, `NamedExpression`, `StringLiteral` nodes).
+- **rule:** Upgraded `ble_scanning` timeout detection from string matching to
+  parameter inspection and `NamedExpression` AST traversal.
+- **test:** Added negative, disabled, suppression, and report-contract coverage
+  for `iot_security`, `ble_scanning`, and `lifecycle_resource` rules (34 tests).
+- **ci:** Added `scripts/release_preflight.sh` for compact release validation
+  and wired it into the release workflow.
+
+## 0.7.0 (2026-07-17)
+
+### Breaking simplification
+
+- Flattened the repository and publishable package into one Dart package root;
+  removed Melos, archived runtime packages, duplicate package metadata, IDE
+  project files, development wrappers, and historical planning documents.
+- Reduced the CLI to `scan`, `baseline create`, `config init|check`, and
+  `rules [rule-id]`.
+- Replaced typed per-rule config records and profile YAML copies with generic
+  registry-driven `RuleConfig` settings.
+- Merged rule metadata, defaults, and execution into one `RuleRegistry` and
+  merged layer/module implementations into `BoundaryRule`.
+- Removed generic size rules, `missing_const_constructor`, and the overlapping
+  `device_lifecycle` rule.
+- Assigned resource cleanup to the lifecycle rule and scan timeout checks to
+  `ble_scanning`; removed overlapping MQTT configuration and dependency-version
+  rules in favor of application configuration and ecosystem tooling.
+- Removed score, priority, confidence, framework switches, JSON compatibility
+  aliases, install diagnostics, issue export, config profiles/print, and
+  baseline stats/prune/check.
+- JSON reports now use schema `2.0.0` with canonical `ruleId`, `severity`, and
+  `domain` fields.
+- Reorganized the test suite by CLI, config, rules, and scanner contracts and
+  updated every hierarchical `AGENTS.md` description.
+
+## 0.6.0 (2026-07-16)
+
+- **cli:** Added 10 AST-first state-management maintainability rules for generic Flutter, Riverpod, Bloc, and Provider projects (23 total rule IDs).
+- **cli:** Added state-rule severity/allowlist/ignore-path controls, framework auto-detection, confidence/evidence output, and changed-only state-cycle analysis.
+- **reporting:** JSON and SARIF now include framework, confidence, and evidence while preserving existing fields and baseline fingerprints.
+- **fix:** Qualified state dependency graph nodes by file and resolved duplicate names through project imports.
+- **compatibility:** Aligned the published package SDK constraint and install examples with the Dart 3.11.5 release workflow.
+- **test:** Expanded the CLI suite to 83 tests with generic/Riverpod/Bloc/Provider fixtures, version synchronization, and release-hardening coverage.
 - **fix:** Prevent successful no-op full scans and preserve setup-error exit codes in local CI scripts.
 - **fix:** Anchor configuration policy to the target project and require explicitly selected config files.
 - **ci:** Run analyze, tests, and the demo scan against the current checkout on the OS matrix.

@@ -1,0 +1,8 @@
+.gradle/
+.kotlin/
+.intellijPlatform/
+build/
+src/main/resources/bin/boundarylens-*
+
+# Previous locally bundled binaries are not source artifacts.
+src/main/resources/bin/flutterguard-*

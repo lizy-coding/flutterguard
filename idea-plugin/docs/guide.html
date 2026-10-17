@@ -1,0 +1,75 @@
+<html><body>
+<h1>BoundaryLens 使用指南</h1>
+<p>首发支持 macOS Apple Silicon / ARM64、IDEA 2026.1；Windows、Linux 和 Intel Mac 不在本包支持范围。</p>
+<p>检查显式资源字段和已配置的依赖边界，在源码与 Problems 列表展示证据。
+先完成 Dart SDK 配置，再用已保存的文件验证效果。</p>
+<h2>三步开始</h2>
+<ol><li>启用 Dart 插件，为当前项目配置 Dart SDK。</li>
+<li>启用本页上方的 BoundaryLens 开关，打开并保存本地 .dart 文件。</li>
+<li>Tools → BoundaryLens: Scan Current Saved File，或编辑器右键调用同一动作。</li></ol>
+<p>下列图片来自实际 IDEA 2026.1.5 窗口，随插件安装，查看不需要网络。
+黄色对应 medium，红色对应 high；Problems 区分无问题、规则发现与扫描失败。</p>
+<h2>核心场景：模块公开入口保护</h2>
+<p>项目只维护模块路径、公开入口和允许依赖，不需要逐类标注。示意配置：</p>
+<pre>architecture:
+  modules:
+    - name: device
+      path: lib/device/**
+      entry_points: [lib/device/device.dart]
+      allowed_deps: []
+    - name: presentation
+      path: lib/presentation/**
+      entry_points: [lib/presentation/presentation.dart]
+      allowed_deps: [device]</pre>
+<p>presentation 导入 lib/device/device.dart：允许；直接导入 lib/device/src/session.dart：
+module_violation（private_entry）；device 模块内部引用自己的 src：允许。
+关系本身不允许时报告 dependency。入口必须由项目维护，工具不推断设计优劣。</p>
+<p>Tools → BoundaryLens: Scan Current Dart Package 从当前 Dart 文件最近的 pubspec.yaml 确定包，
+不会把 IDE 工作区自动当作嵌套包根。结果在可复制的只读文本报告中显示完整路径、行号、发现和诊断。</p>
+<p>覆盖状态区分 not_configured（未配置）、disabled（禁用）、complete（本次范围已检查）、partial（不完整）；
+旧 CLI 没有 coverage 时显示无法判断。省略 entry_points 的旧模块配置仍检查允许关系，但不代表公开入口已检查。
+scope=file/project/changed 及文件计数只说明本次扫描范围；0 findings 不等于整体模块健康或项目通过。</p>
+<p>未信任的 IDEA 项目不执行 CLI；自动检查和手动动作均提示检查未完成，不自动修改信任设置。</p>
+<p>扫描仅使用已保存的磁盘内容；单文件高亮只显示该文件。配置、其他依赖文件改变后需重新扫描目标包。
+首次配置后的核心场景仍需本机 UI 验收。</p>
+<h2>辅助场景：旧版实拍截图</h2>
+<p>以下五张截图保留展示编辑器反馈、修复和失败提示；并非新增模块公开入口场景的验收证据。
+当前默认启用架构类检查；Timer、凭据等旧规则只有在项目 rules 中显式 enabled: true 才运行。</p>
+<h2>1. Timer 未释放：定位问题与规则</h2>
+<p>创建 Timer 却没有释放时，第 6 行出现黄色标注。
+Problems 显示 lifecycle_resource_not_disposed，可据此定位字段和所属类。</p>
+<img src="screenshots/01-timer-warning.png" width="640" height="498" alt="Timer 未释放、黄色标注和 Problems 规则定位">
+<h2>2. 正确释放：验证修复效果</h2>
+<p>dispose 中调用 timer?.cancel() 后，标注消失；Problems 无问题，
+手动扫描通知显示 0 findings、0 diagnostics。本类 helper 中的直接清理也被识别。</p>
+<img src="screenshots/02-timer-fixed.png" width="640" height="482" alt="正确释放后 Problems 无问题">
+<h2>3. 演示凭据：红色高风险提示</h2>
+<p>token 的字符串字面量触发 iot_security，第 3 行显示红色标注。
+示例使用假凭据；启发式 finding 必须结合真实用途复核。</p>
+<img src="screenshots/03-secret-error.png" width="640" height="503" alt="演示 token 的红色标注与 iot_security 规则">
+<h2>4. 配置失败：检查未完成</h2>
+<p>enabled 不是 boolean 时显示 exit 2 和具体错误；不能把它当作 0 findings。
+截图另含 IDEA 自身的拼写提示，它不是 BoundaryLens finding。</p>
+<img src="screenshots/04-configuration-failure.png" width="640" height="499" alt="配置错误、文件级告警及 exit 2">
+<h2>5. 非法依赖：检查配置约束</h2>
+<p>配置 presentation 只允许依赖 domain 后，直接导入 data 会触发 layer_violation，
+第 2 行 import 被标红。未配置边界时不推断项目架构。</p>
+<img src="screenshots/05-boundary-error.png" width="640" height="467" alt="非法层依赖、import 红色标注和 layer_violation">
+<h2>使用边界与排查</h2>
+<ul><li>没有标注时先查看是否启用 Dart 支持及 BoundaryLens，并执行手动扫描确认结果。</li>
+<li>未保存或扫描期间改变文档会使结果失效。手动扫描不会自动保存。</li>
+<li>init/initState 本身不要求 dispose。一次性 addPostFrameCallback 没有注销配对。</li>
+<li>生命周期规则检查显式实例字段；类型推断、别名、继承和跨对象清理暂不覆盖。</li>
+<li>0 findings 只表示没有可见发现，不证明业务正确性、所有权、所有执行路径或真机验收。</li>
+<li>需要明确抑制时使用 // boundarylens: ignore &lt;rule-id&gt;；抑制不等于修复。</li></ul>
+<p>当前本地包已验证 macOS arm64 / IDEA 2026.1.5。其他平台与旧版 IDE 验证状态独立维护。</p>
+<h2>许可、隐私与支持</h2>
+<p>BoundaryLens 自有代码与文档采用 MIT License。许可由版权持有人授予；
+公开发布者 forest.li，联系邮箱 zhenyu_li1998@163.com。JetBrains 不是本插件许可协议的当事方。
+许可证与用户许可说明见随包 META-INF/LICENSE.txt、documentation/eula.md，
+第三方条款见 documentation/third-party-notices.txt。</p>
+<p>检测通过本地 CLI 读取已保存的源码与配置，配置可能包含包外文件；
+单文件 findings 不意味着仅读取该文件。当前审查的执行路径没有源码上传或遥测实现。
+路径和诊断可能进入本地日志，临时可执行文件在正常退出时删除。
+完整说明见随包 documentation/privacy.md。主动发送支持材料前请去除敏感内容。</p>
+</body></html>

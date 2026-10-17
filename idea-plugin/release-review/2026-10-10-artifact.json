@@ -1,0 +1,66 @@
+{
+  "artifact": "/Users/forest/code/flutterguard/idea-plugin/build/distributions/flutterguard-idea-0.7.1.zip",
+  "size": 4186514,
+  "sha256": "3eac1d95edf5e5176807aebbe59611f9bbc0d60c7420484934e827d8959f49f1",
+  "jars": [
+    "flutterguard-idea/lib/flutterguard-idea-0.7.1.jar",
+    "flutterguard-idea/lib/flutterguard-idea-0.7.1-searchableOptions.jar"
+  ],
+  "id": "com.flutterguard",
+  "version": "0.7.1",
+  "ideRange": {
+    "since-build": "261",
+    "until-build": "261.*"
+  },
+  "nativeResources": [
+    "bin/flutterguard-darwin-arm64"
+  ],
+  "legalResourcesPresent": true,
+  "englishPrimarySection": true,
+  "tests": [
+    {
+      "name": "com.flutterguard.FlutterGuardProtocolTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.flutterguard.FlutterGuardNativeCliTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.flutterguard.FlutterGuardDocumentationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "verifier": {
+    "status": "PENDING",
+    "target": "IU-261.27258.48",
+    "reason": "dependency download did not complete; no verdict; run cancelled with exit 130"
+  },
+  "scopeAudit": {
+    "outsideReadObserved": true,
+    "exitCode": 0,
+    "diagnosticStages": [
+      "parse"
+    ]
+  },
+  "vendor": {
+    "name": "forest.li",
+    "email": "zhenyu_li1998@163.com",
+    "url": "https://github.com/lizy-coding/flutterguard"
+  },
+  "agreements": {
+    "eula": "DRAFT",
+    "privacy": "DRAFT",
+    "packagedAndVerified": true
+  },
+  "manualScreenshotsVerified": true
+}

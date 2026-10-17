@@ -1,6 +1,0 @@
-name: scan_demo
-description: Target project for flutterguard scan demonstration.
-publish_to: none
-
-environment:
-  sdk: ">=3.3.0 <4.0.0"

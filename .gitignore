@@ -9,27 +9,22 @@ build/
 .flutter-plugins-dependencies
 
 # CLI
-.flutterguard/
-flutterguard
+.boundarylens/
+/boundarylens
+/boundarylens.exe
+dist/
 
 # IDE
-.idea/*/
-.idea/*.xml
-.idea/*.iml
-!.idea/modules.xml
-!.idea/misc.xml
-!.idea/vcs.xml
-!.idea/runConfigurations/
-!.idea/runConfigurations/**
-!.idea/.name
+.idea/
 .vscode/
 *.iml
 
 # macOS
 **/.DS_Store
 
-# Lock files (libraries and examples, not apps)
+# Examples ignore lock files; the executable CLI freezes its release dependencies.
 pubspec.lock
+!/pubspec.lock
 
 # API docs
 doc/api/
@@ -37,6 +32,16 @@ doc/api/
 # Coverage
 .coverage
 
-# Project evolution spec
-docs/
-CONTEXT.md
+# Session artifacts
+/boundarylensb.md
+/session-ses_*.md
+
+# Duplicate local maintenance transcript; keep boundarylensb.md as canonical.
+/session-ses_07b1.md
+
+# Legacy local artifacts remain excluded after the product rename.
+.flutterguard/
+/flutterguard
+/flutterguard.exe
+/flutterguard.yaml
+/flutterguardb.md

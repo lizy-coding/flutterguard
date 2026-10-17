@@ -1,256 +1,136 @@
-# FlutterGuard
+# BoundaryLens
 
-> IoT Flutter project static analysis CLI for architecture enforcement, code quality, and CI gating.
+BoundaryLens is an independently maintained static analysis tool for
+Dart/Flutter projects, with a CLI and an IntelliJ adapter. Applications consume
+JSON or SARIF reports; they do not depend on a runtime SDK or private scanner API.
 
-[English](README.md) | [中文](README.zh.md)
+The next-stage workflow protects project-declared module public entry points.
+See the [four-file runnable example](idea-plugin/examples/module_boundary/README.md).
+Only architecture checks are enabled by default; lifecycle, IoT/security and
+state-framework checks remain available with explicit `enabled: true`.
+Missing module configuration is reported as `not_configured`, not a project pass.
 
-FlutterGuard scans Flutter/Dart source code and reports architecture boundary breaches, lifecycle/resource leaks, dependency cycles, and size-related code quality issues. The active path is `packages/flutterguard_cli/`; the legacy runtime-tracing packages are archived under `archive/`.
+```yaml
+architecture:
+  modules:
+    - name: checkout
+      path: lib/checkout/**
+      allowed_deps: [payment]
+      entry_points: [lib/checkout/api.dart]
+    - name: payment
+      path: lib/payment/**
+      allowed_deps: []
+      entry_points: [lib/payment/api.dart]
+```
 
-**Platforms**: macOS, Windows, Linux — pure Dart CLI, no native dependencies.
+Adjust paths to existing files. Cross-module references must use the target's
+declared entry, while its own facade may export internal files. Omitting
+entry_points preserves dependency-only checks and reports partial protection.
 
-**Docs**: [Usage Guide](docs/USAGE.md) | [Configuration Strategy](CONFIGURATION_STRATEGY.md) | [Windows Assessment](docs/WINDOWS_ASSESSMENT.md) | [Spec](docs/FLUTTERGUARD_SPEC.md) | [Architecture](docs/ARCHITECTURE.md)
+Consumer projects own their business contracts, module admission, platform
+acceptance, and CI policy. BoundaryLens does not read a project's generated
+Agent contracts or require a particular repository layout, generator, or host.
+Use Dart/Flutter format, analysis, and tests for their existing responsibilities;
+use BoundaryLens only where an explicit detector adds useful evidence.
 
-## What It Is
+## IntelliJ IDEA plugin
 
-- A CLI for static analysis of Flutter/Dart projects
-- A YAML-driven architecture enforcement tool
-- An IoT/smart-home aware rule set for Flutter codebases
-- A CI gate that can fail builds on severity thresholds or score thresholds
+This repository is the source and release-maintenance home for the BoundaryLens
+IDEA plugin: [lizy-coding/flutterguard](https://github.com/lizy-coding/flutterguard).
+The plugin delegates detection to the bundled CLI maintained in this same repository.
 
-## What It Is Not
+- [Installation, examples and screenshots](idea-plugin/README.md)
+- [Plugin release maintenance](idea-plugin/RELEASING.md)
+- [Version history](idea-plugin/docs/changelog.html)
+- [User license](idea-plugin/docs/eula.md) and [privacy statement](idea-plugin/docs/privacy.md)
+- [Marketplace submission preparation](idea-plugin/release-review/marketplace-submission.md)
 
-- Not a runtime observability or APM SDK
-- Not a crash reporter
-- Not a general-purpose Dart linter
-- Not a web dashboard or Flutter widget library
-- Does not require an API key and does not upload APKs
-
-## Requirements
-
-- Dart SDK 3.3.0 or newer
-- `melos` for workspace bootstrap when running from source
-- Supported OS: macOS, Windows, Linux
-
----
+GitHub release assets and Marketplace approval are tracked separately.
+Marketplace availability is recorded only after an actual approval.
 
 ## Install
 
-### Option A: pub.dev install (recommended)
+The first binary distribution targets **macOS Apple Silicon / ARM64**. Download
+the CLI archive or IDEA plugin ZIP from the
+[0.7.1 GitHub release](https://github.com/lizy-coding/flutterguard/releases/tag/v0.7.1).
+The plugin targets IDEA 2026.1 (261) with the Dart plugin enabled. Other native
+platforms are outside this first distribution.
 
-<details open>
-<summary><b>macOS / Linux</b></summary>
-
-```bash
-dart pub global activate flutterguard_cli
-
-# Verify
-flutterguard --version
-```
-
-Ensure `$HOME/.pub-cache/bin` is on your `PATH`:
+The package name is not claimed to be published on pub.dev. To install from a
+source checkout, use the commands below. See [rename migration](doc/RENAMING.md) and
+[the next module-check milestones](doc/MODULE_DETECTION_NEXT_STEPS.md).
 
 ```bash
-export PATH="$PATH:$HOME/.pub-cache/bin"   # add to ~/.zshrc or ~/.bashrc
-```
-</details>
-
-<details>
-<summary><b>Windows (PowerShell)</b></summary>
-
-```powershell
-dart pub global activate flutterguard_cli
-
-# Verify
-flutterguard --version
+dart pub global activate --source path .
+boundarylens --version
 ```
 
-If the command is not found, ensure `%USERPROFILE%\AppData\Local\Pub\Cache\bin` is on your `PATH`:
-
-```powershell
-$env:Path += ";$env:USERPROFILE\AppData\Local\Pub\Cache\bin"
-```
-</details>
-
-### Option B: GitHub Release binary (no Dart SDK at runtime)
-
-Download the matching binary from the GitHub Releases page, then run it
-directly:
-
-<details open>
-<summary><b>macOS / Linux</b></summary>
+From a source checkout:
 
 ```bash
-chmod +x flutterguard
-./flutterguard --version
-./flutterguard scan .
-```
-</details>
-
-<details>
-<summary><b>Windows (PowerShell)</b></summary>
-
-```powershell
-.\flutterguard.exe --version
-.\flutterguard.exe scan .
-```
-</details>
-
-### Option C: source checkout for development
-
-Use the local launcher when you want to run the current checkout without
-installing or replacing the global `flutterguard` command.
-
-<details>
-<summary><b>macOS / Linux</b></summary>
-
-```bash
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
 dart pub get
-./scripts/flutterguard-dev --version
-./scripts/flutterguard-dev scan .
+dart run bin/boundarylens.dart scan example
 ```
-</details>
 
-<details>
-<summary><b>Windows (PowerShell)</b></summary>
+## Commands
 
-```powershell
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
-dart pub get
-.\scripts\flutterguard-dev.ps1 --version
-.\scripts\flutterguard-dev.ps1 scan .
+```text
+boundarylens scan [path] [options]
+boundarylens baseline create [path]
+boundarylens config init [path]
+boundarylens config check [path]
+boundarylens rules [rule-id] [--format table|json]
 ```
-</details>
 
----
+The core scan options are:
 
-## Quick Start
+- `--config`, `-c`: explicit configuration file.
+- `--format`, `-f`: `table`, `json`, or `sarif`.
+- `--output`, `-o`: report directory; default `.boundarylens`.
+- `--stdout`: print JSON/SARIF to stdout instead of writing report files.
+- `--fail-on`: `none`, `high`, `medium`, or `low`.
+- `--changed-only --base <ref>`: scan Git-changed Dart files.
+- `--baseline <file>`: hide findings already recorded in a baseline.
+- `--verbose`: include diagnostics, detail, and evidence.
+- `--no-color`: disable ANSI terminal color.
+
+Exit code `0` means the scan completed and the gate passed. Exit code `1` means
+the severity gate failed. Exit code `2` means the command or scan setup was
+invalid.
+
+## Optional tool integration
+
+Install the CLI independently of the application package. An agent or toolset
+can invoke it with an explicit package/file target and configuration:
 
 ```bash
-# Scan the current directory
-flutterguard scan
-
-# Create and validate a starter config
-flutterguard init --profile migration
-flutterguard config doctor
-flutterguard doctor install
-
-# Inspect the merged effective config
-flutterguard config print
-
-# Scan a specific project
-flutterguard scan ./my_flutter_app          # macOS / Linux
-flutterguard scan .\my_flutter_app          # Windows
-
-# Scan with explicit path flag
-flutterguard scan -p /path/to/project       # macOS / Linux
-flutterguard scan -p D:\path\to\project     # Windows
-
-# JSON output with CI gate
-flutterguard scan . --format json --fail-on high
-
-# Baseline existing issues before enabling a hard CI gate
-flutterguard baseline create .
-flutterguard baseline stats
-flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
-flutterguard scan . --baseline .flutterguard/baseline.json --fail-on high
-
-# GitHub Code Scanning output
-flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
-
-# Export one finding for false-positive feedback
-flutterguard issue export --rule mqtt_connection --file lib/device/mqtt.dart --line 42
-
-# Show help
-flutterguard --help
-flutterguard scan --help
+boundarylens config check /path/to/app
+boundarylens scan /path/to/app/lib/example.dart --config /path/to/app/boundarylens.yaml --format json --stdout --no-color --fail-on none
 ```
 
-### Demo target
+Exit 1 still carries a usable structured report; exit 2 is a failed invocation.
+The consumer decides whether findings block a change. Inspect diagnostics as well
+as findings; an empty finding list alone is not proof of complete verification.
 
-```bash
-flutterguard scan examples/scan_demo
-```
+## IDE integration
 
----
-
-## CLI Reference
-
-Commands:
-
-| Command | Description |
-|---------|-------------|
-| `flutterguard scan [<path>]` | Scan a project (path defaults to current directory) |
-| `flutterguard baseline create [<path>]` | Create a baseline JSON file for existing issues |
-| `flutterguard baseline stats` | Show baseline fingerprint counts |
-| `flutterguard baseline prune [<path>]` | Remove fixed issues from a baseline |
-| `flutterguard baseline check [<path>] --no-growth` | Fail when current issues are missing from baseline |
-| `flutterguard doctor install` | Diagnose executable version and PATH conflicts |
-| `flutterguard init` | Create a starter `flutterguard.yaml` |
-| `flutterguard init --profile migration` | Create a starter config from a profile |
-| `flutterguard init --with-architecture` | Create config with architecture layer/module templates |
-| `flutterguard config print` | Print the merged effective configuration |
-| `flutterguard config doctor` | Validate config, globs, and architecture references |
-| `flutterguard issue export` | Export one issue as a local feedback JSON bundle |
-| `flutterguard rules` | List available rules |
-| `flutterguard explain <rule-id>` | Explain one rule |
-| `flutterguard --help` / `-h` | Show usage |
-| `flutterguard --version` / `-V` | Show version |
-
-### Scan options
-
-| Flag | Short | Default | Description |
-|------|-------|---------|-------------|
-| `<path>` | — | `.` | Positional project path (optional, before options) |
-| `--path` | `-p` | `.` | Project path to scan (overridden by positional `<path>`) |
-| `--config` | `-c` | `flutterguard.yaml` | Config file path |
-| `--format` | `-f` | `table` | Output format: `table`, `json`, or `sarif` |
-| `--output` | `-o` | `.flutterguard` | Output directory for reports |
-| `--verbose` | `-v` | off | Show detailed output with code context |
-| `--no-color` | — | off | Disable ANSI terminal colors |
-| `--changed-only` | — | off | Only scan Dart files changed since `--base` |
-| `--base` | — | `main` | Git base ref for `--changed-only` |
-| `--baseline` | — | unset | Baseline JSON file used to hide existing issues |
-| `--fail-on` | — | `none` | CI gate: `none` / `high` / `medium` / `low` |
-| `--min-score` | — | unset | Minimum score threshold 0–100 |
-| `--help` | `-h` | — | Show scan usage |
-
-### Exit codes
-
-| Code | Meaning |
-|------|---------|
-| `0` | Success, including help/version and a changed-only scan with no relevant changes |
-| `1` | CI gate failed (issues at/above `--fail-on` level, or score below `--min-score`) |
-| `2` | Scan setup error (bad path, missing explicit config, invalid config, or no configured Dart files) |
-
-### Path resolution
-
-FlutterGuard auto-discovers the project root by walking up from the current directory, looking for `flutterguard.yaml`, `pubspec.yaml`, or a `lib/` directory. If none are found, it falls back to the current directory.
-
-The `--config` path is resolved against the target project:
-1. Absolute paths are used as-is and must exist.
-2. Relative paths are resolved from the target project root, never from CWD.
-3. An omitted default `flutterguard.yaml` uses built-in defaults; any explicitly selected config must exist.
-
----
+| BoundaryLens severity | IDE inspection level | SARIF level |
+|---|---|---|
+| `high` | ERROR | error |
+| `medium` | WARNING | warning |
+| `low` | WEAK WARNING | note |
 
 ## Configuration
 
-Create `flutterguard.yaml` in your project root.
+Configuration is optional. Generate a complete starter file from the rule
+registry:
 
-Recommended strategy:
+```bash
+boundarylens config init .
+boundarylens config check .
+```
 
-1. Start with zero config: `flutterguard scan`.
-2. Run `flutterguard init` when you need custom thresholds or excludes.
-3. Use `flutterguard config print` to inspect merged defaults.
-4. Use `flutterguard config doctor` before enabling CI gates.
-5. Add architecture layers/modules only after project boundaries are agreed.
-
-For the full decision model, see [Configuration Strategy](CONFIGURATION_STRATEGY.md).
-
-### Basic config (for most users)
+Minimal example:
 
 ```yaml
 include:
@@ -259,43 +139,18 @@ include:
 exclude:
   - lib/generated/**
   - lib/**.g.dart
-  - lib/**.freezed.dart
-  - lib/**.mocks.dart
 
 rules:
-  large_file:
-    enabled: true
-    maxLines: 500
-  large_class:
-    enabled: true
-    maxLines: 300
-  large_build_method:
-    enabled: true
-    maxLines: 80
-  lifecycle_resource:
-    enabled: true
-  missing_const_constructor:
-    enabled: true
-  device_lifecycle:
-    enabled: true
-  mqtt_connection:
-    enabled: true
-  ble_scanning:
-    enabled: true
-    maxScanDurationMs: 10000
   iot_security:
     enabled: true
+    severity: high
     requireTls: true
-  pubspec_security:
+  ble_scanning:
     enabled: true
-```
-
-### Full config (with architecture enforcement)
-
-```yaml
-# ... include/exclude/rules from basic config above ...
+    severity: medium
 
 architecture:
+  detect_cycles: true
   layers:
     - name: presentation
       path: lib/presentation/**
@@ -303,329 +158,103 @@ architecture:
     - name: domain
       path: lib/domain/**
       allowed_deps: [core]
-    - name: data
-      path: lib/data/**
-      allowed_deps: [domain, core]
     - name: core
       path: lib/core/**
       allowed_deps: []
-
-  modules:
-    - name: device_mqtt
-      path: lib/device/mqtt/**
-      allowed_deps: [domain, core]
-    - name: device_ble
-      path: lib/device/ble/**
-      allowed_deps: [domain, core]
-
-  detect_cycles: true
-  layer_violation:
-    enabled: true
-  module_violation:
-    enabled: true
+  modules: []
 ```
 
-> **Important**: Architecture rules (`layer_violation`, `module_violation`, `circular_dependency`) require explicit `architecture.layers`, `architecture.modules`, and/or `architecture.detect_cycles` declarations in your config. They do not auto-discover project boundaries.
-
-> **Glob patterns**: Always use forward slashes (`/`) in YAML config, even on Windows. Do not use backslashes.
-
----
+Every rule accepts `enabled` and `severity`. Rule-specific scalar options are
+listed by `boundarylens rules <rule-id>`.
 
 ## Rules
 
-| Rule ID | Level | Domain | Priority | What it checks | Config required |
-|---------|-------|--------|----------|----------------|-----------------|
-| `large_file` | LOW | standards | P2 | File line count over `maxLines` | — |
-| `large_class` | LOW | standards | P2 | Class body line count over `maxLines` | — |
-| `large_build_method` | MEDIUM | performance | P1 | `build()` method line count over `maxLines` | — |
-| `lifecycle_resource_not_disposed` | MEDIUM | performance | P1 | Undisposed StreamSubscription, Timer, AnimationController, TextEditingController, ScrollController, FocusNode, MqttClient, BluetoothDevice, StreamController | — |
-| `missing_const_constructor` | LOW | standards | P2 | Widget classes missing a `const` constructor | — |
-| `layer_violation` | HIGH | architecture | P0 | Importing across forbidden architecture layers | `architecture.layers` * |
-| `module_violation` | HIGH | architecture | P0 | Importing across forbidden business modules | `architecture.modules` * |
-| `circular_dependency` | MEDIUM | architecture | P1 | File-level import cycles | `architecture.detect_cycles` * |
-| `device_lifecycle` | HIGH | architecture | P0 | Unbalanced init/teardown pairs (initState↔dispose, connect↔disconnect, etc.) | — |
-| `mqtt_connection` | HIGH | architecture | P0 | MQTT connect/disconnect pairing, hardcoded broker URLs | — |
-| `iot_security` | HIGH | architecture | P0 | Hardcoded credentials, cleartext MQTT/HTTP, insecure BLE | `rules.iot_security.requireTls` |
-| `ble_scanning` | MEDIUM | architecture | P1 | BLE startScan/stopScan pairing, scan timeout | `rules.ble_scanning.maxScanDurationMs` |
-| `pubspec_security` | MEDIUM | standards | P2 | Unbounded deps, deprecated packages, outdated IoT dependencies | — |
+The registry currently contains 16 rule IDs. This is an implementation inventory,
+not a claim that every detector is suitable for a blocking gate. Architecture
+checks require explicit boundaries; lifecycle, transport, and state heuristics
+need consumer-specific positive and negative validation before enforcement:
 
-<sub>* Requires explicit YAML configuration to activate.</sub>
+- Architecture: `layer_violation`, `module_violation`,
+  `circular_dependency`, `state_layer_ui_dependency`,
+  `state_dependency_cycle`.
+- Lifecycle and performance: `lifecycle_resource_not_disposed`,
+  `side_effect_in_build`, `state_manager_created_in_build`,
+  `riverpod_read_used_for_render`, `riverpod_watch_in_callback`,
+  `provider_value_lifecycle_misuse`, `notify_listeners_in_loop`.
+- IoT security: `ble_scanning`, `iot_security`.
+- State standards: `mutable_state_exposed`,
+  `bloc_equatable_props_incomplete`.
 
----
+Generic file-size, missing-const, dependency-version, and broker-configuration
+checks were removed in 0.7.0. Dart lints, `dart pub outdated`, dependency
+security tools, and application configuration are better owners.
 
-## Output
+## Reports and CI
 
-### Terminal table (default)
+JSON uses schema version `2.0.0` and exposes one canonical field name per
+concept: `ruleId`, `severity`, and `domain`. SARIF 2.1.0 is suitable for GitHub
+Code Scanning.
 
-Colored terminal report grouped by domain. Shows overall score, file count, issue count, and per-issue detail.
-
-### JSON report
-
-`--format json` writes `.flutterguard/report.json` under the output directory.
-
-Example shape:
-
-```json
-{
-  "version": "1.0.0",
-  "generatedAt": "2026-06-09T12:00:00.000Z",
-  "projectPath": "/path/to/project",
-  "score": 85,
-  "summary": {
-    "total": 3,
-    "high": 1,
-    "medium": 1,
-    "low": 1,
-    "suppressed": 0,
-    "suppressedByBaseline": 0,
-    "byDomain": {
-      "architecture": { "high": 1, "medium": 0, "low": 0, "total": 1 }
-    }
-  },
-  "issues": []
-}
+```bash
+boundarylens baseline create .
+boundarylens scan . \
+  --baseline .boundarylens/baseline.json \
+  --format sarif \
+  --fail-on high
 ```
 
-### SARIF report
-
-`--format sarif` writes `.flutterguard/report.sarif` for GitHub Code Scanning. High, medium, and low map to SARIF `error`, `warning`, and `note`.
-
-### Suppression and baseline
-
-Use source suppression for known false positives:
+Suppression comments remain available for precise false positives:
 
 ```dart
-// flutterguard: ignore missing_const_constructor
-// flutterguard: ignore iot_security, mqtt_connection
-// flutterguard: ignore all
+// boundarylens: ignore iot_security
+final endpoint = loadLocalDevelopmentEndpoint();
 ```
 
-Suppression applies only to the comment line and the following line.
+## Repository layout
 
-Recommended CI adoption order:
-
-```bash
-flutterguard config doctor
-flutterguard baseline create .
-flutterguard baseline check . --baseline .flutterguard/baseline.json --no-growth
-flutterguard scan . --baseline .flutterguard/baseline.json --format json --fail-on high
+```text
+bin/                 executable entry point
+lib/src/cli/         command parsers and handlers
+lib/src/rules/       registry, rule definitions, and detectors
+lib/src/             scan/config/report shared kernel
+test/                contract and detector tests
+example/             scan target used by CI
+doc/                 architecture and external contract
+scripts/             native release packaging only
 ```
 
-## Scoring
-
-```
-score = max(0, 100 - high×10 - medium×4 - low×1)
-```
-
-| Score | Rating |
-|-------|--------|
-| 80–100 | Excellent |
-| 50–79 | Needs review |
-| 0–49 | Needs action |
-
----
-
-## CI Integration
-
-### GitHub Actions
-
-```yaml
-name: FlutterGuard
-
-on: [push, pull_request]
-
-jobs:
-  scan:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 3.3.0
-      - name: Install FlutterGuard
-        run: dart pub global activate flutterguard_cli
-      - name: Scan
-        run: flutterguard scan . --format json --baseline .flutterguard/baseline.json --fail-on high --min-score 80
-```
-
-### GitHub Code Scanning
-
-```yaml
-name: FlutterGuard SARIF
-
-on: [push, pull_request]
-
-jobs:
-  code-scanning:
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 3.3.0
-      - run: dart pub global activate flutterguard_cli
-      - run: flutterguard scan . --format sarif --baseline .flutterguard/baseline.json
-      - uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: .flutterguard/report.sarif
-```
-
-### GitLab CI
-
-```yaml
-flutterguard:
-  image: dart:3.3.0
-  script:
-    - dart pub global activate flutterguard_cli
-    - flutterguard scan . --format json --fail-on high --min-score 80
-  artifacts:
-    paths:
-      - .flutterguard/report.json
-    when: always
-```
-
-### pre-commit hook
-
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: local
-    hooks:
-      - id: flutterguard
-        name: FlutterGuard scan
-        entry: flutterguard scan . --fail-on high
-        language: system
-        pass_filenames: false
-        always_run: true
-```
-
-### Local scripts
-
-<details>
-<summary><b>macOS / Linux</b></summary>
-
-```bash
-#!/usr/bin/env bash
-# scan_ci.sh
-if flutterguard scan . --format json --fail-on high --min-score 80; then
-    echo "All checks passed!"
-else
-    status=$?
-    echo "FlutterGuard failed with exit code $status."
-    exit "$status"
-fi
-```
-</details>
-
-<details>
-<summary><b>Windows (PowerShell)</b></summary>
-
-```powershell
-# scan_ci.ps1
-$ErrorActionPreference = "Stop"
-flutterguard scan . --format json --fail-on high --min-score 80
-$status = $LASTEXITCODE
-
-if ($status -eq 0) {
-    Write-Host "All checks passed!" -ForegroundColor Green
-} else {
-    Write-Host "FlutterGuard failed with exit code $status." -ForegroundColor Red
-    exit $status
-}
-```
-</details>
-
----
-
-## Troubleshooting
-
-### Windows: ANSI colors show as raw escape codes
-
-Use **Windows Terminal** (built into Windows 10/11) instead of legacy `cmd.exe`. Alternatively, add `--no-color` to disable ANSI output:
-
-```powershell
-flutterguard scan . --no-color
-```
-
-### Windows: "API key required" error
-
-This means the shell is resolving an old globally-installed binary instead of this repository's static-analysis CLI. Run the local binary directly:
-
-```powershell
-.\flutterguard.exe scan .
-```
-
-Or reinstall:
-
-```powershell
-dart pub global deactivate flutterguard_cli
-dart pub global activate flutterguard_cli
-```
-
-### Windows: garbled Chinese output
-
-```powershell
-# In PowerShell, set UTF-8 output encoding
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-# Or use Windows Terminal (recommended) which defaults to UTF-8
-```
-
-### Glob patterns: always use forward slashes
-
-In `flutterguard.yaml`, use `/` for all path patterns regardless of platform:
-
-```yaml
-# Correct
-path: lib/presentation/**
-
-# Wrong (even on Windows)
-path: lib\presentation\**
-```
-
----
-
-## Repository Layout
-
-```
-flutterguard/
-├── packages/
-│   └── flutterguard_cli/   Active CLI implementation
-├── archive/                Frozen legacy runtime-tracing packages
-└── examples/
-    └── scan_demo/          Demo scan target
-```
+BoundaryLens is a single Dart package. There is no Melos workspace, runtime
+SDK, plugin system, or public Dart scanner API.
 
 ## Development
 
 ```bash
-# All platforms
-git clone https://github.com/lizy-coding/flutterguard.git
-cd flutterguard
 dart pub get
-dart pub global activate melos
-melos bootstrap
-
-# Common commands
-dart run melos run analyze     # Static analysis
-dart run melos run test:cli    # Run tests
-dart compile exe packages/flutterguard_cli/bin/flutterguard.dart -o flutterguard
+dart format --output=none --set-exit-if-changed bin lib test
+dart analyze
+dart test
+dart run bin/boundarylens.dart scan example --format json --no-color
+dart pub publish --dry-run
 ```
 
-## Further Reading
+### Release preflight
 
-| Document | Content |
-|----------|---------|
-| [docs/USAGE.md](docs/USAGE.md) | Full usage guide (all platforms) |
-| [docs/WINDOWS_ASSESSMENT.md](docs/WINDOWS_ASSESSMENT.md) | Windows compatibility assessment |
-| [docs/FLUTTERGUARD_SPEC.md](docs/FLUTTERGUARD_SPEC.md) | Technical specification |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture overview |
+Before creating a release tag, run the compact preflight command:
+
+```bash
+bash scripts/release_preflight.sh
+```
+
+It resolves dependencies, checks formatting, analysis, tests, and the CLI
+example, then runs `dart pub publish --dry-run` without uploading anything.
+It finishes by printing the required human checks for package contents, legal
+redistribution, version/tag, and publisher access. A nonzero exit means at
+least one automated release gate failed.
+
+See [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) for internal boundaries and
+[doc/BOUNDARYLENS_SPEC.md](doc/BOUNDARYLENS_SPEC.md) for the external
+contract.
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).

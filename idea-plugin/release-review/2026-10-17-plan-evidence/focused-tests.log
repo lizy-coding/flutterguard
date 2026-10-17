@@ -1,0 +1,45 @@
+00:00 +0: loading test/rename_contract_test.dart
+00:00 +0: test/cli_test.dart: CLI version matches package version
+00:00 +1: test/cli_test.dart: CLI version matches package version
+00:00 +2: test/cli_test.dart: CLI version matches package version
+00:00 +3: test/cli_test.dart: CLI version matches package version
+00:00 +4: test/cli_test.dart: CLI version matches package version
+00:00 +5: test/cli_test.dart: CLI version matches package version
+00:00 +6: test/cli_test.dart: CLI version matches package version
+00:00 +7: test/cli_test.dart: CLI version matches package version
+00:00 +8: test/cli_test.dart: CLI version matches package version
+00:00 +9: test/cli_test.dart: CLI version matches package version
+00:00 +10: test/cli_test.dart: CLI version matches package version
+00:00 +11: test/cli_test.dart: CLI version matches package version
+00:00 +12: test/cli_test.dart: CLI version matches package version
+00:00 +13: test/cli_test.dart: CLI version matches package version
+00:00 +14: test/cli_test.dart: CLI version matches package version
+00:00 +15: test/cli_test.dart: CLI version matches package version
+00:00 +16: test/cli_test.dart: CLI version matches package version
+00:00 +17: test/cli_test.dart: CLI version matches package version
+00:00 +18: test/cli_test.dart: CLI version matches package version
+00:00 +19: test/cli_test.dart: CLI version matches package version
+00:00 +20: test/cli_test.dart: CLI version matches package version
+00:00 +21: test/cli_test.dart: CLI version matches package version
+00:00 +22: test/cli_test.dart: CLI version matches package version
+00:00 +23: test/cli_test.dart: CLI version matches package version
+00:00 +24: test/cli_test.dart: CLI version matches package version
+00:00 +25: test/cli_test.dart: CLI version matches package version
+00:00 +26: test/cli_test.dart: CLI version matches package version
+00:06 +27: test/rename_contract_test.dart: new executable advertises new name and retains JSON schema
+00:12 +28: test/rule_contract_test.dart: invalid parameter fails both CLI commands before execution
+00:12 +29: test/rule_contract_test.dart: invalid parameter fails both CLI commands before execution
+00:12 +30: test/rule_contract_test.dart: invalid parameter fails both CLI commands before execution
+00:12 +31: test/cli_test.dart: --stdout with --format table exits with error
+00:12 +32: test/cli_test.dart: --stdout with --format table exits with error
+00:12 +33: test/cli_test.dart: --stdout with --format table exits with error
+00:12 +34: test/cli_test.dart: --stdout with --format table exits with error
+00:12 +35: test/cli_test.dart: --stdout with --format table exits with error
+00:15 +36: test/cli_test.dart: --stdout with --format json writes valid JSON to stdout
+00:19 +37: test/cli_test.dart: single .dart file path scans only that file
+00:22 +38: test/cli_test.dart: single .dart file without parent pubspec exits with error
+00:26 +39: test/cli_test.dart: JSON issue includes fileRelative field
+00:29 +40: test/cli_test.dart: changed-only clean scan succeeds and writes an empty JSON report
+00:33 +41: test/cli_test.dart: explicitly selected default config must exist
+00:36 +42: test/cli_test.dart: target project config is not shadowed by the working directory
+00:38 +43: All tests passed!

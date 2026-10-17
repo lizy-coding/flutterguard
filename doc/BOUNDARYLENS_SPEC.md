@@ -1,0 +1,311 @@
+# BoundaryLens External Contract
+
+Version: 0.7 / JSON schema 2.0.0
+
+This document defines supported user-facing behavior. Internal classes and file
+layout are documented in `ARCHITECTURE.md` and are not compatibility contracts.
+
+## Identity and scope
+
+BoundaryLens is an independently maintained local static analysis CLI and IDE
+integration for Dart/Flutter projects. Its current detectors cover configured
+architecture boundaries, lifecycle/resource risks, IoT transport/security, and
+state-management patterns. Detector availability is not a guarantee of business
+correctness or platform acceptance.
+
+The primary workflow is project-declared module boundaries and public entry
+protection. Only layer/module boundaries and circular import detection are
+enabled by default (cycles additionally require detect_cycles). Other registered
+rules are retained as opt-in checks; enable them explicitly with enabled: true.
+
+Consumer projects provide explicit scan targets and configuration. The scanner
+does not consume their generated Agent contracts, module admission registries,
+platform matrices, or host orchestration. Consumer CI and toolsets decide when
+to invoke the CLI and whether findings block a change.
+
+It is not a runtime SDK, observability agent, crash reporter, hosted service,
+network proxy, widget library, or general formatting/style linter.
+
+## Commands
+
+```text
+boundarylens scan [path] [options]
+boundarylens baseline create [path] [options]
+boundarylens config init [path] [options]
+boundarylens config check [path] [options]
+boundarylens rules [rule-id] [--format table|json]
+```
+
+Global options are `--help` and `--version`.
+
+The package is boundarylens_cli, the executable is boundarylens and the IDEA ID
+is com.boundarylens. Default configuration is boundarylens.yaml; when it is
+absent, flutterguard.yaml is read for migration. The two files are never merged;
+explicit --config does not fall back. Both boundarylens and legacy flutterguard
+suppression prefixes remain accepted. Default report output is .boundarylens/;
+existing baselines remain readable through an explicit --baseline path.
+
+### Scan options
+
+| Option | Contract |
+|---|---|
+| `--config`, `-c` | Explicit config; missing explicit files are errors |
+| `--format`, `-f` | `table`, `json`, or `sarif`; default `table` |
+| `--output`, `-o` | Report directory; default `.boundarylens` |
+| `--verbose`, `-v` | Print diagnostics, detail, and evidence |
+| `--no-color` | Disable ANSI colors |
+| `--fail-on` | `none`, `high`, `medium`, or `low` |
+| `--changed-only` | Restrict source rules to Git-changed Dart files |
+| `--base` | Verified Git base ref; default `main` |
+| `--baseline` | Hide findings present in a baseline file |
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Command succeeded and the severity gate passed |
+| `1` | Severity gate or config check failed |
+| `2` | Invalid arguments, project, config, baseline, or Git base |
+
+## Project and files
+
+Project discovery walks upward from the requested path and recognizes
+`boundarylens.yaml`, `pubspec.yaml`, or `lib/`. Default source selection is:
+
+```yaml
+include: [lib/**]
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+```
+
+An ordinary full scan with zero matched Dart files is an error. A valid
+changed-only scan with zero changed Dart files succeeds and writes an empty
+requested report.
+
+## Configuration
+
+Top-level keys are `include`, `exclude`, `rules`, and `architecture`.
+
+```yaml
+rules:
+  <rule-id>:
+    enabled: true
+    severity: high
+    <rule-specific-option>: <scalar>
+
+architecture:
+  detect_cycles: false
+  layers: []
+  modules: []
+```
+
+Rule severity is `low`, `medium`, or `high`. Unknown rule IDs and unknown
+rule-specific options are errors in both `config check` and `scan`. Run `config init` to
+generate current definitions and defaults.
+
+A boundary entry is:
+
+```yaml
+- name: presentation
+  path: lib/presentation/**
+  allowed_deps: [domain, core]
+```
+
+Layer and module enforcement is inactive when its boundary list is empty.
+Circular import detection requires `architecture.detect_cycles: true` and is
+skipped in changed-only mode.
+
+Modules may additionally declare `entry_points`, a list of project-relative
+file paths or globs. A cross-module import or export must satisfy both the
+source's allowed_deps and the target's entry_points. Internal same-module
+references and a public entry exporting its own implementation remain legal.
+An empty list makes all files internal. Omitting the key preserves legacy
+dependency-only behavior and reports incomplete entry protection.
+
+Duplicate names, unknown allowed_deps, overlapping ownership, invalid globs,
+and entry patterns matching no selected files or files outside their module
+are setup errors (exit 2). These checks also run for single-file scans against
+their complete configured file context. Unowned references and unresolved local
+references produce diagnostics, not invented violations.
+
+Import and export conditional alternatives are all checked conservatively,
+without selecting a runtime platform. Only the root package's package: URIs
+resolve into this project; other package identities are excluded from this
+module check. Missing extensions are not guessed. This is file-level boundary
+enforcement, not symbol-level API leakage or business correctness analysis.
+
+## Rule inventory
+
+The registry contains 16 IDs:
+
+```text
+ble_scanning
+bloc_equatable_props_incomplete
+circular_dependency
+iot_security
+layer_violation
+lifecycle_resource_not_disposed
+module_violation
+mutable_state_exposed
+notify_listeners_in_loop
+provider_value_lifecycle_misuse
+riverpod_read_used_for_render
+riverpod_watch_in_callback
+side_effect_in_build
+state_dependency_cycle
+state_layer_ui_dependency
+state_manager_created_in_build
+```
+
+`rules [rule-id]` is the authoritative description of purpose, default
+severity, framework, options, example, and remediation.
+Its JSON metadata also exposes defaultEnabled from the same rule definition.
+Metadata additionally describes inputs, scopes, activation and optionTypes.
+requireTls accepts only a boolean; invalid values are rejected before source
+analysis. config check reports validation failures with its existing exit 1;
+scan rejects invalid setup with exit 2 and no structured stdout report.
+
+## Lifecycle detection boundary
+
+`lifecycle_resource_not_disposed` checks explicitly typed instance resource
+fields, including nullable and generic types and every variable in a declaration.
+It recognizes AST release calls in `dispose()` and directly invoked same-class
+helpers, including null-aware, `this`, and cascade receivers. Merely storing a
+cleanup closure or mentioning a call in a string does not count as releasing it.
+
+This is a syntax check, not a proof of resource ownership or control flow.
+Inferred fields, aliases, inherited cleanup, and cross-object cleanup remain
+outside this rule's supported boundary. Resource containers are not treated as
+individual resource fields. `initState()` alone does not require `dispose()`;
+one-shot `addPostFrameCallback` registration has no unregister pair.
+
+## Findings
+
+The internal finding model exposes one canonical JSON representation:
+
+```json
+{
+  "ruleId": "iot_security",
+  "title": "IoT 安全风险",
+  "file": "/project/lib/device.dart",
+  "fileRelative": "lib/device.dart",
+  "line": 10,
+  "severity": "high",
+  "domain": "architecture",
+  "message": "...",
+  "detail": "...",
+  "suggestion": "...",
+  "metadata": {},
+  "framework": "generic",
+  "evidence": []
+}
+```
+
+There are no duplicate `id`/`ruleId` or `level`/`severity` fields, and no
+priority, score, or confidence fields.
+
+## JSON report
+
+JSON reports use schema version `2.0.0`:
+
+```json
+{
+  "schemaVersion": "2.0.0",
+  "projectPath": "/project",
+  "scanMode": "full",
+  "summary": {
+    "total": 1,
+    "high": 1,
+    "medium": 0,
+    "low": 0,
+    "suppressed": 0,
+    "suppressedByBaseline": 0,
+    "diagnostics": 0,
+    "byDomain": {}
+  },
+  "issues": [],
+  "diagnostics": []
+}
+```
+
+SARIF reports conform to SARIF 2.1.0 and include registry definitions and
+finding locations.
+
+JSON 2.0 additionally includes coverage.moduleBoundary with status
+not_configured, disabled, complete or partial; scope project, file or changed;
+checkedFiles (owned selected source files), totalFiles (configured context),
+and reasons. complete means the declared check could evaluate that scope,
+not that there are no findings or that other scopes passed. Omitting
+entry_points, unmatched modules or scan diagnostics makes coverage partial.
+File/changed scans do not certify unselected callers after configuration or
+entry changes: run a full package scan for that assessment.
+
+SARIF runs carry the same coverage and diagnostics in properties. CLI coverage
+summaries go to stderr, preserving pure JSON/SARIF on --stdout. Exit codes and
+severity gates remain unchanged; incomplete coverage is not a new finding
+severity and does not by itself trigger the finding gate.
+module_violation metadata.reason is dependency or private_entry; referenceKind
+identifies import/export and entryPoints records the target's declaration.
+
+coverage.rules is an additive map keyed by built-in rule ID. Each entry records
+status, scope, reasons and checkedFiles. Status is disabled, not_configured,
+unsupported_scope, not_applicable, complete or partial. These are execution states,
+not finding severities. Rule inputs distinguish target syntax, project syntax and
+the local import graph. Unsupported or unavailable inputs are not a successful
+empty check. Syntax input failure skips that check; usable graph subsets may
+still produce findings with partial coverage. The legacy moduleBoundary summary
+remains conservative and compatible; consumers must not infer every rule's
+coverage from it. Execution status does not change existing severity gate codes.
+Circular dependency checking is project-only; state dependency cycles support
+project/changed scopes, not single-file certification.
+
+## IDE severity mapping
+
+| BoundaryLens | IDE | SARIF |
+|---|---|---|
+| high | ERROR | error |
+| medium | WARNING | warning |
+| low | WEAK WARNING | note |
+
+## Suppression and baseline
+
+Supported comments are same-line and immediately preceding-line forms:
+
+```dart
+// boundarylens: ignore iot_security
+final endpoint = localEndpoint;
+```
+
+Multiple IDs may be comma-separated; `ignore all` suppresses all findings at
+the target line.
+
+`baseline create` stores stable fingerprints derived from rule ID, normalized
+path, line, and message. A scan with `--baseline` hides matching findings after
+inline suppression.
+
+## Changed-only behavior
+
+Changed-only mode verifies `<base>^{commit}`, collects tracked changes and
+untracked files, and filters them to configured Dart sources. Unchanged project
+files remain available for import and state-graph resolution. Project-level
+pubspec checks run only when `pubspec.yaml` changed. State dependency cycles
+use the full graph and report cycles touching a changed source.
+
+## Release gates
+
+A release is valid only when all of the following pass from the repository
+root:
+
+```bash
+dart pub get
+dart analyze
+dart test
+dart run bin/boundarylens.dart scan example --format json --no-color
+dart pub publish --dry-run
+```
+
+Native release artifacts are produced by `scripts/package_release.sh` and
+`scripts/package_release.ps1` on their respective operating systems.

@@ -1,0 +1,11 @@
+BoundaryLens IDEA Plugin release preflight
+Version: 0.7.1
+Plugin dir: /Users/forest/code/flutterguard/idea-plugin
+
+PASS  plugin project exists
+PASS  native binary: boundarylens-0.7.1-macos-arm64/boundarylens
+FAIL  native binary missing: boundarylens-0.7.1-macos-x64/boundarylens (run scripts/package_release.sh on each platform first)
+FAIL  native binary missing: boundarylens-0.7.1-linux-x64/boundarylens (run scripts/package_release.sh on each platform first)
+FAIL  native binary missing: boundarylens-0.7.1-windows-x64/boundarylens.exe (run scripts/package_release.sh on each platform first)
+
+Preflight aborted: native target set incomplete; existing plugin resources were not overwritten.

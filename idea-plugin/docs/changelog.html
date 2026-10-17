@@ -1,0 +1,63 @@
+<html><body>
+<h2>0.7.1 — BoundaryLens（2026-10-17）</h2>
+<p>首个 BoundaryLens 分发版本面向 macOS Apple Silicon / ARM64、IDEA 2026.1。
+项目声明 boundarylens.yaml 中的模块路径、公开 entry_points 和允许依赖；
+通过当前文件标注与当前 Dart 包报告展示违规、诊断及本次检查覆盖范围。</p>
+<ul><li>默认启用架构检查；历史非架构规则需项目显式 enabled: true。</li>
+<li>统一规则输入、范围与参数预校验；配置失败不会显示为零发现。</li>
+<li>保留单文件、增量扫描、baseline、抑制注释与 JSON/SARIF 报告契约。</li>
+<li>新插件 ID 为 com.boundarylens；安装前停用旧 FlutterGuard。旧配置与抑制前缀继续兼容。</li>
+<li>离线指南、更新记录、MIT、隐私声明与原生第三方 notices 随包提供。</li></ul>
+<p>GitHub 安装包分发和 Marketplace 审批分别记录。其他平台与 IDE 版本另行验收。</p>
+<hr><h2>开发历史（以下为发布前快照）</h2>
+<h2>0.7.1 发布候选 — 2026-10-17（尚未发布）</h2>
+<p>首发限定 macOS Apple Silicon / ARM64 与 IDEA 2026.1；插件元数据声明系统与架构依赖，
+发布预检只接收对应 native，CI 同步收窄到 macos-15。其他平台后续单独验收。
+修正设置页指南内容区的最小与首选尺寸，长段落和更新记录换行已在本机实看。</p>
+<h2>未发布 — 首版标准整改（2026-10-16）</h2>
+<ul><li>内置规则声明输入、范围、激活条件和参数类型；统一跳过禁用规则，输出逐规则执行状态。</li>
+<li>config check 与 scan 提前拒绝无效参数，修复校验结果取决于源码形状的问题。</li>
+<li>注册时校验 ID 与默认值/schema 一致性，执行时校验 finding 归属；不开放用户自定义规则。</li>
+<li>构建/Verifier 默认统一至 IDEA 2026.1.5 / 261、Kotlin 2.3，替换弃用的读动作及分析刷新调用。</li>
+<li>发布 CI 更新 macOS ARM/Intel runner，并在四平台 native 完整后构建插件；远端和 UI 验收独立记录。</li></ul>
+<h2>BoundaryLens 更名 — 2026-10-16（未发布，沿用本地 0.7.1）</h2>
+<p>原产品 FlutterGuard 更名为 BoundaryLens；IDEA ID 为 com.boundarylens，
+CLI 为 boundarylens，Dart 包为 boundarylens_cli。GitHub 地址与历史版权不变。
+旧 flutterguard.yaml 和 flutterguard 抑制注释继续兼容；新配置使用 boundarylens.yaml。
+安装新插件前请停用旧 com.flutterguard，避免重复检查。本记录不代表市场已发布。</p>
+<h2>未发布 — 模块公开入口保护（2026-10-16）</h2>
+<ul><li>定位收敛为项目配置的模块公开入口与允许依赖，默认只启用架构类检查；非架构旧规则需显式启用，旧截图仅作辅助场景。</li>
+<li>新增当前 Dart 包扫描：最近 pubspec 确定嵌套包，完整只读报告可复制。</li>
+<li>协议保留完整 findings，编辑器独立过滤当前文件；项目级无行号发现保留在报告。</li>
+<li>显示 coverage 状态与 scope，旧 CLI 明确提示覆盖未知；无发现不表示项目通过。</li>
+<li>本轮仅适配器测试和构建验证；新场景 UI、native 二进制及发布独立验收。</li></ul>
+<h2>0.7.1 — 本地迭代（2026-10-10，未发布）</h2>
+<h3>新增</h3>
+<ul>
+<li>内置使用指南：五张 IDEA 实拍截图、操作入口、预期结果与检测边界，离线可查看。</li>
+<li>Tools → BoundaryLens: Usage Guide &amp; Changelog；设置页直接查看场景与版本记录。</li>
+<li>手动扫描当前已保存 Dart 文件，显示 findings 数量、诊断或失败原因。</li>
+<li>随包提供 MIT 用户许可说明、隐私声明及第三方 notices；指南展示发布者联系与数据读取边界。</li>
+</ul>
+<h3>修复</h3>
+<ul>
+<li>修复内置说明页的离线图片加载、HTML 渲染与窄窗口图文布局。</li>
+<li>生命周期检查识别 nullable / 泛型资源字段，以及同一声明中的多个字段。</li>
+<li>改用 AST 识别释放调用，避免把字符串当成 cleanup；支持 dispose 直接调用本类 helper。</li>
+<li>只显示当前文件的 findings，拒绝无效行号与过期文档结果；未保存文件提示保存。</li>
+<li>进程输出在执行期间读取；超时、配置错误、无效报告不再表现为零问题。</li>
+<li>Windows native CLI 资源名包含 .exe；同一 IDE 进程复用提取的 CLI。</li>
+</ul>
+<h3>调整</h3>
+<ul>
+<li>IDE 展示 severity，不执行 CI severity gate；业务契约由消费项目维护。</li>
+<li>删除未实现的保存扫描、自定义参数设置和空启动组件。</li>
+<li>插件说明、离线指南与标准 change-notes 明确区分静态检查、扫描失败和实际验收。</li>
+<li>五张场景图替换为人工截图，移除操控图标，并按原始比例展示。</li>
+</ul>
+<h3>验证范围</h3>
+<p>本机 IDEA 2026.1.5 / macOS Apple Silicon 完成编译、协议测试和 bundled CLI smoke 测试；
+关键场景已在编辑器、Problems 列表与通知中实测。本地安装包携带 macOS arm64 CLI。</p>
+<p>2024.3、其他宿主、完整 native 分发矩阵与 Marketplace 发布仍需单独验证。
+版本号沿用 CLI 0.7.1；此记录描述本地实现，不声明已经公开发布。</p>
+</body></html>

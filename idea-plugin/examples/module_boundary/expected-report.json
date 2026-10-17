@@ -1,0 +1,9 @@
+{
+  "scope": "project",
+  "coverageStatus": "complete",
+  "checkedFiles": 4,
+  "totalFiles": 4,
+  "findings": [
+    {"file": "lib/checkout/bad.dart", "line": 1, "ruleId": "module_violation", "reason": "private_entry"}
+  ]
+}

@@ -1,0 +1,13 @@
+include:
+  - lib/**
+
+exclude:
+  - lib/generated/**
+  - lib/**.g.dart
+  - lib/**.freezed.dart
+  - lib/**.mocks.dart
+
+architecture:
+  layers: []
+  modules: []
+  detect_cycles: false

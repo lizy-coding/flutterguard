@@ -1,54 +1,98 @@
-# Project Context
+# BoundaryLens Context
 
-> **Purpose**: Session handover document. Agents should read this first.
-> **Also read**: `AGENTS.md` (project rules & package hierarchy), `PROJECT_RULES.md` (constitution), `docs/ARCHITECTURE.md` (dependency chains).
+BoundaryLens is an independent static-analysis tool and IDE integration for
+Dart/Flutter projects. Consumer projects own their business contracts and gates.
 
----
+## Language
 
-## Completed (Current Session)
+**BoundaryLens**:
+The independently maintained static-analysis product whose findings describe
+rule-defined risks in a Dart/Flutter project.
+_Avoid_: BoundaryLens Flow, runtime tracing SDK, observability SDK
 
-| # | Task | Details |
-|---|------|---------|
-| 1 | Project rename | `flutterguard_flow` → `flutterguard` in melos.yaml, pubspec.yaml, README |
-| 2 | Chinese README | `README.zh.md` with language toggle links |
-| 3 | .gitignore cleanup | Deduplicated, sectioned (Dart/Flutter/CLI/IDE/macOS) |
-| 4 | Example refactoring | Removed `examples/checkout/` (Flutter view), added `examples/scan_demo/` (CLI target) + `examples/usage_demo/` (tracing API demo) |
-| 5 | .idea config | Updated project name, modules, added runConfigurations (trace_demo, scan_demo, melos bootstrap/clean/test), cleaned misc.xml |
-| 6 | Clean tracked artifacts | Removed 3x `pubspec_overrides.yaml` + `.idea/caches/` + `.idea/git_toolbox_prj.xml` from git tracking |
-| 7 | Directory rename | `flutterguard_flow/` → `flutterguard/` (git mv) |
-| 8 | Create `PROJECT_RULES.md` | Agent-readable constitution (Root) |
-| 9 | Supplement `docs/FLUTTERGUARD_SPEC.md` | §0 Scope + §15 IoT rules + updated Roadmap/Commands/Known Limitations |
-| 10 | Renumber spec sections | §0 added, existing sections renumbered through §15 |
+**Scan**:
+A static-analysis assessment of a project's Dart sources under an effective
+configuration and selected scan scope.
+_Avoid_: Runtime trace, telemetry session
 
-## Strategic Decisions
+**Scan scope**:
+The set of Dart files selected for finding evaluation, such as project files,
+Git-changed files, or one explicitly selected file.
+_Avoid_: Entire repository by default, report filter
 
-| Decision | Detail |
-|----------|--------|
-| **Path A first** | CLI static aspect analysis is primary; runtime tracing (Path B) is frozen |
-| **Project identity** | IoT/smart home Flutter project static analysis plugin — NOT a general observability SDK |
-| **Convergence strategy** | Spec/rules first, code converges gradually per PR (best burn rate) |
+**Finding**:
+A rule-owned observation identified by `ruleId`, `severity`, and `domain`, with
+a source location and explanation.
+_Avoid_: Confidence score, priority score
 
-## Pending
+**Rule**:
+A named detector contract with an identifier, metadata, default configuration,
+and finding ownership.
+_Avoid_: Independent metadata catalog, generic style lint
 
-| # | Task | Priority | File |
-|   |------|----------|------|
-| 1 | Refocus CLI rules toward IoT domain | Medium | Add device lifecycle, MQTT, BLE, security rules |
-| 2 | Archive or spin off runtime packages | Low | `flutterguard_core`, `flutterguard_dio`, `flutterguard_flutter` |
+**Rule configuration**:
+The effective enablement, severity, and rule-specific options assigned to a
+rule for a scan.
+_Avoid_: Framework mode, global state-manager switch
 
-## Key Files
+**Severity**:
+The finding's canonical risk level: `high`, `medium`, or `low`.
+_Avoid_: Priority, score, confidence
 
-| File | Purpose |
-|------|---------|
-| `PROJECT_RULES.md` | Agent-readable scope & conventions |
-| `docs/FLUTTERGUARD_SPEC.md` | Single source of truth for implementation |
-| `flutterguard.yaml` | CLI config schema example |
-| `packages/flutterguard_cli/` | PRIMARY active package |
-| `packages/flutterguard_core/` | [Transitional] runtime tracing — frozen |
-| `packages/flutterguard_dio/` | [Transitional] frozen |
-| `packages/flutterguard_flutter/` | [Transitional] frozen |
-| `examples/scan_demo/` | CLI scan target for testing |
-| `examples/usage_demo/` | Tracing API example |
+**Domain**:
+The finding's canonical concern classification, such as architecture,
+lifecycle, IoT security, or state management.
+_Avoid_: Severity, framework selection
 
-## Agent Instructions
+**Architecture boundary**:
+An allowed dependency relationship between configured layers or modules.
+_Avoid_: Formatting convention, directory size limit
 
-When resuming, always read `CONTEXT.md` (session state), `AGENTS.md` (project rules), `PROJECT_RULES.md` (constitution), `docs/ARCHITECTURE.md` (architecture), then reference `docs/FLUTTERGUARD_SPEC.md` for detailed specs.
+**Suppression**:
+An explicit source annotation that excludes a matching finding from the visible
+results of a scan.
+_Avoid_: Baseline, disabled rule
+
+**Baseline**:
+A recorded set of existing findings excluded from later visible results by
+matching finding identity.
+_Avoid_: Suppression comment, disabled detector
+
+**Severity gate**:
+The acceptance threshold that determines whether visible findings fail a scan.
+_Avoid_: Scanner crash, invalid report
+
+**IDE inspection**:
+An editor annotation derived from a BoundaryLens finding for a selected source
+file.
+_Avoid_: Separate rule engine, public Dart scanner API
+
+**Project constraint**:
+A project-declared restriction on observable source relationships within an
+explicit project scope, evaluated against source evidence.
+_Avoid_: Universal coding style, inferred business correctness, health score
+
+**Detection capability**:
+A supported kind of source evidence and check that defines which project
+constraints BoundaryLens can evaluate and where it cannot establish a verdict.
+_Avoid_: Any natural-language requirement, universal semantic analysis
+
+**Module**:
+A project-declared group of source files with a named boundary and public
+entry points.
+_Avoid_: Any directory by default, runtime plugin, class responsibility
+
+**Public entry point**:
+A source entry explicitly designated by a module for access from other modules.
+Being inside an allowed dependency does not make every file public.
+_Avoid_: Any public Dart identifier, any importable file, package export by default
+
+**Module internal implementation**:
+Source belonging to a module that is not designated as an entry point for
+other modules.
+_Avoid_: Dart private identifier, another package's lib/src by definition
+
+**Check coverage**:
+The portion of the declared project constraints and source scope for which
+the checker has enough evidence to evaluate violations.
+_Avoid_: Finding count, test coverage, correctness guarantee

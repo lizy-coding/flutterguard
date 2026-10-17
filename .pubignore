@@ -1,0 +1,26 @@
+.github/
+.idea/
+.dart_tool/
+.boundarylens/
+**/AGENTS.md
+scripts/
+test/
+/boundarylens.yaml
+analysis_options.yaml
+pubspec.lock
+dist/
+/boundarylens
+/boundarylens.exe
+*.iml
+CONTEXT.md
+/boundarylensb.md
+/session-ses_*.md
+/boundarylensb.md
+/session-ses_07b1.md
+
+# Legacy local artifacts remain excluded after the product rename.
+.flutterguard/
+/flutterguard
+/flutterguard.exe
+/flutterguard.yaml
+/flutterguardb.md
