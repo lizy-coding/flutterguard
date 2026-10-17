@@ -7,7 +7,7 @@ SRC="$ROOT_DIR/bin/boundarylens.dart"
 DIST="$ROOT_DIR/dist"
 cd "$ROOT_DIR"
 export PUB_HOSTED_URL=https://pub.dev
-dart pub get --enforce-lockfile
+dart pub get --no-example --enforce-lockfile
 
 case "$(uname -s)" in
   Darwin) OS="macos" ;;

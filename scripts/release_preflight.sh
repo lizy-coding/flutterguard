@@ -54,7 +54,7 @@ else
   fail 'clean Git worktree (commit, stash, or remove local changes before publishing)'
 fi
 
-if ! dart pub get --enforce-lockfile; then
+if ! dart pub get --no-example --enforce-lockfile; then
   fail 'resolve locked dependencies'
   printf '\nPreflight aborted: dependencies were not resolved; later checks require them.\n' >&2
   exit 1

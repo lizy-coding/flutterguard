@@ -18,6 +18,8 @@
 - Release preflight and native packaging resolve the committed lock against
   `https://pub.dev`, independently of a developer's local mirror setting.
   Dependency resolution must succeed before downstream CLI checks run.
+  Strict locking applies to the root executable package (`--no-example`);
+  the example scan fixture intentionally has no committed lockfile.
 - Native package folders are `dist/boundarylens-<version>-<os>-<arch>`.
   Packaging builds for the actual host/target and must run `dart compile exe`
   and the resulting binary's version check.
