@@ -27,7 +27,7 @@ class SarifReport {
           'tool': {
             'driver': {
               'name': 'BoundaryLens',
-              'informationUri': 'https://github.com/lizy-coding/flutterguard',
+              'informationUri': 'https://github.com/lizy-coding/BoundaryLens',
               'rules': [
                 for (final rule in rules)
                   {

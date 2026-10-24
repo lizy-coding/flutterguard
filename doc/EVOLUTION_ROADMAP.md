@@ -2,7 +2,8 @@
 
 更新：2026-10-17。
 
-本地产品已更名为 BoundaryLens（原 FlutterGuard），GitHub 与工作目录地址保留。
+产品与 GitHub 仓库已更名为 BoundaryLens（原 FlutterGuard），远端为
+`lizy-coding/BoundaryLens`；本地工作目录已迁移为 `/Users/forest/code/boundarylens`（2026-10-24）。
 迁移边界见 [RENAMING](RENAMING.md)。下阶段具体改动与逐步验收标准见
 [模块检测执行计划](MODULE_DETECTION_NEXT_STEPS.md)：配置定位 → 增量失效提示 → IDE 证据导航 → 获授权试点。
 

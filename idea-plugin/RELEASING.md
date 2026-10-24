@@ -1,6 +1,6 @@
 # BoundaryLens plugin release maintenance
 
-Canonical repository: https://github.com/lizy-coding/flutterguard.
+Canonical repository: https://github.com/lizy-coding/BoundaryLens.
 This repository maintains the IDEA plugin and the CLI it bundles together.
 Public publisher name: forest.li; contact: zhenyu_li1998@163.com.
 
@@ -25,10 +25,10 @@ independent of any consumer repository.
 
 ## Public entry points
 
-- Project website and source: https://github.com/lizy-coding/flutterguard
-- Support and bug reports: https://github.com/lizy-coding/flutterguard/issues
-- Published artifacts and release records: https://github.com/lizy-coding/flutterguard/releases
-- CI evidence after a remote run: https://github.com/lizy-coding/flutterguard/actions
+- Project website and source: https://github.com/lizy-coding/BoundaryLens
+- Support and bug reports: https://github.com/lizy-coding/BoundaryLens/issues
+- Published artifacts and release records: https://github.com/lizy-coding/BoundaryLens/releases
+- CI evidence after a remote run: https://github.com/lizy-coding/BoundaryLens/actions
 
 These URLs identify the maintenance destinations; they do not prove that the
 current local implementation, agreements or screenshots have been pushed.
@@ -62,4 +62,4 @@ Windows, Linux and Intel Mac are not part of this first IDEA distribution.
 
 Local preparation does not authorize push, tag creation, GitHub Releases,
 Marketplace upload or agreement acceptance. The current repository association
-uses the existing `origin` at `git@github.com:lizy-coding/flutterguard.git`.
+uses the existing `origin` at `git@github.com:lizy-coding/BoundaryLens.git`.

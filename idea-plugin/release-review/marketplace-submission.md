@@ -8,9 +8,10 @@ publisher decisions and submission materials remain independent gates.
 This document records proposed submission materials, not acceptance of an
 agreement, a published release, or JetBrains approval.
 
-The maintenance repository is [lizy-coding/flutterguard](https://github.com/lizy-coding/flutterguard).
+The maintenance repository is [lizy-coding/BoundaryLens](https://github.com/lizy-coding/BoundaryLens).
 See [RELEASING.md](../RELEASING.md) for source, documentation and release mappings.
-This association is prepared locally; the current materials have not been pushed.
+The reviewed source is now public at revision
+`e5b14b7d8c02b615c2375d4518b69d5162b0b5e0`. A GitHub Release is a separate event.
 
 ## Proposed listing fields
 
@@ -18,7 +19,7 @@ This association is prepared locally; the current materials have not been pushed
 |---|---|
 | Name / ID | BoundaryLens / com.boundarylens; check uniqueness in Marketplace |
 | Public contact | zhenyu_li1998@163.com |
-| Vendor website / source | https://github.com/lizy-coding/flutterguard |
+| Vendor website / source | https://github.com/lizy-coding/BoundaryLens |
 | Vendor legal identity | Public name forest.li confirmed; verify individual/entity identity against account |
 | License | Existing MIT License and docs/eula.md notice; owner verifies Vendor profile at submission |
 | Privacy | Publisher confirmed the support policy on 2026-10-17; publish docs/privacy.md and verify its public URL |

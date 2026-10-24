@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Repository maintenance (2026-10-17)
+
+- Rename the GitHub repository to `lizy-coding/BoundaryLens` and update active
+  package, SARIF, plugin and maintenance links. Existing release records retain
+  their original names and addresses; the local checkout path is unchanged.
+
 ## 0.7.1 — First BoundaryLens distribution (2026-10-17)
 
 - First IDEA distribution targets macOS Apple Silicon / ARM64 on IDEA2026.1;

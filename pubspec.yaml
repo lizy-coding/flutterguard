@@ -1,8 +1,8 @@
 name: boundarylens_cli
 description: Project-declared module boundary and public entry checks for Dart, with JSON/SARIF reports and IntelliJ integration.
 version: 0.7.1
-repository: https://github.com/lizy-coding/flutterguard
-issue_tracker: https://github.com/lizy-coding/flutterguard/issues
+repository: https://github.com/lizy-coding/BoundaryLens
+issue_tracker: https://github.com/lizy-coding/BoundaryLens/issues
 topics:
   - static-analysis
   - flutter

@@ -36,7 +36,7 @@ use BoundaryLens only where an explicit detector adds useful evidence.
 ## IntelliJ IDEA plugin
 
 This repository is the source and release-maintenance home for the BoundaryLens
-IDEA plugin: [lizy-coding/flutterguard](https://github.com/lizy-coding/flutterguard).
+IDEA plugin: [lizy-coding/BoundaryLens](https://github.com/lizy-coding/BoundaryLens).
 The plugin delegates detection to the bundled CLI maintained in this same repository.
 
 - [Installation, examples and screenshots](idea-plugin/README.md)
@@ -52,7 +52,7 @@ Marketplace availability is recorded only after an actual approval.
 
 The first binary distribution targets **macOS Apple Silicon / ARM64**. Download
 the CLI archive or IDEA plugin ZIP from the
-[0.7.1 GitHub release](https://github.com/lizy-coding/flutterguard/releases/tag/v0.7.1).
+[0.7.1 GitHub release](https://github.com/lizy-coding/BoundaryLens/releases/tag/v0.7.1).
 The plugin targets IDEA 2026.1 (261) with the Dart plugin enabled. Other native
 platforms are outside this first distribution.
 

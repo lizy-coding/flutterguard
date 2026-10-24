@@ -15,14 +15,26 @@
 | 配置 / 输出 | boundarylens.yaml / .boundarylens/ |
 | Kotlin 编译器环境变量 | BOUNDARYLENS_KOTLIN_VERSION |
 
-GitHub origin 继续使用 git@github.com:lizy-coding/flutterguard.git，网页、Issues、
-Release 的实际 URL 不变；本地工作目录仍为 /Users/forest/code/flutterguard。
-未重命名远端仓库或移动工作目录，也未提交、推送、发布或接受协议。
+2026-10-17：GitHub 仓库已更名为
+[lizy-coding/BoundaryLens](https://github.com/lizy-coding/BoundaryLens)，
+仓库 ID 1240731058 保持不变。新的 origin 为
+`git@github.com:lizy-coding/BoundaryLens.git`；网页、Issues、Actions 和 Release
+使用新的仓库地址。本地工作目录仍为 `/Users/forest/code/flutterguard`，本轮未移动目录。
+
+旧 GitHub 地址由 GitHub 重定向；活跃包元数据、SARIF 工具链接、插件来源和维护资料
+已切换到新地址。日期化审查、历史指纹与已上传安装包保留当时的内容。
 
 2026-10-17 续评已重新核对包、CLI、插件 ID、ZIP 描述符和唯一的 macOS ARM64
 native，43 项更名及相关 CLI/模块/规则契约测试通过。当前发布状态和产物指纹见
 [发布计划续评](../idea-plugin/release-review/2026-10-17-release-plan-review.md)。
-本地身份迁移完成；仓库地址、工作目录迁移和名称登记没有由此自动完成。
+该续评是远端仓库更名前的证据快照；当前仓库地址以上述更新为准。
+仓库更名不代表产品名或包名的独占登记，也不改变 Marketplace 插件 ID。
+
+2026-10-24：本地工作目录由 `/Users/forest/code/flutterguard` 迁移为
+`/Users/forest/code/boundarylens`，目录名与产品名对齐。Agent Hub 注册项目 ID
+同步由 `flutterguard` 正式更名为 `boundarylens`（program ID、快照 namespace 与
+workspace 配置文件一并更名），旧 ID 经注册表 alias 继续解析；Hub 侧日期化报告
+与 benchmark 金标保留旧名称作为当时证据。
 
 ## 已有项目迁移
 

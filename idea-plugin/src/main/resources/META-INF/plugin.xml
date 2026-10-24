@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>com.boundarylens</id>
   <name>BoundaryLens</name>
-  <vendor email="zhenyu_li1998@163.com" url="https://github.com/lizy-coding/flutterguard">forest.li</vendor>
+  <vendor email="zhenyu_li1998@163.com" url="https://github.com/lizy-coding/BoundaryLens">forest.li</vendor>
 
   <description><![CDATA[
 <p><b>Module public-entry protection for Dart/Flutter projects.</b></p>
@@ -22,7 +22,7 @@ The plugin processes files locally and does not implement source upload or telem
 Paths and diagnostic messages may appear in local IDE logs; see the bundled privacy statement.</p>
 <p>Findings are static evidence, not a proof of ownership, control flow, application correctness, or device acceptance.
 This local package is validated on IDEA 2026.1.5 / macOS arm64; other release targets require separate verification.</p>
-<p>Source and issues: <a href="https://github.com/lizy-coding/flutterguard">GitHub</a>.
+<p>Source and issues: <a href="https://github.com/lizy-coding/BoundaryLens">GitHub</a>.
 License: MIT. The versioned changes are available in What's New.</p>
 <h3>中文说明</h3>
 
